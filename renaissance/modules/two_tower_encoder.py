@@ -52,8 +52,6 @@ class BertSelfAttention(nn.Module):
         
     def get_attention_map(self):
         return self.attention_map
-    
-
 
     def transpose_for_scores(self, x):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -401,6 +399,8 @@ class TwoTowerEncoder(nn.Module):
             test_only
     ):
         super().__init__()
+        if not config['use_text_encoder'] and config['use_image_encoder']:
+            raise ValueError("Either the text encoder or the image encoer must be enabled to use the two-tower transformer.")
         
         self.fine_tune = fine_tune
         self.test_only = test_only
@@ -409,82 +409,91 @@ class TwoTowerEncoder(nn.Module):
         self.random_init_text_encoder = config['random_init_text_encoder']
         
         # Vision Encoder
-        if self.random_init_vision_encoder:
-            if config['image_encoder_manual_configuration']:
-                image_encoder_kwargs = {
-                    'hidden_size' : config["image_encoder_hidden_size"],
-                    'num_hidden_layers' : config["image_encoder_num_layers"],
-                    'num_attention_heads' : config["image_encoder_num_heads"],
-                    'intermediate_size' : config["image_encoder_hidden_size"] * config["image_encoder_mlp_ratio"],
-                    'hidden_dropout_prob' : config["image_encoder_drop_rate"],
-                    'attention_probs_dropout_prob' : config["image_encoder_drop_rate"],
-                }
-                hf_image_config = AutoConfig.from_pretrained(config['image_encoder'], **image_encoder_kwargs)
-            # elif not config['image_encoder_manual_configuration']:
-            else:
-                hf_image_config = AutoConfig.from_pretrained(config['image_encoder'])
-            self.image_encoder = AutoModel.from_config(hf_image_config)
-            # if 'clip' in (config['image_encoder']):
-            #     self.image_encoder = self.image_encoder.vision_model
-        
-        else:
-            # hf_image_config = AutoConfig.from_pretrained(config['image_encoder'])
-            self.image_encoder = AutoModel.from_pretrained(config['image_encoder'])
+        if config['use_image_encoder']:
+            if self.random_init_vision_encoder:
+                if config['image_encoder_manual_configuration']:
+                    image_encoder_kwargs = {
+                        'hidden_size' : config["image_encoder_hidden_size"],
+                        'num_hidden_layers' : config["image_encoder_num_layers"],
+                        'num_attention_heads' : config["image_encoder_num_heads"],
+                        'intermediate_size' : config["image_encoder_hidden_size"] * config["image_encoder_mlp_ratio"],
+                        'hidden_dropout_prob' : config["image_encoder_drop_rate"],
+                        'attention_probs_dropout_prob' : config["image_encoder_drop_rate"],
+                    }
+                    hf_image_config = AutoConfig.from_pretrained(config['image_encoder'], **image_encoder_kwargs)
+                # elif not config['image_encoder_manual_configuration']:
+                else:
+                    hf_image_config = AutoConfig.from_pretrained(config['image_encoder'])
+                self.image_encoder = AutoModel.from_config(hf_image_config)
+                # if 'clip' in (config['image_encoder']):
+                #     self.image_encoder = self.image_encoder.vision_model
             
-        # Freeze Parameters for self.image_encoder
-        if config['freeze_image_encoder']:
-            for param in self.image_encoder.parameters(self):
-                param.requires_grad = False
+            else:
+                # hf_image_config = AutoConfig.from_pretrained(config['image_encoder'])
+                self.image_encoder = AutoModel.from_pretrained(config['image_encoder'])
+                
+            # Freeze Parameters for self.image_encoder
+            if config['freeze_image_encoder']:
+                for param in self.image_encoder.parameters(self):
+                    param.requires_grad = False
+
+            self.image_encoder_hidden_size = self.image_encoder.config.hidden_size
+        else:
+            self.image_encoder = None
         
         # Initialize text_encoder
         # Randomly Initialize Encoder Weights
-        if self.random_init_text_encoder:
-            if config['text_encoder_manual_configuration']:
-                text_encoder_kwargs = {
-                    'hidden_size' : config["text_encoder_hidden_size"],
-                    'num_hidden_layers' : config["text_encoder_num_layers"],
-                    'num_attention_heads' : config["text_encoder_num_heads"],
-                    'intermediate_size' : config["text_encoder_hidden_size"] * config["text_encoder_mlp_ratio"],
-                    'hidden_dropout_prob' : config["text_encoder_drop_rate"],
-                    'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
-                }
-                hf_text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
-            # elif not config['text_encoder_manual_configuration']:
+        if config['use_text_encoder']:
+            if self.random_init_text_encoder:
+                if config['text_encoder_manual_configuration']:
+                    text_encoder_kwargs = {
+                        'hidden_size' : config["text_encoder_hidden_size"],
+                        'num_hidden_layers' : config["text_encoder_num_layers"],
+                        'num_attention_heads' : config["text_encoder_num_heads"],
+                        'intermediate_size' : config["text_encoder_hidden_size"] * config["text_encoder_mlp_ratio"],
+                        'hidden_dropout_prob' : config["text_encoder_drop_rate"],
+                        'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
+                    }
+                    hf_text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
+                # elif not config['text_encoder_manual_configuration']:
+                else:
+                    hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
+                self.text_transformer = AutoModel.from_config(hf_text_config)
             else:
-                hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
-            self.text_transformer = AutoModel.from_config(hf_text_config)
+                # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
+                self.text_transformer = AutoModel.from_pretrained(config['text_encoder'])
+            
+            # Freeze Parameters for self.text_transformer
+            if config['freeze_text_encoder']:
+                for param in self.text_transformer.parameters():
+                    param.requires_grad = False
+
+            self.text_transformer_hidden_size = self.text_transformer.config.hidden_size
         else:
-            # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
-            self.text_transformer = AutoModel.from_pretrained(config['text_encoder'])
+            self.text_transformer = None
         
-        # Freeze Parameters for self.text_transformer
-        if config['freeze_text_encoder']:
-            for param in self.text_transformer.parameters():
-                param.requires_grad = False
+        if config['use_image_encoder'] and config['use_text_encoder']:
+            self.hidden_size = config['cross_layer_hidden_size']
+            # Cross Modal Layers
+            self.cross_modal_text_transform = nn.Linear(self.text_transformer_hidden_size, self.hidden_size)
+            self.cross_modal_text_transform.apply(init_weights)
+            self.cross_modal_image_transform = nn.Linear(self.image_encoder_hidden_size, self.hidden_size)
+            self.cross_modal_image_transform.apply(init_weights)
+            
+            # Cross-Modal Module with LXMERT Layers
+            # self.fusion_encoder = BertCrossModalEncoder(config)
+            self.fusion_encoder = LxmertCrossModalEncoder(config)
+            self.fusion_encoder.apply(init_weights)
+            
+            if config['freeze_cross_modal_layers']:
+                for param in self.fusion_encoder.parameters(self):
+                    param.requires_grad = False
         
-        
-        self.image_encoder_hidden_size = self.image_encoder.config.hidden_size
-        self.text_transformer_hidden_size = self.text_transformer.config.hidden_size
-        self.hidden_size = config['cross_layer_hidden_size']
-        # Cross Modal Layers
-        self.cross_modal_text_transform = nn.Linear(self.text_transformer_hidden_size, self.hidden_size)
-        self.cross_modal_text_transform.apply(init_weights)
-        self.cross_modal_image_transform = nn.Linear(self.image_encoder_hidden_size, self.hidden_size)
-        self.cross_modal_image_transform.apply(init_weights)
-        
-        # Cross-Modal Module with LXMERT Layers
-        # self.fusion_encoder = BertCrossModalEncoder(config)
-        self.fusion_encoder = LxmertCrossModalEncoder(config)
-        self.fusion_encoder.apply(init_weights)
-        
-        if config['freeze_cross_modal_layers']:
-            for param in self.fusion_encoder.parameters(self):
-                param.requires_grad = False
-        
-        # Token Type Embeddings
-        self.token_type_embeddings = nn.Embedding(2, config["cross_layer_hidden_size"])
-        self.token_type_embeddings.apply(init_weights)
-        
+            # Token Type Embeddings
+            self.token_type_embeddings = nn.Embedding(2, config["cross_layer_hidden_size"])
+            self.token_type_embeddings.apply(init_weights)
+        else:
+            self.fusion_encoder = None
 
         # Handle Distributed Case
         # Test this on frege when time permits
@@ -502,7 +511,7 @@ class TwoTowerEncoder(nn.Module):
         image_token_type_idx=1,
         img=None,
     ):
-        if img is None:
+        if img is None and self.image_encoder is not None:
             if f"image_{image_token_type_idx - 1}" in batch:
                 imgkey = f"image_{image_token_type_idx - 1}"
             else:
@@ -510,58 +519,72 @@ class TwoTowerEncoder(nn.Module):
             img = batch[imgkey][0]
         
         # Process Text Input to Text Embeddings
-        do_mlm = "_mlm" if mask_text else ""
-        text_ids = batch[f"text_ids{do_mlm}"]
-        text_labels = batch[f"text_labels{do_mlm}"]
-        text_masks = batch["text_masks"]
+        if self.text_transformer is not None:
+            do_mlm = "_mlm" if mask_text else ""
+            text_ids = batch[f"text_ids{do_mlm}"]
+            text_labels = batch[f"text_labels{do_mlm}"]
+            text_masks = batch["text_masks"]
 
-        text_embeds = self.text_transformer.embeddings(input_ids=text_ids)
-        device = text_embeds.device
-        input_shape = text_masks.size()
-        extend_text_masks = self.text_transformer.get_extended_attention_mask(text_masks, input_shape)#, device)
-        
-        text_embeds = self.text_transformer(inputs_embeds=text_embeds).last_hidden_state
-        text_embeds = self.cross_modal_text_transform(text_embeds)
+            text_embeds = self.text_transformer.embeddings(input_ids=text_ids)
+            device = text_embeds.device
+            input_shape = text_masks.size()
+            extend_text_masks = self.text_transformer.get_extended_attention_mask(text_masks, input_shape)#, device)
+            
+            text_embeds = self.text_transformer(inputs_embeds=text_embeds).last_hidden_state
+            if self.image_encoder is not None:
+                text_embeds = self.cross_modal_text_transform(text_embeds)
+            else:
+                text_feats = text_embeds
         
         # Process Image Input to Image Embeddings
-        if self.fine_tune or self.test_only:
-            try:
-                image_embeds = self.image_encoder(img, interpolate_pos_encoding = True)
-            except:
+        if self.image_encoder is not None:
+            if self.fine_tune or self.test_only:
+                try:
+                    image_embeds = self.image_encoder(img, interpolate_pos_encoding = True)
+                except:
+                    image_embeds = self.image_encoder(img)
+            else:
                 image_embeds = self.image_encoder(img)
-        else:
-            image_embeds = self.image_encoder(img)
-            
-        # if self.is_huggingface:
-        image_embeds = image_embeds.last_hidden_state
-        image_embeds = self.cross_modal_image_transform(image_embeds)
-        image_masks = torch.ones((image_embeds.size(0), image_embeds.size(1)), dtype=torch.long, device=device)
-        extend_image_masks = self.text_transformer.get_extended_attention_mask(image_masks, image_masks.size())#, device)
+                
+            # if self.is_huggingface:
+            image_embeds = image_embeds.last_hidden_state
+            if self.text_transformer is not None:
+                image_embeds = self.cross_modal_image_transform(image_embeds)
+                image_masks = torch.ones((image_embeds.size(0), image_embeds.size(1)), dtype=torch.long, device=device)
+                extend_image_masks = self.text_transformer.get_extended_attention_mask(image_masks, image_masks.size())#, device)
+            else:
+                image_feats = image_embeds
 
         # Cross-Modal Processing
-        text_embeds, image_embeds = (
-            text_embeds + self.token_type_embeddings(torch.zeros_like(text_masks)),
-            image_embeds
-            + self.token_type_embeddings(
-                torch.full_like(image_masks, image_token_type_idx)
-            ),
-        )
-        
-        # cls_feats, text_feats, image_feats = self.fusion_encoder(text_embeds, image_embeds, extend_text_masks, extend_image_masks)
-        cls_feats, text_feats, image_feats = self.fusion_encoder(text_embeds, extend_text_masks, image_embeds, extend_image_masks)
+        if self.fusion_encoder is not None:
+            text_embeds, image_embeds = (
+                text_embeds + self.token_type_embeddings(torch.zeros_like(text_masks)),
+                image_embeds
+                + self.token_type_embeddings(
+                    torch.full_like(image_masks, image_token_type_idx)
+                ),
+            )
+            
+            # cls_feats, text_feats, image_feats = self.fusion_encoder(text_embeds, image_embeds, extend_text_masks, extend_image_masks)
+            cls_feats, text_feats, image_feats = self.fusion_encoder(text_embeds, extend_text_masks, image_embeds, extend_image_masks)
 
         ret = {
-            "text_feats": text_feats,
-            "image_feats": image_feats,
-            "cls_feats": cls_feats,
-            "text_labels": text_labels,
-            "text_ids": text_ids,
-            "text_masks": text_masks,
+            "text_feats": text_feats if self.text_transformer is not None else None,
+            "image_feats": image_feats if self.image_encoder is not None else None,
+            "cls_feats": cls_feats if self.fusion_encoder is not None else None,
+            "text_labels": text_labels if self.text_transformer is not None else None,
+            "text_ids": text_ids if self.text_transformer is not None else None,
+            "text_masks": text_masks if self.text_transformer is not None else None,
         }
         return ret
         
     def get_hidden_size(self):
-        return self.hidden_size
+        if self.fusion_encoder is not None:
+            return self.hidden_size
+        elif self.image_encoder is not None:
+            return self.image_encoder.config.hidden_size
+        elif self.text_transformer is not None:
+            return self.text_transformer.config.hidden_size
     
     def adjust_type_embeds_for_nlvr2(self):
         emb_data = self.token_type_embeddings.weight.data

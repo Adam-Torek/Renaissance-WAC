@@ -16,6 +16,16 @@ from .fusion_encoder import LxmertCrossModalEncoder
 from .one_tower_encoder import OneTowerEncoder
 from .two_tower_encoder import TwoTowerEncoder
 
+objective_dict = {
+    "mlm": objectives.compute_mlm,
+    "itm": objectives.compute_itm,
+    "vqa": objectives.compute_vqa,
+    "snli": objectives.compute_snli,
+    "irtr": objectives.compute_irtr,
+    "ref": objectives.compute_ref,
+    "mrpc": objectives.compute_mrpc,
+}
+
 class RenaissanceTransformer(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
@@ -311,72 +321,11 @@ class RenaissanceTransformer(pl.LightningModule):
         if len(self.current_tasks) == 0:
             ret.update(self.infer(batch))
             return ret
-
-        # Masked Language Modeling
-        if "mlm" in self.current_tasks:
-            ret.update(objectives.compute_mlm(self, batch))
-
-        # Image Text Matching
-        if "itm" in self.current_tasks:
-            ret.update(objectives.compute_itm(self, batch))
-
-        # Visual Question Answering
-        if "vqa" in self.current_tasks:
-            ret.update(objectives.compute_vqa(self, batch))
-
-        # Natural Language for Visual Reasoning 2
-        if "nlvr2" in self.current_tasks:
-            ret.update(objectives.compute_nlvr2(self, batch))
-
-        # SNLI Visual Entailment
-        if "snli" in self.current_tasks:
-            ret.update(objectives.compute_snli(self, batch))
-
-        # Image Retrieval and Text Retrieval
-        if "irtr" in self.current_tasks:
-            ret.update(objectives.compute_irtr(self, batch))
-            
-        # Reference Resolution Task
-        if 'ref' in self.current_tasks:
-            ret.update(objectives.compute_ref(self, batch))
         
-        # Text Only Tasks
-        
-        # MRPC Task from GLUE
-        if 'mrpc' in self.current_tasks:
-            ret.update(objectives.compute_mrpc(self, batch))
-        
-        # rte Task from GLUE
-        if 'rte' in self.current_tasks:
-            ret.update(objectives.compute_rte(self, batch))
-        
-        # wnli Task from GLUE
-        if 'wnli' in self.current_tasks:
-            ret.update(objectives.compute_wnli(self, batch))
-            
-        # sst2 Task from GLUE
-        if 'sst2' in self.current_tasks:
-            ret.update(objectives.compute_sst2(self, batch))
-            
-        # qqp Task from GLUE
-        if 'qqp' in self.current_tasks:
-            ret.update(objectives.compute_qqp(self, batch))
-            
-        # qnli Task from GLUE
-        if 'qnli' in self.current_tasks:
-            ret.update(objectives.compute_qnli(self, batch))
-            
-        # mnli Task from GLUE
-        if 'mnli' in self.current_tasks:
-            ret.update(objectives.compute_mnli(self, batch))
-            
-        # cola Task from GLUE
-        if 'cola' in self.current_tasks:
-            ret.update(objectives.compute_cola(self, batch))
-        
-        # cifar10 Image-Only Classification Task
-        if 'cifar10' in self.current_tasks:
-            ret.update(objectives.compute_cifar10(self, batch))
+        for task in self.current_tasks:
+            if task in objective_dict:
+                objective_function = objective_dict[task]
+                ret.update(objective_function(self, batch))
             
         return ret
 

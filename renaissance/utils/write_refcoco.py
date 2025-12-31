@@ -38,13 +38,10 @@ def process_ref(ref, path, Imgs, imgToAnns):
         bboxes.append(ann['bbox'])
     label = obj_ids.index(ann_id)
         
-    return [binary, sents, bboxes, label]
+    return [binary, sents, bboxes, label]    
 
 
-    
-
-
-def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc'):
+def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'google'):
 # ROOT_DIR = osp.abspath(osp.dirname(__file__))
     DATA_DIR = osp.join(data_root, dataset)
     if dataset in ['refcoco', 'refcoco+', 'refcocog']:
@@ -76,8 +73,6 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
     for img in data['images']:
         Imgs[img['id']] = img
         
-    
-    
     splits = ['train', 'val', 'test']
     
     for split in splits:
@@ -101,10 +96,10 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
 
 if __name__ == '__main__':
     
-    data_root = '/home/claytonfields/nlp/code/data/coco'  # contains refclef, refcoco, refcoco+, refcocog and images
-    outfile_root = '/home/claytonfields/nlp/code/meter/data/arrow'
+    data_root = '/home/adam-torek/Documents/Thesis_Documents/renaissance/data/coco'  # contains refclef, refcoco, refcoco+, refcocog and images
+    outfile_root = '/home/adam-torek/Documents/Thesis_Documents/renaissance/data/arrow'
     dataset = 'refcoco' 
-    splitBy = 'unc'
+    splitBy = 'google'
 
     write_refcoco(data_root, outfile_root)
 

@@ -64,6 +64,7 @@ def main(_config):
         
     print()
     print("Training Info")
+    print("Data Root: ", _config['data_root'])
     print("Learning Rate: ", _config['learning_rate'])
     print("Max Epochs: ", _config['max_epoch'])
     print("Max Steps: ", _config['max_steps'])

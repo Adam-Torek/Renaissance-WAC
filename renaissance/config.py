@@ -85,6 +85,8 @@ def config():
     original_image_size = 224 # Image size model is pretrained with, used in fine-tuning and testing
     patch_size = 16
     image_only = False
+    use_text_encoder = True
+    use_image_encoder = True
     # Image Transform Keys
     train_transform_keys = ["imagenet"]
     val_transform_keys = ["imagenet"]
@@ -200,6 +202,35 @@ def pretrain_mlm_itm_twotower_exp2_deittiny_electrasmall():
     val_check_interval = 1.0
     lr_mult_head = 5
     lr_mult_cross_modal = 5
+
+@ex.named_config
+def pretrain_mlm_onetower_electrasmall():
+    exp_name = "mlm_itm_onetower_electrasmall"
+    model_type = "one-tower"
+    datasets = ["coco"]
+    loss_names = _loss_names({"mlm": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 1
+    max_steps = 50000
+    warmup_steps = 0.1
+    whole_word_masking = True
+    model_type = "two-tower"
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    num_gpus = 1
+    data_root = "data/arrow/"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
 
 @ex.named_config
 def pretrain_mlm_itm_twotower_exp2_deitsmall_electrasmall():

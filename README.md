@@ -10,7 +10,7 @@ The one-tower encoder consists of an embedding layer, an encoder module and a ou
 
 ![alt text](one-tower.png)
 
-The tow-tower encoder consists of a text-encoder, an image-encoder and a cross-modal fusion encoder
+The two-tower encoder consists of a text-encoder, an image-encoder and a cross-modal fusion encoder
 followed by an output layer. The text-encoder and the image-encoder can be drawn from a number of models available on huggingface. The fusion encoder is always manually configured and trained from scratch.
 
 ![alt text](two-tower.png)

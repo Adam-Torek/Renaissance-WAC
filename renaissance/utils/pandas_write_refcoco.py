@@ -76,9 +76,6 @@ def process_ref(ref, path, Imgs, imgToAnns):
     return [binary, sents, bboxes, label]
 
 
-    
-
-
 def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc'):
 # ROOT_DIR = osp.abspath(osp.dirname(__file__))
     DATA_DIR = osp.join(data_root, dataset)
@@ -113,8 +110,6 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
         imgToAnns[ann['image_id']] = imgToAnns.get(ann['image_id'], []) + [ann]
     for img in data['images']:
         Imgs[img['id']] = img
-        
-    
     
     splits = ['train', 'val', 'test']
     

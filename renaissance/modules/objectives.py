@@ -386,7 +386,7 @@ def compute_irtr_recall(pl_module):
             fblen = len(txt_batch["text_ids"])
             im = _im.repeat(fblen, 1, 1, 1).to(device=txt_batch['text_ids'].device)
 
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast():
                 score = pl_module.rank_output(
                     pl_module.infer(
                         {
