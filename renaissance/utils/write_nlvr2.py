@@ -27,7 +27,7 @@ def process(root, iden, row):
     return [img0, img1, texts, labels, iden]
 
 
-def make_arrow(root, dataset_root):
+def write_nlvr2(root, dataset_root):
     train_data = list(
         map(json.loads, open(f"{root}/nlvr2/data/train.json").readlines())
     )

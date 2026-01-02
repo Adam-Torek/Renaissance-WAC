@@ -33,8 +33,7 @@ def path2rest(path, iid2captions):
         str(iid),
     ]
 
-
-def make_arrow(root, dataset_root):
+def write_vg(root, dataset_root):
     with open(f"{root}/annotations/region_descriptions.json", "r") as fp:
         captions = json.load(fp)
 

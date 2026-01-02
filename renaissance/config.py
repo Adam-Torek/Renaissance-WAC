@@ -159,6 +159,10 @@ def config():
     num_nodes = 1
     num_workers = 12
     precision = 32
+
+    # WAC distribution and embedding settings
+    wac_embedding_size = -1
+    wac_distribution_matrix = None
     
 
 # ===================== Experiment 2 Cofigs ===================== #

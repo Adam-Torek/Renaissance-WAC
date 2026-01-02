@@ -33,6 +33,10 @@ class BertSelfAttention(nn.Module):
         self.key = nn.Linear(config.hidden_size, self.all_head_size)
         self.value = nn.Linear(config.hidden_size, self.all_head_size)
 
+        self.wac_distribution_matrix = config.wac_distribution_matrix
+        if self.wac_distribution_matrix is not None:
+            self.wac_distribution_projection = nn.Linear(config.vocab_size, self.all_head_size)
+           
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
         if self.position_embedding_type == "relative_key" or self.position_embedding_type == "relative_key_query":
@@ -67,6 +71,7 @@ class BertSelfAttention(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        wac_distributions=None,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -94,6 +99,18 @@ class BertSelfAttention(nn.Module):
             value_layer = self.transpose_for_scores(self.value(hidden_states))
 
         query_layer = self.transpose_for_scores(mixed_query_layer)
+
+        if wac_distributions is not None and self.wac_distribution_matrix is not None:
+            wac_distributions = self.wac_distribution_projection(wac_distributions)
+            wac_distributions = wac_distributions.expand(-1, query_layer.shape[2], -1)
+            wac_distributions = self.transpose_for_scores(wac_distributions)
+
+            if self.wac_distribution_matrix == "query":
+                query_layer = query_layer * wac_distributions
+            elif self.wac_distribution_matrix == "key":
+                key_layer = key_layer * wac_distributions
+            elif self.wac_distribution_matrix == "value":
+                value_layer = value_layer * wac_distributions
 
         if self.is_decoder:
             # if cross_attention save Tuple(torch.Tensor, torch.Tensor) of all cross attention key/value_states.
@@ -269,6 +286,7 @@ class BertCrossLayer(nn.Module):
         attention_mask=None,
         encoder_attention_mask=None,
         output_attentions=False,
+        wac_distributions=None,
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = None #past_key_value[:2] if past_key_value is not None else None
@@ -278,6 +296,7 @@ class BertCrossLayer(nn.Module):
             head_mask=None,
             output_attentions=output_attentions,
             past_key_value=None,
+            wac_distributions=wac_distributions,
         )
         attention_output = self_attention_outputs[0]
 
@@ -330,10 +349,10 @@ class BertCrossModalEncoder(nn.Module):
         self.cross_modal_image_pooler = Pooler(config["cross_layer_hidden_size"])
         self.cross_modal_text_pooler = Pooler(config["cross_layer_hidden_size"])
         
-    def forward(self, text_embeds, image_embeds, extend_text_masks, extend_image_masks):
+    def forward(self, text_embeds, image_embeds, extend_text_masks, extend_image_masks, wac_distribution_matrix=None):
         x, y = text_embeds, image_embeds
         for text_layer, image_layer in zip(self.cross_modal_text_layers, self.cross_modal_image_layers):
-            x1 = text_layer(x, y, extend_text_masks, extend_image_masks)
+            x1 = text_layer(x, y, extend_text_masks, extend_image_masks, wac_distribution_matrix=wac_distribution_matrix)
             y1 = image_layer(y, x, extend_image_masks, extend_text_masks)
             x, y = x1[0], y1[0]
 
@@ -389,8 +408,6 @@ class LxmertCrossModalEncoder(nn.Module):
         
         return cls_feats, lang_feats, visual_feats
         
-
-
 class TwoTowerEncoder(nn.Module):
     def __init__(
             self, 
@@ -453,11 +470,14 @@ class TwoTowerEncoder(nn.Module):
                         'intermediate_size' : config["text_encoder_hidden_size"] * config["text_encoder_mlp_ratio"],
                         'hidden_dropout_prob' : config["text_encoder_drop_rate"],
                         'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
+                        'wac_embedding_size': config['wac_embedding_size'],
+                        'wac_distribution_matrix': config['wac_distribution_matrix'],
                     }
                     hf_text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
                 # elif not config['text_encoder_manual_configuration']:
                 else:
                     hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
+                
                 self.text_transformer = AutoModel.from_config(hf_text_config)
             else:
                 # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])

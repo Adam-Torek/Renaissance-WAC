@@ -18,7 +18,7 @@ def path2rest(path, iid2captions, iid2split):
     return [binary, captions, name, split]
 
 
-def make_arrow(root, dataset_root):
+def write_coco_karpathy(root, dataset_root):
     with open(f"{root}/karpathy/dataset_coco.json", "r") as fp:
         captions = json.load(fp)
 

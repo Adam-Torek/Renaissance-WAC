@@ -22,6 +22,16 @@
             "request": "launch",
             "program": "renaissance/utils/write_refcoco.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Process RefCOCO Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "renaissance/utils/run_write.py",
+            "console": "integratedTerminal",
+            "args": ["--dataset_to_write", "refcoco", 
+                     "--dataset_source_path", "data/coco/", 
+                     "--dataset_destination_path", "data/arrow/"]
         }
     ]
 }

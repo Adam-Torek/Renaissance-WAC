@@ -7,7 +7,7 @@ import os
 from tqdm import tqdm
 from glob import glob
 from collections import defaultdict, Counter
-from .glossary import normalize_word
+from glossary import normalize_word
 
 
 def get_score(occurences):
@@ -23,8 +23,7 @@ def get_score(occurences):
         return 1.0
 
 
-def 
-(path, split, annotations, label2ans):
+def path2rest(path, split, annotations, label2ans):
     iid = int(path.split("/")[-1].split("_")[-1][:-4])
 
     with open(path, "rb") as fp:
@@ -50,7 +49,7 @@ def
     return [binary, questions, answers, answer_labels, answer_scores, iid, qids, split]
 
 
-def make_arrow(root, dataset_root):
+def write_vqa(root, dataset_root):
     with open(f"{root}/v2_OpenEnded_mscoco_train2014_questions.json", "r") as fp:
         questions_train2014 = json.load(fp)["questions"]
     with open(f"{root}/v2_OpenEnded_mscoco_val2014_questions.json", "r") as fp:

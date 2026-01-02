@@ -9,6 +9,10 @@ from renaissance.config import ex
 from renaissance.modules import RenaissanceTransformer
 from renaissance.datamodules.multitask_datamodule import MTDataModule
 
+from transformers import AutoConfig
+
+from renaissance.modules.config import WACConfig
+
 import warnings
 import torch
 import torch.distributed as dist

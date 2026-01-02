@@ -101,6 +101,11 @@ class ElectraEmbeddings(nn.Module):
             "position_ids", torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False
         )
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
+
+        if config.wac_embedding_size > -1:
+            self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
+        else:
+            self.wac_embeddings_projection = None
         
     # Copied from transformers.models.bert.modeling_bert.BertEmbeddings.forward
     def forward(
@@ -109,6 +114,7 @@ class ElectraEmbeddings(nn.Module):
         # token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         inputs_embeds: Optional[torch.FloatTensor] = None,
+        wac_embeddings: Optional[torch.FloatTensor] = None,
         past_key_values_length: int = 0,
     ) -> torch.Tensor:
         if input_ids is not None:
@@ -125,12 +131,27 @@ class ElectraEmbeddings(nn.Module):
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
 
+        if wac_embeddings is not None:
+            if wac_embeddings.shape[1] != embeddings.shape[1]:
+                if self.wac_embeddings_projection is not None:
+                    raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
+                
+                wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
+
         embeddings = inputs_embeds 
         if self.position_embedding_type == "absolute":
             position_embeddings = self.position_embeddings(position_ids)
             embeddings += position_embeddings
+
+            if wac_embeddings is not None:
+                wac_embeddings += position_embeddings
+        
+        if wac_embeddings is not None:
+            embeddings *= wac_embeddings
+       
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
+        
         return embeddings
     
     def _adjust_position_embeddings(self, new_num_tokens: int):

@@ -20,7 +20,7 @@ def process(root, imgid, ann):
 
 
 
-def make_arrow(root, dataset_root):
+def write_snli(root, dataset_root):
     train_data = list(
         map(json.loads, open(f"{root}/snli_ve_train.jsonl").readlines())
     )
