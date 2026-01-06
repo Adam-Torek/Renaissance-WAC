@@ -210,7 +210,7 @@ def pretrain_mlm_itm_twotower_exp2_deittiny_electrasmall():
 @ex.named_config
 def pretrain_mlm_onetower_electrasmall():
     exp_name = "mlm_itm_onetower_electrasmall"
-    model_type = "one-tower"
+    model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"mlm": 1})
     batch_size = 128
@@ -224,7 +224,9 @@ def pretrain_mlm_onetower_electrasmall():
     freeze_image_encoder = False
     freeze_text_encoder = False
     # Text Setting
-    text_encoder = "google/electra-small-discriminator"
+    text_encoder = "bert_wac"
+    random_init_text_encoder = True
+    tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15

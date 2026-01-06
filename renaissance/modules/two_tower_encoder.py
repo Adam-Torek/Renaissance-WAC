@@ -2,6 +2,8 @@ import math
 import torch
 import torch.nn as nn
 
+from transformers import PreTrainedModel
+from transformers.modeling_outputs import BaseModelOutputWithPastAndCrossAttentions
 from transformers.models.auto import AutoConfig, AutoModel
 from transformers.models.lxmert.modeling_lxmert import LxmertXLayer
 from transformers.models.lxmert.configuration_lxmert import LxmertConfig
@@ -12,6 +14,9 @@ from transformers.modeling_utils import (
     find_pruneable_heads_and_indices,
     prune_linear_layer,
 )
+
+from renaissance.modules.embeddings import ElectraEmbeddings
+from .config import WACConfig
 
 from .objectives import init_weights
 from .heads import Pooler
@@ -223,6 +228,7 @@ class BertAttention(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        wac_distributions=None,
     ):
         self_outputs = self.self(
             hidden_states,
@@ -232,6 +238,7 @@ class BertAttention(nn.Module):
             encoder_attention_mask,
             past_key_value,
             output_attentions,
+            wac_distributions=wac_distributions,
         )
         attention_output = self.output(self_outputs[0], hidden_states)
         outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them
@@ -282,10 +289,11 @@ class BertCrossLayer(nn.Module):
     def forward(
         self,
         hidden_states,
-        encoder_hidden_states,
+        encoder_hidden_states=None,
         attention_mask=None,
         encoder_attention_mask=None,
         output_attentions=False,
+        past_key_value=None,
         wac_distributions=None,
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
@@ -295,7 +303,7 @@ class BertCrossLayer(nn.Module):
             attention_mask,
             head_mask=None,
             output_attentions=output_attentions,
-            past_key_value=None,
+            past_key_value=past_key_value,
             wac_distributions=wac_distributions,
         )
         attention_output = self_attention_outputs[0]
@@ -304,17 +312,18 @@ class BertCrossLayer(nn.Module):
         outputs = self_attention_outputs[1:]  # add self attentions if we output attention weights
 
         cross_attn_present_key_value = None
-        cross_attention_outputs = self.crossattention(
-            attention_output,
-            attention_mask,
-            None,
-            encoder_hidden_states,
-            encoder_attention_mask,
-            None,
-            output_attentions,
-        )
-        attention_output = cross_attention_outputs[0]
-        outputs = outputs + cross_attention_outputs[1:-1]  # add cross attentions if we output attention weights
+        if encoder_hidden_states is not None:
+            cross_attention_outputs = self.crossattention(
+                attention_output,
+                attention_mask,
+                None,
+                encoder_hidden_states,
+                encoder_attention_mask,
+                None,
+                output_attentions,
+            )
+            attention_output = cross_attention_outputs[0]
+            outputs = outputs + cross_attention_outputs[1:-1]  # add cross attentions if we output attention weights
 
         layer_output = apply_chunking_to_forward(
             self.feed_forward_chunk, self.chunk_size_feed_forward, self.seq_len_dim, attention_output
@@ -328,10 +337,126 @@ class BertCrossLayer(nn.Module):
         layer_output = self.output(intermediate_output, attention_output)
         return layer_output
     
+class BertWACEncoder(nn.Module):
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.layers = nn.ModuleList([BertCrossLayer(config) for _ in range(0, config.num_hidden_layers)])
+
+    def forward(self, 
+                hidden_states, 
+                attention_mask=None, 
+                encoder_hidden_states=None, 
+                encoder_attention_mask=None, 
+                output_attentions=False,
+                past_key_values=None,
+                wac_distributions=None,):
+        
+        last_hidden_state = hidden_states
+        for layer in self.layers:
+            hidden_states = layer(hidden_states=last_hidden_state, 
+                                  attention_mask=attention_mask, 
+                                  encoder_hidden_states=encoder_hidden_states, 
+                                  encoder_attention_mask=encoder_attention_mask, 
+                                  output_attentions=output_attentions,
+                                  past_key_value=past_key_values,
+                                  wac_distributions=wac_distributions)
+            
+            last_hidden_state = hidden_states[0]
+
+        return BaseModelOutputWithPastAndCrossAttentions(
+            last_hidden_state=last_hidden_state,
+            past_key_values=past_key_values
+        )
+
+class BertWACPreTrainedModel(PreTrainedModel):
+
+    config_class = WACConfig
+    base_model_prefix = "bert_wac"
+
+class BertWACTransformer(BertWACPreTrainedModel):
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.config = config
+        self.embeddings = ElectraEmbeddings(config)
+
+        self.encoder = BertWACEncoder(config)
+        self.gradient_checkpointing = False
+
+        if config.embedding_size != config.hidden_size:
+            self.embeddings_projection = nn.Linear(config.embedding_size, config.hidden_size)
+        else:
+            self.embeddings_projection = None
+
+        self.post_init()
+
+    def forward(self, 
+                input_ids=None, 
+                attention_mask=None, 
+                position_ids=None, 
+                inputs_embeds=None, 
+                wac_embeddings=None, 
+                encoder_hidden_states=None, 
+                encoder_attention_mask=None,
+                output_attentions=False,
+                past_key_values=None,
+                wac_distributions=None, ):
+        
+        if input_ids is None and inputs_embeds is None:
+            raise ValueError("input_ids or input_embeddings must be defined")
+        
+        elif input_ids is not None and inputs_embeds is not None:
+            raise ValueError("Only input_ids or input_embeddings can be defined, not both.")
+
+        if inputs_embeds is not None:
+            input_shape = inputs_embeds.size()[:-1]
+        
+        elif input_ids is not None:
+            self.warn_if_padding_and_no_attention_mask(input_ids, attention_mask)
+            input_shape = input_ids.size()
+
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+
+        past_key_values_length = past_key_values[0][0].shape[2] if past_key_values is not None else 0
+
+        if attention_mask is None:
+            attention_mask = torch.ones(input_shape, device=device)
+
+        extended_attention_mask = self.get_extended_attention_mask(attention_mask, input_shape)
+
+        if self.config.is_decoder and encoder_hidden_states is not None:
+            encoder_batch_size, encoder_sequence_length, _ = encoder_hidden_states.size()
+            encoder_hidden_shape = (encoder_batch_size, encoder_sequence_length)
+            if encoder_attention_mask is None:
+                encoder_attention_mask = torch.ones(encoder_hidden_shape, device=device)
+            encoder_extended_attention_mask = self.invert_attention_mask(encoder_attention_mask)
+        else:
+            encoder_extended_attention_mask = None
+
+        hidden_states = self.embeddings(input_ids=input_ids, 
+                                        position_ids=position_ids, 
+                                        inputs_embeds=inputs_embeds, 
+                                        past_key_values_length=past_key_values_length,
+                                        wac_embeddings=wac_embeddings)
+        
+        if self.embeddings_projection is not None:
+            hidden_states = self.embeddings_projection(hidden_states)
+        
+        hidden_states = self.encoder(hidden_states=hidden_states,
+                                     attention_mask=extended_attention_mask,
+                                     encoder_hidden_states=encoder_hidden_states,
+                                     encoder_attention_mask=encoder_extended_attention_mask,
+                                     output_attentions=output_attentions,
+                                     past_key_values=past_key_values,
+                                     wac_distributions=wac_distributions,)
+        
+        return hidden_states
+    
 class BertCrossModalEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        
         
         bert_config = BertConfig(
             vocab_size=config["vocab_size"],
@@ -407,7 +532,15 @@ class LxmertCrossModalEncoder(nn.Module):
         cls_feats = torch.cat([cls_feats_text, cls_feats_image], dim=-1)
         
         return cls_feats, lang_feats, visual_feats
-        
+
+config_dict = {
+    'bert_wac': WACConfig,
+}
+
+transformer_dict = {
+    'bert_wac': BertWACTransformer
+}
+
 class TwoTowerEncoder(nn.Module):
     def __init__(
             self, 
@@ -437,6 +570,7 @@ class TwoTowerEncoder(nn.Module):
                         'hidden_dropout_prob' : config["image_encoder_drop_rate"],
                         'attention_probs_dropout_prob' : config["image_encoder_drop_rate"],
                     }
+                  
                     hf_image_config = AutoConfig.from_pretrained(config['image_encoder'], **image_encoder_kwargs)
                 # elif not config['image_encoder_manual_configuration']:
                 else:
@@ -473,15 +607,30 @@ class TwoTowerEncoder(nn.Module):
                         'wac_embedding_size': config['wac_embedding_size'],
                         'wac_distribution_matrix': config['wac_distribution_matrix'],
                     }
-                    hf_text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
+                    if 'wac' in config['text_encoder']:
+                        text_encoder_kwargs['wac_embedding_size'] = config['wac_embedding_size']
+                        text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
+                        hf_text_config = WACConfig(**text_encoder_kwargs)
+                    else:
+                        hf_text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
+                  
                 # elif not config['text_encoder_manual_configuration']:
                 else:
-                    hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
+                    if 'wac' in config['text_encoder']:
+                        hf_text_config = WACConfig()
+                    else:
+                        hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
                 
-                self.text_transformer = AutoModel.from_config(hf_text_config)
+                if 'wac' in config['text_encoder']:
+                    self.text_transformer = BertWACTransformer(hf_text_config)
+                else:
+                    self.text_transformer = AutoModel.from_config(hf_text_config)
             else:
                 # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
-                self.text_transformer = AutoModel.from_pretrained(config['text_encoder'])
+                if 'wac' in config['text_encoder']:
+                    self.text_transformer = BertWACTransformer.from_pretrained(config['text_encoder'])
+                else:
+                    self.text_transformer = AutoModel.from_pretrained(config['text_encoder'])
             
             # Freeze Parameters for self.text_transformer
             if config['freeze_text_encoder']:

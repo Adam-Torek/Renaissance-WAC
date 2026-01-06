@@ -158,7 +158,6 @@ class RenaissanceTransformer(pl.LightningModule):
         else:
             self.text_hs = config['text_encoder_hidden_size']
         
-        
         self.text_only = False
      
         # MRPC Text Classifier

@@ -5,6 +5,8 @@ from transformers import ElectraConfig
 
 class WACConfig(ElectraConfig):
 
+    model_type = "bert_wac"
+
     def __init__(self, 
                  wac_embedding_size=-1, 
                  wac_distribution_matrix=None,

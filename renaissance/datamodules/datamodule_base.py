@@ -36,7 +36,7 @@ class BaseDataModule(LightningDataModule):
         )
         
         self.processor = AutoImageProcessor.from_pretrained(_config['image_encoder'])
-        self.tokenizer = AutoTokenizer.from_pretrained(_config["text_encoder"])
+        self.tokenizer = AutoTokenizer.from_pretrained(_config["tokenizer"])
         self.vocab_size = self.tokenizer.vocab_size
 
         collator = (

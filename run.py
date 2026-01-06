@@ -9,7 +9,7 @@ from renaissance.config import ex
 from renaissance.modules import RenaissanceTransformer
 from renaissance.datamodules.multitask_datamodule import MTDataModule
 
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoModel
 
 from renaissance.modules.config import WACConfig
 
@@ -17,10 +17,17 @@ import warnings
 import torch
 import torch.distributed as dist
 
+from renaissance.modules.two_tower_encoder import BertWACTransformer
+
 
 
 @ex.automain
 def main(_config):
+    AutoConfig.register(model_type="bert_wac", 
+                        config=WACConfig)
+    
+    AutoModel.register(config_class=WACConfig, 
+                       model_class=BertWACTransformer)
     
     _config = copy.deepcopy(_config)
     pl.seed_everything(_config["seed"])
