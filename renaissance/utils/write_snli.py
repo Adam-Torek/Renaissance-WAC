@@ -53,9 +53,7 @@ def write_snli(root, dataset_root):
                 annots[split][imgid]['sentences'] = []
                 annots[split][imgid]['labels'] = []
             annots[split][imgid]['sentences'].append( [line['sentence1'], line['sentence2']] )
-            annots[split][imgid]['labels'].append( label2id[line['gold_label']] )
-            
-        
+            annots[split][imgid]['labels'].append( label2id[line['gold_label']] )    
 
     for split in splits:
         bs = [process(root, imgid, annots[split][imgid]) for imgid in tqdm(annots[split])]

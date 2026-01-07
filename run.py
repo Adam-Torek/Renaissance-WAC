@@ -19,8 +19,6 @@ import torch.distributed as dist
 
 from renaissance.modules.two_tower_encoder import BertWACTransformer
 
-
-
 @ex.automain
 def main(_config):
     AutoConfig.register(model_type="bert_wac", 

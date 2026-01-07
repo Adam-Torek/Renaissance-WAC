@@ -38,7 +38,6 @@ class BaseDataset(torch.utils.data.Dataset):
         if not hugging_face:
             assert len(transform_keys) >= 1
         super().__init__()
-
         self.transforms = keys_to_transforms(transform_keys, size=image_size)
         self.clip_transform = False
         for transform_key in transform_keys:
@@ -204,82 +203,98 @@ class BaseDataset(torch.utils.data.Dataset):
     def collate(self, batch, mlm_collator):
         # collate function for locally stored datasets
         if not self.hugging_face:
-            batch_size = len(batch)
-            keys = set([key for b in batch for key in b.keys()])
-            dict_batch = {k: [dic[k] if k in dic else None for dic in batch] for k in keys}
-    
-            img_keys = [k for k in list(dict_batch.keys()) if "image" in k]
-            img_sizes = list()
-    
-            for img_key in img_keys:
-                img = dict_batch[img_key]
-                img_sizes += [ii.shape for i in img if i is not None for ii in i]
-    
-            for size in img_sizes:
-                assert (
-                    len(size) == 3
-                ), f"Collate error, an image should be in shape of (3, H, W), instead of given {size}"
-    
-            if len(img_keys) != 0:
-                max_height = max([i[1] for i in img_sizes])
-                max_width = max([i[2] for i in img_sizes])
-    
-            for img_key in img_keys:
-                img = dict_batch[img_key]
-                view_size = len(img[0])
-    
-                new_images = [
-                    torch.zeros(batch_size, 3, max_height, max_width)
-                    for _ in range(view_size)
-                ]
-    
-                for bi in range(batch_size):
-                    orig_batch = img[bi]
-                    for vi in range(view_size):
-                        if orig_batch is None:
-                            new_images[vi][bi] = None
-                        else:
-                            orig = img[bi][vi]
-                            new_images[vi][bi, :, : orig.shape[1], : orig.shape[2]] = orig
-    
-                dict_batch[img_key] = new_images
-    
-            txt_keys = [k for k in list(dict_batch.keys()) if "text" in k]
-    
-            if len(txt_keys) != 0:
-                texts = [[d[0] for d in dict_batch[txt_key]] for txt_key in txt_keys]
-                encodings = [[d[1] for d in dict_batch[txt_key]] for txt_key in txt_keys]
-                draw_text_len = len(encodings)
-                flatten_encodings = [e for encoding in encodings for e in encoding]
-                flatten_mlms = mlm_collator(flatten_encodings)
-    
-                for i, txt_key in enumerate(txt_keys):
-                    texts, encodings = (
-                        [d[0] for d in dict_batch[txt_key]],
-                        [d[1] for d in dict_batch[txt_key]],
-                    )
-    
-                    mlm_ids, mlm_labels = (
-                        flatten_mlms["input_ids"][batch_size * (i) : batch_size * (i + 1)],
-                        flatten_mlms["labels"][batch_size * (i) : batch_size * (i + 1)],
-                    )
-    
-                    input_ids = torch.zeros_like(mlm_ids)
-                    attention_mask = torch.zeros_like(mlm_ids)
-                    for _i, encoding in enumerate(encodings):
-                        _input_ids, _attention_mask = (
-                            torch.tensor(encoding["input_ids"]),
-                            torch.tensor(encoding["attention_mask"]),
+        
+            if isinstance(batch[0], dict) and "text_ids" in batch[0] and isinstance(batch[0]["text_ids"], torch.Tensor) and batch[0]["text_ids"].dim() > 1:
+                batch_size = len(batch)
+                keys = set([key for b in batch for key in b.keys()])
+                dict_batch = {k: [dic[k] if k in dic else None for dic in batch] for k in keys}
+
+                img_keys = [k for k in list(dict_batch.keys()) if "image" in k]
+                img_sizes = list()
+        
+                for img_key in img_keys:
+                    img = dict_batch[img_key]
+                    img_sizes += [ii.shape for i in img if i is not None for ii in i]
+        
+                for size in img_sizes:
+                    assert (
+                        len(size) == 3
+                    ), f"Collate error, an image should be in shape of (3, H, W), instead of given {size}"
+        
+                if len(img_keys) != 0:
+                    max_height = max([i[1] for i in img_sizes])
+                    max_width = max([i[2] for i in img_sizes])
+        
+                for img_key in img_keys:
+                    img = dict_batch[img_key]
+                    view_size = len(img[0])
+        
+                    new_images = [
+                        torch.zeros(batch_size, 3, max_height, max_width)
+                        for _ in range(view_size)
+                    ]
+        
+                    for bi in range(batch_size):
+                        orig_batch = img[bi]
+                        for vi in range(view_size):
+                            if orig_batch is None:
+                                new_images[vi][bi] = None
+                            else:
+                                orig = img[bi][vi]
+                                new_images[vi][bi, :, : orig.shape[1], : orig.shape[2]] = orig
+        
+                    dict_batch[img_key] = new_images
+        
+                txt_keys = [k for k in list(dict_batch.keys()) if "text" in k]
+        
+                if len(txt_keys) != 0:
+                    texts = [[d[0] for d in dict_batch[txt_key]] for txt_key in txt_keys]
+                    encodings = [[d[1] for d in dict_batch[txt_key]] for txt_key in txt_keys]
+                    draw_text_len = len(encodings)
+                    flatten_encodings = [e for encoding in encodings for e in encoding]
+                    flatten_mlms = mlm_collator(flatten_encodings)
+        
+                    for i, txt_key in enumerate(txt_keys):
+                        texts, encodings = (
+                            [d[0] for d in dict_batch[txt_key]],
+                            [d[1] for d in dict_batch[txt_key]],
                         )
-                        input_ids[_i, : len(_input_ids)] = _input_ids
-                        attention_mask[_i, : len(_attention_mask)] = _attention_mask
-    
-                    dict_batch[txt_key] = texts
-                    dict_batch[f"{txt_key}_ids"] = input_ids
-                    dict_batch[f"{txt_key}_labels"] = torch.full_like(input_ids, -100)
-                    dict_batch[f"{txt_key}_ids_mlm"] = mlm_ids
-                    dict_batch[f"{txt_key}_labels_mlm"] = mlm_labels
-                    dict_batch[f"{txt_key}_masks"] = attention_mask
+        
+                        mlm_ids, mlm_labels = (
+                            flatten_mlms["input_ids"][batch_size * (i) : batch_size * (i + 1)],
+                            flatten_mlms["labels"][batch_size * (i) : batch_size * (i + 1)],
+                        )
+        
+                        input_ids = torch.zeros_like(mlm_ids)
+                        attention_mask = torch.zeros_like(mlm_ids)
+                        for _i, encoding in enumerate(encodings):
+                            _input_ids, _attention_mask = (
+                                torch.tensor(encoding["input_ids"]),
+                                torch.tensor(encoding["attention_mask"]),
+                            )
+                            input_ids[_i, : len(_input_ids)] = _input_ids
+                            attention_mask[_i, : len(_attention_mask)] = _attention_mask
+        
+                        dict_batch[txt_key] = texts
+                        dict_batch[f"{txt_key}_ids"] = input_ids
+                        dict_batch[f"{txt_key}_labels"] = torch.full_like(input_ids, -100)
+                        dict_batch[f"{txt_key}_ids_mlm"] = mlm_ids
+                        dict_batch[f"{txt_key}_labels_mlm"] = mlm_labels
+                        dict_batch[f"{txt_key}_masks"] = attention_mask
+            else:
+                if "text_ids" in batch[0]:
+                    data_to_collate = []
+                    for item in batch:
+                        collation_item = {}
+                        collation_item["input_ids"] = item["text_ids"]
+                        collation_item["attention_mask"] = item["text_ids"]
+                        data_to_collate.append(collation_item)
+
+                    collation_result = mlm_collator(data_to_collate)
+                    dict_batch = {}
+                    dict_batch["text_ids_mlm"] = collation_result["input_ids"]
+                    dict_batch["text_masks"] = collation_result["attention_mask"]
+                    dict_batch["text_labels_mlm"] = collation_result["labels"]
                     
         # Collate function for datasets derived from guggingface
         else:

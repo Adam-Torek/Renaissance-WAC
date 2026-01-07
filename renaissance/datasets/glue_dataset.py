@@ -12,10 +12,7 @@ from .base_dataset import BaseDataset
 class GlueDataset(BaseDataset):
     def __init__(self,*args,  task='', split='', max_text_length=128, **kwargs):
 
-            
             # self.data_dict = load_dataset('glue', self.task, split=self.split).to_dict()
-            
-            
             if  split not in ["train", "val", "test"]:
                 raise ValueError(f"{split} is not a recognized data split.")
             self.split = split
@@ -25,8 +22,7 @@ class GlueDataset(BaseDataset):
             if self.task not in self.tasks:
                 raise ValueError("The selected GLUE task is not supported.")
             super().__init__(*args,hugging_face=True, **kwargs)
-            
-            
+                
             self.max_text_length = max_text_length
             
             # Consider dicionary apping

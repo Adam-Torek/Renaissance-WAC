@@ -1,3 +1,4 @@
+from renaissance.datamodules.babylm_datamodule import BabyLMDataModule
 from .vg_caption_datamodule import VisualGenomeCaptionDataModule
 from .f30k_caption_karpathy_datamodule import F30KCaptionKarpathyDataModule
 from .coco_caption_karpathy_datamodule import CocoCaptionKarpathyDataModule
@@ -10,6 +11,7 @@ from .refcoco_datamodule import RefcocoDataModule
 from .glue_datamodule import GlueDataModule
 
 _datamodules = {
+    "babylm": BabyLMDataModule,
     "vg": VisualGenomeCaptionDataModule,
     "f30k": F30KCaptionKarpathyDataModule,
     "coco": CocoCaptionKarpathyDataModule,

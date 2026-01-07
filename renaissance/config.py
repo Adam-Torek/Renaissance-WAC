@@ -34,7 +34,7 @@ def _loss_names(d):
 def config():
     exp_name = "renaissance"
     seed = 0
-    datasets = ["coco", "vg"] # Supports ["coco", "vg", "sbu", "gcc"]
+    datasets = ["coco", "vg", "babylm"] # Supports ["coco", "vg", "sbu", "gcc"]
     loss_names = _loss_names({"itm": 1, "mlm": 1})
     batch_size = 256  # this is a desired batch size; pl trainer will accumulate gradients when per step batch is smaller.
     per_gpu_batchsize = 0  # you should define this manually with per_gpu_batch_size=#
@@ -211,7 +211,7 @@ def pretrain_mlm_itm_twotower_exp2_deittiny_electrasmall():
 def pretrain_mlm_onetower_electrasmall():
     exp_name = "mlm_itm_onetower_electrasmall"
     model_type = "two-tower"
-    datasets = ["coco"]
+    datasets = ["babylm"]
     loss_names = _loss_names({"mlm": 1})
     batch_size = 128
     per_gpu_batchsize = 128
@@ -219,7 +219,6 @@ def pretrain_mlm_onetower_electrasmall():
     max_steps = 50000
     warmup_steps = 0.1
     whole_word_masking = True
-    model_type = "two-tower"
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
     freeze_text_encoder = False
@@ -232,7 +231,7 @@ def pretrain_mlm_onetower_electrasmall():
     mlm_prob = 0.15
     draw_false_text = 0
     num_gpus = 1
-    data_root = "data/arrow/"
+    data_root = "data/arrow/babylm_data/"
 
     # Image settings to not use image encoders
     use_image_encoder = False

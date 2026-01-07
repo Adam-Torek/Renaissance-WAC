@@ -24,14 +24,14 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Process RefCOCO Data",
+            "name": "Process Renaissance Data",
             "type": "debugpy",
             "request": "launch",
             "program": "renaissance/utils/run_write.py",
             "console": "integratedTerminal",
-            "args": ["--dataset_to_write", "refcoco", 
-                     "--dataset_source_path", "data/coco/", 
-                     "--dataset_destination_path", "data/arrow/"]
+            "args": ["--dataset_to_write", "babylm", 
+                     "--dataset_source_path", "data/babylm_data/", 
+                     "--dataset_destination_path", "data/arrow/babylm_data/"]
         }
     ]
 }
