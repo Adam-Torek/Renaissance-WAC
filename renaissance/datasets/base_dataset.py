@@ -204,7 +204,7 @@ class BaseDataset(torch.utils.data.Dataset):
         # collate function for locally stored datasets
         if not self.hugging_face:
         
-            if isinstance(batch[0], dict) and "text_ids" in batch[0] and isinstance(batch[0]["text_ids"], torch.Tensor) and batch[0]["text_ids"].dim() > 1:
+            if isinstance(batch[0], dict) and "text" in batch[0] and isinstance(batch[0]["text"], tuple):
                 batch_size = len(batch)
                 keys = set([key for b in batch for key in b.keys()])
                 dict_batch = {k: [dic[k] if k in dic else None for dic in batch] for k in keys}

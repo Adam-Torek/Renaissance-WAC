@@ -14,12 +14,12 @@ class RefcocoDataset(BaseDataset):
         self.max_bb = max_bb
 
         if split == "train":
-            names = ['refcoco_unc_train']
+            names = ['refcoco_google_train']
         elif split == "val":
             # names = ["coco_caption_karpathy_val"]
-            names = ['refcoco_unc_val']
+            names = ['refcoco_google_val']
         elif split == "test":
-            names = ['refcoco_unc_test']
+            names = ['refcoco_google_test']
 
         super().__init__(*args, names=names, text_column_name="sentences", remove_duplicate=False, **kwargs)
         # self.filter_table()
