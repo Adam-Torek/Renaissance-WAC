@@ -3,10 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+import os
 
 from transformers.models.bert.modeling_bert import BertConfig#, BertModel, BertEmbeddings
 from transformers.models.vit.modeling_vit import ViTEmbeddings, ViTConfig
 from transformers.models.electra.modeling_electra import  ElectraConfig#,ElectraEmbeddings
+from huggingface_hub import ModelHubMixin
 from .embeddings import ElectraEmbeddings
 # from transformers.model.vit import 
 # from .bert_model import BertCrossLayer
@@ -26,13 +28,14 @@ objective_dict = {
     "mrpc": objectives.compute_mrpc,
 }
 
-class RenaissanceTransformer(pl.LightningModule):
+class RenaissanceTransformer(pl.LightningModule, ModelHubMixin):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
         
         # ===================== Base Architecture ===================== #
         self.model_type = config['model_type']
+        self.save_name = config['save_name']
         # Adjust dimensions for fine-tuning
         self.fine_tune = (self.hparams.config["load_path"] != ""
             and not self.hparams.config["test_only"])
@@ -363,3 +366,9 @@ class RenaissanceTransformer(pl.LightningModule):
 
     def configure_optimizers(self):
         return renaissance_utils.set_schedule(self)
+
+    def save_pretrained(self, 
+                        save_directory,):
+        state_dict = self.state_dict()
+        torch.save(state_dict, f=os.path.join(save_directory, self.save_name))
+        pass

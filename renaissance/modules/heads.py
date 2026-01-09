@@ -94,7 +94,6 @@ class UniModalClassificationHead(nn.Module):
 class MultiModalClassificationHead(nn.Module):
     """Head for multimodal classification tasks."""
 
-
     def __init__(self, hidden_size = None, num_labels = None):
         super().__init__()
         self.hidden_size = hidden_size

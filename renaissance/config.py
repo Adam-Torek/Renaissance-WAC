@@ -163,7 +163,12 @@ def config():
     # WAC distribution and embedding settings
     wac_embedding_size = -1
     wac_distribution_matrix = None
-    
+
+    # HuggingFace settings to save and upload model
+    upload_to_huggingface = False
+    huggingface_save_path = ""
+    huggingface_upload_path = ""
+
 
 # ===================== Experiment 2 Cofigs ===================== #
 
@@ -216,7 +221,7 @@ def pretrain_mlm_onetower_electrasmall():
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 1
-    max_steps = 50000
+    max_steps = 50
     warmup_steps = 0.1
     whole_word_masking = True
     # DO NOT Freeze Encoders
@@ -236,6 +241,7 @@ def pretrain_mlm_onetower_electrasmall():
     # Image settings to not use image encoders
     use_image_encoder = False
 
+    # HuggingFace settings
 
 @ex.named_config
 def pretrain_mlm_itm_twotower_exp2_deitsmall_electrasmall():

@@ -180,5 +180,7 @@ def main(_config):
         
     else:
         trainer.test(model, datamodule=dm)
+
+   
     
     

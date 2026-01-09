@@ -32,6 +32,16 @@
             "args": ["--dataset_to_write", "babylm", 
                      "--dataset_source_path", "data/babylm_data/", 
                      "--dataset_destination_path", "data/arrow/babylm_data/"]
+        },
+        {
+            "name": "Upload Model to HuggingFace",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "model_uploader.py",
+            "console": "integratedTerminal",
+            "args": ["--model_save_path", "result/mlm_itm_onetower_electrasmall_seed0_is224_ps16_bs128_pgbs128_ts50000/version_69/checkpoints/last.ckpt", 
+                     "--model_upload_path", "ajtorek/model-upload-test", 
+                    ]
         }
     ]
 }
