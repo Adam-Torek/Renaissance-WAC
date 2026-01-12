@@ -211,8 +211,8 @@ class OneTowerConfig(PretrainedConfig):
             self.text_config = self.one_tower_config
             self.image_config = ViTConfig(image_size=image_size,
                                           patch_size=32,
-                                          hidden_size=self.text_config.embedding_size
-                                          hidden_dropout_prob=self.text_config.hidden_dropout_prob
-                                          attention_probs_dropout_prob=self.text_config.attention_probs_dropout_prob)
+                                          hidden_size=self.text_config.embedding_size,
+                                          hidden_dropout_prob=self.text_config.hidden_dropout_prob,
+                                          attention_probs_dropout_prob=self.text_config.attention_probs_dropout_prob,)
 
         super().__init__(**kwargs)

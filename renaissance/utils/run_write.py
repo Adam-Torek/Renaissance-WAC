@@ -3,7 +3,7 @@ import argparse
 from datasets import dataset_dict
 
 from write_babylm import write_babylm
-from pandas_write_refcoco import write_refcoco
+from write_refcoco import write_refcoco
 from write_coco_karpathy import write_coco_karpathy
 from write_conceptual_caption import write_conceptual_caption
 from write_f30k_karpathy import write_f30k_karpathy

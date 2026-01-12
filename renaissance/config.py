@@ -222,7 +222,7 @@ def pretrain_mlm_onetower_electrasmall():
     max_epoch = 1
     max_steps = 50
     warmup_steps = 0.1
-    whole_word_masking = True
+    whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
     freeze_text_encoder = False
@@ -235,7 +235,7 @@ def pretrain_mlm_onetower_electrasmall():
     mlm_prob = 0.15
     draw_false_text = 0
     num_gpus = 1
-    data_root = "data/arrow/"
+    data_root = "data/arrow/coco/"
 
     # Image settings to not use image encoders
     use_image_encoder = False

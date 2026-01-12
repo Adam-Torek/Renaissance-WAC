@@ -8,15 +8,14 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         self.split = split
 
         if split == "train":
-            names = ["refcoco_google_train"]
+            names = ["refcoco_unc_train"]
         elif split == "val":
             # names = ["coco_caption_karpathy_val"]
-            names = ["refcoco_google_val"]
+            names = ["refcoco_unc_val"]
         elif split == "test":
-            names = ["refcoco_google_train"]
+            names = ["refcoco_unc_test"]
 
         super().__init__(*args, **kwargs, names=names, text_column_name="sentences")
-
 
     def __getitem__(self, index):
         suite = self.get_suite(index)

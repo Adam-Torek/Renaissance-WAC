@@ -41,7 +41,7 @@ def process_ref(ref, path, Imgs, imgToAnns):
     return [binary, sents, bboxes, label]    
 
 
-def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'google'):
+def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc'):
 # ROOT_DIR = osp.abspath(osp.dirname(__file__))
     DATA_DIR = osp.join(data_root, dataset)
     if dataset in ['refcoco', 'refcoco+', 'refcocog']:
@@ -92,18 +92,3 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'googl
         ) as sink:
             with pa.RecordBatchFileWriter(sink, table.schema) as writer:
                 writer.write_table(table)
-
-
-if __name__ == '__main__':
-    
-    data_root = '/home/adam-torek/Documents/Thesis_Documents/renaissance/data/coco'  # contains refclef, refcoco, refcoco+, refcocog and images
-    outfile_root = '/home/adam-torek/Documents/Thesis_Documents/renaissance/data/arrow'
-    dataset = 'refcoco' 
-    splitBy = 'google'
-
-    write_refcoco(data_root, outfile_root)
-
-
-
-
-
