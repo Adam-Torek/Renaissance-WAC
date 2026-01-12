@@ -5,18 +5,15 @@ import torch.nn as nn
 
 from transformers.models.vit.configuration_vit import ViTConfig
 from transformers.models.electra import ElectraConfig
+from transformers.modeling_utils import PreTrainedModel
 
 from typing import List, Optional, Tuple, Union
 
 from .objectives import init_weights
 from .heads import Pooler
-
-
-
+from .config import OneTowerConfig
 
 from transformers.models.auto import AutoConfig, AutoModel
-
-
 
 def _get_resized_embeddings(
         old_embeddings: nn.Embedding,
@@ -258,35 +255,16 @@ class ViTPatchEmbeddings(nn.Module):
         embeddings = self.projection(pixel_values).flatten(2).transpose(1, 2)
         return embeddings
         
-class OneTowerEncoder(nn.Module):
+class OneTowerEncoder(PreTrainedModel):
     def __init__(
             self, 
-            config,
-            image_size,
-            max_text_len,
-            fine_tune,
-            test_only
+            config: OneTowerConfig,
     ):
         super().__init__()
-        
-        if config['random_init_encoder']:
-            # Manually Configure Encoder Dimensions
-            if config['encoder_manual_configuration']:
-                encoder_kwargs = {
-                    'vocab_size' : config["vocab_size"],
-                    'hidden_size' : config["hidden_size"],
-                    'num_hidden_layers' : config["num_layers"],
-                    'num_attention_heads' : config["num_heads"],
-                    'intermediate_size' : config["hidden_size"] * config["mlp_ratio"],
-                    'max_position_embeddings' : config["max_text_len"],
-                    'hidden_dropout_prob' : config["drop_rate"],
-                    'attention_probs_dropout_prob' : config["drop_rate"],
-                }
-                hf_config = AutoConfig.from_pretrained(config['encoder'], **encoder_kwargs)
-            # Use Default Encoder Dimensions with Random Weights
-            elif not config['encoder_manual_configuration']:
-                hf_config = AutoConfig.from_pretrained(config['encoder'])
-            model = AutoModel.from_config(hf_config)
+
+        if config.one_tower_config is not None:
+            one_tower_config = config.one_tower_config
+            model = AutoModel.from_config(one_tower_config)
             self.encoder = model.encoder
             
             # image_size = config['image_size']
@@ -296,8 +274,11 @@ class OneTowerEncoder(nn.Module):
         # Use Pretrained Encoder Weights from Huggingface Hub
         else:
             # Download Encoder - Get Dimensions
-            model = AutoModel.from_pretrained(config['encoder'])
+            model = AutoModel.from_pretrained(config.encoder_path)
             self.encoder = model.encoder
+
+        self.config = config
+
         self.hidden_size = self.encoder.config.hidden_size
         try:
             self.embedding_size = self.encoder.config.embedding_size
@@ -309,34 +290,17 @@ class OneTowerEncoder(nn.Module):
             self.text_embedding_projection = nn.Linear(self.embedding_size, self.hidden_size)
             self.image_embedding_projection = nn.Linear(self.embedding_size, self.hidden_size)
         
-        image_config = ViTConfig(
-            image_size=image_size,
-            patch_size=config['patch_size'],
-            hidden_size=self.embedding_size,
-            hidden_dropout_prob=config["drop_rate"],
-            attention_probs_dropout_prob=config["drop_rate"],
-        )
-        
-        text_config = ElectraConfig(
-            vocab_size=config["vocab_size"],
-            hidden_size=self.hidden_size,
-            embedding_size=self.embedding_size,
-            max_position_embeddings=max_text_len,
-            hidden_dropout_prob=config["drop_rate"],
-            attention_probs_dropout_prob=config["drop_rate"],
-        )
-        
         # Add ability to adjust embedding size for down stream changes
-        self.text_embeddings = ElectraEmbeddings(text_config)
+        self.text_embeddings = ElectraEmbeddings(config.text_config)
         self.text_embeddings.apply(init_weights)
         
-        self.image_embeddings = ViTEmbeddings(image_config)
+        self.image_embeddings = ViTEmbeddings(config.image_config)
         self.image_embeddings.apply(init_weights)
         
         self.token_type_embeddings = nn.Embedding(2, self.embedding_size)
         self.token_type_embeddings.apply(init_weights)
         
-        self.pooler_type = config['pooler_type']
+        self.pooler_type = config.pooler_type
         if self.pooler_type == 'single':
             self.pooler = Pooler(self.hidden_size)
             self.pooler.apply(init_weights)

@@ -171,6 +171,18 @@ def main(_config):
             trainer.fit(model, datamodule=dm, ckpt_path=_config["resume_from"])
         else:
             trainer.fit(model, datamodule=dm)
+
+        if _config["huggingface_save_directory"] is not None and _config["huggingface_save_name"] is not None:
+            if "/" in _config["huggingface_save_name"]:
+                model_save_name = _config["huggingface_save_name"].split("/")[-1]
+            else:
+                model_save_name = _config["huggingface_save_name"]
+            
+            model_save_directory = os.path.join(_config["huggingface_save_directory"], model_save_name)
+
+            model.save_pretrained(model_save_directory)
+            if _config["push_to_hub"]:
+                model.push_to_hub(_config["huggingface_save_name"])
         
         # Display location of results
         print()

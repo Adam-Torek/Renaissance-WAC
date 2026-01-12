@@ -4,12 +4,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import os
+from safetensors.torch import save_file
+from huggingface_hub import upload_folder, create_repo
 
 from transformers.models.bert.modeling_bert import BertConfig#, BertModel, BertEmbeddings
 from transformers.models.vit.modeling_vit import ViTEmbeddings, ViTConfig
 from transformers.models.electra.modeling_electra import  ElectraConfig#,ElectraEmbeddings
 from huggingface_hub import ModelHubMixin
 from .embeddings import ElectraEmbeddings
+from .config import OneTowerConfig, TwoTowerConfig
 # from transformers.model.vit import 
 # from .bert_model import BertCrossLayer
 from . import heads, objectives, renaissance_utils
@@ -28,14 +31,13 @@ objective_dict = {
     "mrpc": objectives.compute_mrpc,
 }
 
-class RenaissanceTransformer(pl.LightningModule, ModelHubMixin):
+class RenaissanceTransformer(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.save_hyperparameters()
         
         # ===================== Base Architecture ===================== #
         self.model_type = config['model_type']
-        self.save_name = config['save_name']
         # Adjust dimensions for fine-tuning
         self.fine_tune = (self.hparams.config["load_path"] != ""
             and not self.hparams.config["test_only"])
@@ -60,19 +62,21 @@ class RenaissanceTransformer(pl.LightningModule, ModelHubMixin):
             else:
                 image_size = config['image_size']
                 max_text_len = config['max_text_len']
-            self.encoder = OneTowerEncoder(
-                config,
-                image_size,
-                max_text_len,
-                self.fine_tune,
-                self.test_only
-            )
+
+            one_tower_config = OneTowerConfig(config, 
+                                              image_size, 
+                                              max_text_len)
+            
+            self.encoder = OneTowerEncoder(one_tower_config)
+
             self.hidden_size = self.encoder.get_hidden_size()
             self.embedding_size = self.encoder.get_embedding_size()
         
         elif self.model_type == 'two-tower':
+            two_tower_config = TwoTowerConfig(config)
+
             self.encoder = TwoTowerEncoder(
-                config,
+                two_tower_config,
                 self.fine_tune,
                 self.test_only
             )
@@ -368,7 +372,27 @@ class RenaissanceTransformer(pl.LightningModule, ModelHubMixin):
         return renaissance_utils.set_schedule(self)
 
     def save_pretrained(self, 
-                        save_directory,):
-        state_dict = self.state_dict()
-        torch.save(state_dict, f=os.path.join(save_directory, self.save_name))
-        pass
+                        save_directory,
+                        **kwargs):
+        
+        config = self.encoder.config
+        config.save_pretrained(save_directory)
+        model_save_name = os.path.join(save_directory, "model.safetensors")
+
+        save_file(self.encoder.state_dict(), 
+                  model_save_name)
+
+        self.save_directory = save_directory
+
+    def push_to_hub(self, model_hub_name, **kwargs):
+        
+        create_repo(repo_id=model_hub_name, 
+                    exist_ok=True, 
+                    private=False)
+
+        upload_folder(repo_id=model_hub_name, 
+                      folder_path=self.save_directory, 
+                      repo_type='model',
+                      **kwargs)
+        
+        del self.save_directory

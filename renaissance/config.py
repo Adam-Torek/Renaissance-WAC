@@ -165,10 +165,9 @@ def config():
     wac_distribution_matrix = None
 
     # HuggingFace settings to save and upload model
-    upload_to_huggingface = False
-    huggingface_save_path = ""
-    huggingface_upload_path = ""
-
+    huggingface_save_directory = None
+    huggingface_save_name = None
+    push_to_hub = False
 
 # ===================== Experiment 2 Cofigs ===================== #
 
@@ -242,6 +241,9 @@ def pretrain_mlm_onetower_electrasmall():
     use_image_encoder = False
 
     # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-renaissance-test"
+    push_to_hub = True
 
 @ex.named_config
 def pretrain_mlm_itm_twotower_exp2_deitsmall_electrasmall():

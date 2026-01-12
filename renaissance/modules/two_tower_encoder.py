@@ -16,7 +16,7 @@ from transformers.modeling_utils import (
 )
 
 from renaissance.modules.embeddings import ElectraEmbeddings
-from .config import WACConfig
+from .config import WACConfig, TwoTowerConfig
 
 from .objectives import init_weights
 from .heads import Pooler
@@ -541,50 +541,38 @@ transformer_dict = {
     'bert_wac': BertWACTransformer
 }
 
-class TwoTowerEncoder(nn.Module):
+class TwoTowerEncoder(PreTrainedModel):
     def __init__(
             self, 
-            config,
-            fine_tune,
-            test_only
+            config: TwoTowerConfig,
+            fine_tune: bool,
+            test_only: bool,
     ):
-        super().__init__()
-        if not config['use_text_encoder'] and config['use_image_encoder']:
-            raise ValueError("Either the text encoder or the image encoer must be enabled to use the two-tower transformer.")
+        super().__init__(config)
+        if config.text_encoder_path is None and config.image_encoder_path is None:
+            raise ValueError("Either the text encoder or the image encoder must be enabled to use the two-tower transformer.")
         
         self.fine_tune = fine_tune
         self.test_only = test_only
+        self.config = config
         
-        self.random_init_vision_encoder = config['random_init_vision_encoder']
-        self.random_init_text_encoder = config['random_init_text_encoder']
+        self.random_init_vision_encoder = config.random_init_vision_encoder
+        self.random_init_text_encoder = config.random_init_text_encoder
         
         # Vision Encoder
-        if config['use_image_encoder']:
+        if config.image_encoder_path is not None:
             if self.random_init_vision_encoder:
-                if config['image_encoder_manual_configuration']:
-                    image_encoder_kwargs = {
-                        'hidden_size' : config["image_encoder_hidden_size"],
-                        'num_hidden_layers' : config["image_encoder_num_layers"],
-                        'num_attention_heads' : config["image_encoder_num_heads"],
-                        'intermediate_size' : config["image_encoder_hidden_size"] * config["image_encoder_mlp_ratio"],
-                        'hidden_dropout_prob' : config["image_encoder_drop_rate"],
-                        'attention_probs_dropout_prob' : config["image_encoder_drop_rate"],
-                    }
-                  
-                    hf_image_config = AutoConfig.from_pretrained(config['image_encoder'], **image_encoder_kwargs)
-                # elif not config['image_encoder_manual_configuration']:
-                else:
-                    hf_image_config = AutoConfig.from_pretrained(config['image_encoder'])
-                self.image_encoder = AutoModel.from_config(hf_image_config)
+                image_encoder_config = config.image_config
+                self.image_encoder = AutoModel.from_config(image_encoder_config)
                 # if 'clip' in (config['image_encoder']):
                 #     self.image_encoder = self.image_encoder.vision_model
             
             else:
                 # hf_image_config = AutoConfig.from_pretrained(config['image_encoder'])
-                self.image_encoder = AutoModel.from_pretrained(config['image_encoder'])
+                self.image_encoder = AutoModel.from_pretrained(config.image_encoder_path)
                 
             # Freeze Parameters for self.image_encoder
-            if config['freeze_image_encoder']:
+            if config.freeze_image_encoder:
                 for param in self.image_encoder.parameters(self):
                     param.requires_grad = False
 
@@ -594,46 +582,22 @@ class TwoTowerEncoder(nn.Module):
         
         # Initialize text_encoder
         # Randomly Initialize Encoder Weights
-        if config['use_text_encoder']:
+        if config.text_encoder_path is not None:
             if self.random_init_text_encoder:
-                if config['text_encoder_manual_configuration']:
-                    text_encoder_kwargs = {
-                        'hidden_size' : config["text_encoder_hidden_size"],
-                        'num_hidden_layers' : config["text_encoder_num_layers"],
-                        'num_attention_heads' : config["text_encoder_num_heads"],
-                        'intermediate_size' : config["text_encoder_hidden_size"] * config["text_encoder_mlp_ratio"],
-                        'hidden_dropout_prob' : config["text_encoder_drop_rate"],
-                        'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
-                        'wac_embedding_size': config['wac_embedding_size'],
-                        'wac_distribution_matrix': config['wac_distribution_matrix'],
-                    }
-                    if 'wac' in config['text_encoder']:
-                        text_encoder_kwargs['wac_embedding_size'] = config['wac_embedding_size']
-                        text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
-                        hf_text_config = WACConfig(**text_encoder_kwargs)
+                    text_encoder_config = config.text_config
+                    if 'wac' in config.text_encoder_path:
+                        self.text_transformer = BertWACTransformer(text_encoder_config)
                     else:
-                        hf_text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
-                  
-                # elif not config['text_encoder_manual_configuration']:
-                else:
-                    if 'wac' in config['text_encoder']:
-                        hf_text_config = WACConfig()
-                    else:
-                        hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
-                
-                if 'wac' in config['text_encoder']:
-                    self.text_transformer = BertWACTransformer(hf_text_config)
-                else:
-                    self.text_transformer = AutoModel.from_config(hf_text_config)
+                        self.text_transformer = AutoModel.from_config(text_encoder_config)
             else:
                 # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
-                if 'wac' in config['text_encoder']:
-                    self.text_transformer = BertWACTransformer.from_pretrained(config['text_encoder'])
+                if 'wac' in config.text_encoder_path:
+                    self.text_transformer = BertWACTransformer.from_pretrained(config.text_encoder_path)
                 else:
-                    self.text_transformer = AutoModel.from_pretrained(config['text_encoder'])
+                    self.text_transformer = AutoModel.from_pretrained(config.text_encoder_path)
             
             # Freeze Parameters for self.text_transformer
-            if config['freeze_text_encoder']:
+            if config.freeze_text_encoder:
                 for param in self.text_transformer.parameters():
                     param.requires_grad = False
 
@@ -641,8 +605,8 @@ class TwoTowerEncoder(nn.Module):
         else:
             self.text_transformer = None
         
-        if config['use_image_encoder'] and config['use_text_encoder']:
-            self.hidden_size = config['cross_layer_hidden_size']
+        if config.image_encoder_path is not None and config.text_encoder_path is not None:
+            self.hidden_size = config.cross_layer_hidden_size
             # Cross Modal Layers
             self.cross_modal_text_transform = nn.Linear(self.text_transformer_hidden_size, self.hidden_size)
             self.cross_modal_text_transform.apply(init_weights)
@@ -651,15 +615,16 @@ class TwoTowerEncoder(nn.Module):
             
             # Cross-Modal Module with LXMERT Layers
             # self.fusion_encoder = BertCrossModalEncoder(config)
-            self.fusion_encoder = LxmertCrossModalEncoder(config)
+            fusion_config = config.fusion_config
+            self.fusion_encoder = LxmertCrossModalEncoder(fusion_config)
             self.fusion_encoder.apply(init_weights)
             
-            if config['freeze_cross_modal_layers']:
+            if config.freeze_cross_modal_layers:
                 for param in self.fusion_encoder.parameters(self):
                     param.requires_grad = False
         
             # Token Type Embeddings
-            self.token_type_embeddings = nn.Embedding(2, config["cross_layer_hidden_size"])
+            self.token_type_embeddings = nn.Embedding(2, config.cross_layer_hidden_size)
             self.token_type_embeddings.apply(init_weights)
         else:
             self.fusion_encoder = None
