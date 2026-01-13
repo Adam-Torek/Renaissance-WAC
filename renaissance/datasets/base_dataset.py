@@ -25,6 +25,7 @@ class BaseDataset(torch.utils.data.Dataset):
         image_only=False,
         # text_only=False,
         hugging_face=False,
+        include_wac_data=False,
         hf_dataset_key = '',
         task = '',
         tokenizer=None,
@@ -38,6 +39,9 @@ class BaseDataset(torch.utils.data.Dataset):
         if not hugging_face:
             assert len(transform_keys) >= 1
         super().__init__()
+
+       
+
         self.transforms = keys_to_transforms(transform_keys, size=image_size)
         self.clip_transform = False
         for transform_key in transform_keys:
@@ -63,6 +67,11 @@ class BaseDataset(torch.utils.data.Dataset):
         
         self.hugging_face = hugging_face
         # self.task = 
+
+        if draw_false_image > 0 or draw_false_text > 0 or self.image_only:
+            self.include_wac_data = False
+        else:
+            self.include_wac_data = include_wac_data
         
         # Use hugging face dataset classes to download, load and manage data
         if self.hugging_face:
@@ -133,6 +142,18 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def get_image(self, index, image_key="image"):
         image = self.get_raw_image(index, image_key=image_key)
+        if self.include_wac_data:
+            # TODO: include all bounding boxes connected to this index 
+            # and return them in the image dictionary. This will be done
+            # by extracting sub-images from the bounding boxes and 
+            # processing them with image transforms. This must be done
+            # before the main image is processed to prevent double-processing
+            # and wierd or buggy artifacts that would come as a result.
+            text_index, caption_index = self.index_mapper[index]
+            label = self.table["label"]
+            bbox = self.table["bboxes"][text_index][label]
+            pass
+
         image_tensor = [tr(image) for tr in self.transforms]
         return {
             "image": image_tensor,

@@ -3,7 +3,7 @@ import io
 from PIL import Image
 
 class CocoCaptionKarpathyDataset(BaseDataset):
-    def __init__(self, *args, split="", **kwargs):
+    def __init__(self, *args, split="", include_wac_data=False, **kwargs):
         assert split in ["train", "val", "test"]
         self.split = split
 
@@ -15,7 +15,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         elif split == "test":
             names = ["refcoco_unc_test"]
 
-        super().__init__(*args, **kwargs, names=names, text_column_name="sentences")
+        super().__init__(*args, **kwargs, names=names, include_wac_data=include_wac_data, text_column_name="sentences")
 
     def __getitem__(self, index):
         suite = self.get_suite(index)
