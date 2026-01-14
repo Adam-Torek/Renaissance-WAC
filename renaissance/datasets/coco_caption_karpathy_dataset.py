@@ -3,7 +3,7 @@ import io
 from PIL import Image
 
 class CocoCaptionKarpathyDataset(BaseDataset):
-    def __init__(self, *args, split="", include_wac_data=False, **kwargs):
+    def __init__(self, *args, split="", include_wac_data=True, **kwargs):
         assert split in ["train", "val", "test"]
         self.split = split
 

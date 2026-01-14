@@ -3,8 +3,10 @@ import torch
 import io
 import pyarrow as pa
 import os
+import numpy as np
 
-from PIL import Image
+from PIL import Image 
+from PIL.Image import Resampling
 from ..transforms import keys_to_transforms
 from datasets import load_dataset
 from torch.utils.data._utils.collate import default_collate
@@ -25,11 +27,11 @@ class BaseDataset(torch.utils.data.Dataset):
         image_only=False,
         # text_only=False,
         hugging_face=False,
-        include_wac_data=False,
         hf_dataset_key = '',
         task = '',
         tokenizer=None,
-        processor=None
+        processor=None,
+        include_wac_data=True,
     ):
         """
         data_dir : where dataset file *.arrow lives; existence should be guaranteed via DataModule.prepare_data
@@ -39,8 +41,6 @@ class BaseDataset(torch.utils.data.Dataset):
         if not hugging_face:
             assert len(transform_keys) >= 1
         super().__init__()
-
-       
 
         self.transforms = keys_to_transforms(transform_keys, size=image_size)
         self.clip_transform = False
@@ -142,25 +142,69 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def get_image(self, index, image_key="image"):
         image = self.get_raw_image(index, image_key=image_key)
-        if self.include_wac_data:
-            # TODO: include all bounding boxes connected to this index 
-            # and return them in the image dictionary. This will be done
-            # by extracting sub-images from the bounding boxes and 
-            # processing them with image transforms. This must be done
-            # before the main image is processed to prevent double-processing
-            # and wierd or buggy artifacts that would come as a result.
-            text_index, caption_index = self.index_mapper[index]
-            label = self.table["label"]
-            bbox = self.table["bboxes"][text_index][label]
-            pass
+
+        # Get the right bounding box using an index mapper to a text-image pair index
+        if "bboxes" in self.table.column_names:
+            text_index, _ = self.index_mapper[index]
+            label = int(self.table["labels"][text_index])
+            bbox = self.table["bboxes"][text_index][label].as_py()
+            bbox_torch = torch.tensor(bbox)
+        else: 
+            bbox_torch = None
+
+        # Get subimage and position data for WAC models if needed
+        if self.include_wac_data and bbox_torch is not None:
+
+            # Extract the subimage using the bounding box and use it to 
+            bbox_int = [int(bound) for bound in bbox]
+            bbox_bounds = [bbox_int[0], bbox_int[1], bbox_int[0]+bbox_int[2], bbox_int[1]+bbox_int[3]]
+            subimage = image.crop(bbox_bounds)
+            subimage = subimage.resize(image.size, resample=Resampling.LANCZOS)
+
+            # Gather position data to supplement WAC models with location information
+            image_width, image_height = image.size
+            bbox_x, bbox_y, bbox_w, bbox_h = bbox
+            bbox_x_2, bbox_y_2 = bbox_x+bbox_w, bbox_y + bbox_h
+
+            x_1_rel, y_1_rel = bbox_x / image_width, bbox_y / image_height
+            x_2_rel, y_2_rel = bbox_x_2 / image_width, bbox_y_2 / image_height
+
+            center_x, center_y = image_width / 2, image_height / 2
+            bbox_center_x, bbox_center_y = bbox_x_2 / image_width, bbox_y_2 / image_height
+
+            rel_area = (bbox_w * bbox_h) / (image_width * image_height)
+            side_ratio = image_width / image_height
+
+            distance_from_center = np.sqrt((bbox_center_x-center_x)**2 + (bbox_center_y - center_y)**2) / np.sqrt(center_x**2 + center_y**2)
+
+            bbox_position_data = torch.tensor([x_1_rel, y_1_rel, x_2_rel, y_2_rel, rel_area, side_ratio, distance_from_center])
+        else:
+            subimage = None
+            bbox_position_data = None
 
         image_tensor = [tr(image) for tr in self.transforms]
-        return {
+        if subimage is not None:
+            subimage_tensor = [tr(image) for tr in self.transforms]
+        else:
+            subimage_tensor = None
+
+        return_dict = {
             "image": image_tensor,
             "img_index": self.index_mapper[index][0],
             "cap_index": self.index_mapper[index][1],
             "raw_index": index,
         }
+
+        if bbox_torch is not None:
+            return_dict["bounding_box"] = bbox_torch
+
+        if bbox_position_data is not None:
+            return_dict["position_data"] = bbox_position_data
+
+        if subimage_tensor is not None:
+            return_dict["subimage"] = subimage_tensor
+
+        return return_dict
 
     def get_false_image(self, rep, image_key="image"):
         random_index = random.randint(0, len(self.index_mapper) - 1)

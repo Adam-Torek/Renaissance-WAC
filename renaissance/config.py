@@ -163,6 +163,7 @@ def config():
     # WAC distribution and embedding settings
     wac_embedding_size = -1
     wac_distribution_matrix = None
+    wac_image_encoder = None
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -234,6 +235,7 @@ def pretrain_mlm_onetower_electrasmall():
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0
+    draw_false_image = 0
     num_gpus = 1
     data_root = "data/arrow/coco/"
 

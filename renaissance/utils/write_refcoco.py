@@ -25,10 +25,8 @@ def process_ref(ref, path, Imgs, imgToAnns):
         binary = fp.read()
 
     sents = []
-    sent_ids = []
     for sent in ref['sentences']:
         sents.append(sent['sent'])
-        sent_ids.append(sent['sent_id'])
     
     anns = imgToAnns[ref['image_id']]
     ann_id = ref['ann_id']
@@ -39,12 +37,8 @@ def process_ref(ref, path, Imgs, imgToAnns):
         obj_ids.append(ann['id'])
         bboxes.append(ann['bbox'])
     label = obj_ids.index(ann_id)
-
-    sentences_to_bboxes = []
-    for sent_id in sent_ids:
-        sentences_to_bboxes.append((sent_id, label))
         
-    return [binary, sents, bboxes, label, sentences_to_bboxes]    
+    return [binary, sents, bboxes, label]    
 
 
 def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc'):
