@@ -14,7 +14,6 @@ class WACModels():
                  vocab: list[str], 
                  embedding_size: int, 
                  position_size: int, 
-                 save_directory: str,
                  neg_to_pos: int=5,
                  num_cores: int=-1,
                  **wac_kwargs: Unpack[dict],) -> None:
@@ -53,13 +52,16 @@ class WACModels():
                         embedding: np.ndarray, 
                         label: int) -> None:
 
+        # Raise error if word is not defined in vocab
         if word not in self.vocab:
             raise ValueError(f"Word {word} is not in the WAC model vocabulary")
         
+        # Do not add the visual feature to the WAC dataset to train if it already exists
         else:
-            if feature_id in self.used_feature_ids[word]:
+            if label == 1 and feature_id in self.used_feature_ids[word]:
                 return
         
+        # Add visual feature and feature ID to current WAC database
         if label == 1:
             self.current_wac_datasets[word]["pos"].append((embedding, feature_id))
         elif label == 0:
@@ -133,7 +135,7 @@ class WACModels():
                 # And add them to the training dataset
                 feature_embedding, feature_id = feature
                 word_training_ids.add(feature_id)
-                wac_training_features.append(feature_id)
+                wac_training_features.append(feature_embedding)
 
                 label = 1 if feature_key == "pos" else 0
                 wac_training_labels.append(label)
@@ -180,31 +182,32 @@ class WACModels():
             self.used_feature_ids[word].update(feature_ids)
             self.wac_models[word] = trained_model
 
-    def get_distributions(self, word_features: dict) -> np.array:
+    def get_distributions(self, word_features: np.ndarray) -> dict:
 
         # Get a list of distributions for all words in the provided 
         # words dict
-        probability_list = []
-        for word, feature in word_features.items():
-            if word not in self.vocab:
+        probability_dict = {}
+        for word, model in self.wac_models.items():
+            try:
+                word_prob = model.predict_proba(word_features)[0,1]
+            except Exception as e:
                 word_prob = 0.0
-            else:
-                word_prob = self.wac_models[word].predict_proba(feature)[0,1]
             
-            probability_list.append(word_prob)
+            probability_dict[word] = word_prob
         
-        probability_list = np.array(probability_list)
-        return probability_list
+        return probability_dict
 
     def get_embeddings(self, words: list) -> np.array:
 
         # Get embeddings for each word from the WAC model if it exists, and a vector of zeros if it does not
         embeddings_list = []
         for word in words:
-            if word not in self.vocab:
+            try:
+                random_features = np.random((self.embedding_size + self.position_size + 1,))
+                _ = self.wac_models[word].predict(random_features)
+                word_embedding = np.concat([self.wac_datasets[word].coef_, self.wac_datasets[word].intercept_]) 
+            except Exception as e:
                 word_embedding = np.zeros((self.embedding_size+self.position_size+1,))
-            else:
-                word_embedding = np.concat([self.wac_datasets[word].coef_, self.wac_datasets[word].intercept_])
 
             embeddings_list.append(word_embedding)
         
@@ -231,7 +234,7 @@ class WACModels():
 
     def load_models(self) -> None:
         
-        if not os.path.exists(save_directory):
+        if not os.path.exists(self.save_directory):
             raise ValueError(f"Directory {self.save_directory} cannot be found or does not exist.")
 
         # Load WAC model metadata from disk

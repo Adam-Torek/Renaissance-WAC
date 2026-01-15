@@ -161,9 +161,17 @@ def config():
     precision = 32
 
     # WAC distribution and embedding settings
-    wac_embedding_size = -1
+    wac_embedding_size = None
     wac_distribution_matrix = None
     wac_image_encoder = None
+
+    # WAC model settings
+    embedding_size = None
+    position_size = 7
+    save_directory = None
+    neg_to_pos = None
+    wac_kwargs = None
+    num_cores = None
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -241,6 +249,11 @@ def pretrain_mlm_onetower_electrasmall():
 
     # Image settings to not use image encoders
     use_image_encoder = False
+
+    # WAC model settings
+    wac_embedding_size = 512
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    save_directory = "wac_models"
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"

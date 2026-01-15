@@ -16,10 +16,11 @@ from .config import OneTowerConfig, TwoTowerConfig
 # from transformers.model.vit import 
 # from .bert_model import BertCrossLayer
 from . import heads, objectives, renaissance_utils
-from transformers import AutoConfig, AutoModel#, AutoModelForSequenceClassification
+from transformers import AutoConfig, AutoImageProcessor, AutoModel, AutoTokenizer #, AutoModelForSequenceClassification
 from .fusion_encoder import LxmertCrossModalEncoder
 from .one_tower_encoder import OneTowerEncoder
 from .two_tower_encoder import TwoTowerEncoder
+from .wac_models import WACModels
 
 objective_dict = {
     "mlm": objectives.compute_mlm,
@@ -73,6 +74,70 @@ class RenaissanceTransformer(pl.LightningModule):
             self.embedding_size = self.encoder.get_embedding_size()
         
         elif self.model_type == 'two-tower':
+
+            if config['wac_embedding_size'] is not None or config['wac_distribution_matrix'] is not None:
+                wac_image_encoder_path = config['wac_image_encoder']
+                if wac_image_encoder_path is None:
+                    raise ValueError("WAC image encoder must be defined if WAC models are enabled")
+                
+                save_directory = config['save_directory']
+                if save_directory is None:
+                    raise ValueError("WAC models save directory must be defined if they are enabled")
+                
+                self.use_wac_embeddings = config['wac_embedding_size'] is not None
+                self.wac_distribution_matrix = config['wac_distribution_matrix']
+
+                self.wac_image_preprocessor = AutoImageProcessor.from_pretrained(wac_image_encoder_path)
+                self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
+
+                if hasattr(self.wac_image_encoder, "vision_model"):
+                    self.wac_image_encoder = self.wac_image_encoder.vision_model
+                
+                self.wac_image_encoder = self.wac_image_encoder.eval()
+
+                tokenizer_path = config['tokenizer']
+                wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+                vocab = []
+                for word in wac_tokenizer.vocab.keys():
+                    vocab.append(word)
+
+                if hasattr(self.wac_image_encoder, 'config'):
+                    wac_image_encoder_config = self.wac_image_encoder.config
+                    if hasattr(wac_image_encoder_config, 'projection_dim'):
+                        wac_embedding_size = wac_image_encoder_config.projection_dim
+                    elif hasattr(wac_image_encoder_config, 'embedding_size'):
+                        wac_embedding_size = wac_image_encoder_config.embedding_size
+                    elif hasattr(wac_image_encoder_config, 'hidden_size'):
+                        wac_embedding_size = wac_image_encoder_config.hidden_size
+
+                config['wac_embedding_size'] = wac_embedding_size + config['position_size'] + 1
+                
+                wac_args = {}
+                wac_args['embedding_size'] = wac_embedding_size
+                wac_args['save_directory'] = save_directory
+                wac_args['position_size'] = config['position_size']
+                wac_args['vocab'] = vocab
+
+                neg_to_pos = config['neg_to_pos']
+                if neg_to_pos is not None:
+                    wac_args['neg_to_pos'] = neg_to_pos
+
+                wac_kwargs = config['wac_kwargs']
+                if wac_kwargs is not None:
+                    wac_args['wac_kwargs'] = wac_kwargs
+
+                num_cores = config['num_cores']
+                if num_cores is not None:
+                    wac_args['num_cores'] = num_cores
+                
+                self.wac_models = WACModels(**wac_args)
+            else:
+                self.wac_models = None
+                self.wac_image_encoder = None
+                self.wac_image_preprocessor = None
+                self.use_wac_embeddings = False
+                self.wac_distribution_matrix = None
+
             two_tower_config = TwoTowerConfig(config)
 
             self.encoder = TwoTowerEncoder(
@@ -311,7 +376,6 @@ class RenaissanceTransformer(pl.LightningModule):
         return ret
     
     
-    
     # Review and if update, if needed for one-tower
     def infer_text_only(self, batch):
         if self.model_type == 'two-tower':
@@ -321,7 +385,6 @@ class RenaissanceTransformer(pl.LightningModule):
         
         return hidden_state
 
-    # This is ugly. Try to generalize
     def forward(self, batch):
         ret = dict()
         if len(self.current_tasks) == 0:
