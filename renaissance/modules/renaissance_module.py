@@ -83,6 +83,10 @@ class RenaissanceTransformer(pl.LightningModule):
                 save_directory = config['save_directory']
                 if save_directory is None:
                     raise ValueError("WAC models save directory must be defined if they are enabled")
+
+                tokenizer_path = config['tokenizer']
+                if tokenizer_path is None:
+                    raise ValueError("Tokenizer must be defined for WAC models so the vocabulary can be defined")
                 
                 self.use_wac_embeddings = config['wac_embedding_size'] is not None
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
@@ -95,12 +99,6 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_image_encoder = self.wac_image_encoder.eval()
 
-                tokenizer_path = config['tokenizer']
-                wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-                vocab = []
-                for word in wac_tokenizer.vocab.keys():
-                    vocab.append(word)
-
                 if hasattr(self.wac_image_encoder, 'config'):
                     wac_image_encoder_config = self.wac_image_encoder.config
                     if hasattr(wac_image_encoder_config, 'projection_dim'):
@@ -111,13 +109,24 @@ class RenaissanceTransformer(pl.LightningModule):
                         wac_embedding_size = wac_image_encoder_config.hidden_size
 
                 config['wac_embedding_size'] = wac_embedding_size + config['position_size'] + 1
-                
+
                 wac_args = {}
+                wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+                vocab = []
+                for word in wac_tokenizer.vocab.keys():
+                    vocab.append(word)
+
+                special_vocab = []
+                for special_word in wac_tokenizer.special_tokens_map.values():
+                    special_vocab.append(special_word)
+                
+                wac_args['vocab'] = vocab
+                wac_args['special_vocab'] = special_vocab
+               
                 wac_args['embedding_size'] = wac_embedding_size
                 wac_args['save_directory'] = save_directory
                 wac_args['position_size'] = config['position_size']
-                wac_args['vocab'] = vocab
-
+                
                 neg_to_pos = config['neg_to_pos']
                 if neg_to_pos is not None:
                     wac_args['neg_to_pos'] = neg_to_pos
@@ -131,12 +140,14 @@ class RenaissanceTransformer(pl.LightningModule):
                     wac_args['num_cores'] = num_cores
                 
                 self.wac_models = WACModels(**wac_args)
+                self.current_training_epoch = 0
             else:
                 self.wac_models = None
                 self.wac_image_encoder = None
                 self.wac_image_preprocessor = None
                 self.use_wac_embeddings = False
                 self.wac_distribution_matrix = None
+                self.current_training_epoch = None
 
             two_tower_config = TwoTowerConfig(config)
 

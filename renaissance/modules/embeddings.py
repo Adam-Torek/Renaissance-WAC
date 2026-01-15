@@ -102,7 +102,7 @@ class ElectraEmbeddings(nn.Module):
         )
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
 
-        if config.wac_embedding_size > -1:
+        if config.wac_embedding_size is not None:
             self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
         else:
             self.wac_embeddings_projection = None

@@ -88,6 +88,9 @@ def set_metrics(pl_module):
 def epoch_wrapup(pl_module):
     phase = "train" if pl_module.training else "val"
     the_metric = 0
+
+    if phase == "train" and hasattr(pl_module, "current_train_epoch") and pl_module.current_train_epoch is not None:
+        pl_module.current_train_epoch += 1
     
     # Create get recal funtion to extract tihs, makes it hard to read
     if pl_module.hparams.config["get_recall_metric"] and not pl_module.training:

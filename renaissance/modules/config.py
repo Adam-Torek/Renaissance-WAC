@@ -10,7 +10,7 @@ class WACConfig(ElectraConfig):
     model_type = "bert_wac"
 
     def __init__(self, 
-                 wac_embedding_size=-1, 
+                 wac_embedding_size=None, 
                  wac_distribution_matrix=None,
                  vocab_size=30522,
                  embedding_size=128,

@@ -39,7 +39,6 @@ class ITMHead(nn.Module):
 class MLMHead(nn.Module):
     def __init__(self, config, hidden_size=None, weight=None):
         
-        
         bert_config = BertConfig(
             vocab_size=config["vocab_size"],
             hidden_size=hidden_size,

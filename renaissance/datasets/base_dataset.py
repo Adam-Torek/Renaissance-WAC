@@ -214,8 +214,14 @@ class BaseDataset(torch.utils.data.Dataset):
 
     def get_text(self, raw_index):
         index, caption_index = self.index_mapper[raw_index]
-
         text = self.all_texts[index][caption_index]
+
+        return_dict = {}
+
+        if self.include_wac_data:
+            tokenized_text = self.tokenizer.tokenize(text)
+            return_dict["tokenized_text"] = tokenized_text
+
         encoding = self.tokenizer(
             text,
             padding="max_length",
@@ -224,12 +230,13 @@ class BaseDataset(torch.utils.data.Dataset):
             return_special_tokens_mask=True,
             # return_tensors='pt'
         )
-        return {
-            "text": (text, encoding),
-            "img_index": index,
-            "cap_index": caption_index,
-            "raw_index": raw_index,
-        }
+
+        return_dict["text"] = (text, encoding)
+        return_dict["img_index"] = index
+        return_dict["cap_index"] = caption_index
+        return_dict["raw_index"] = raw_index
+        
+        return return_dict
 
     def get_false_text(self, rep):
         random_index = random.randint(0, len(self.index_mapper) - 1)

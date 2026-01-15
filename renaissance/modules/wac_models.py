@@ -12,6 +12,7 @@ class WACModels():
     def __init__(self, 
                  save_directory: str,
                  vocab: list[str], 
+                 special_vocab: list[str],
                  embedding_size: int, 
                  position_size: int, 
                  neg_to_pos: int=5,
@@ -20,6 +21,7 @@ class WACModels():
         
         self.save_directory = save_directory
         self.vocab = vocab
+        self.special_vocab = special_vocab
         self.embedding_size = embedding_size
         self.positon_size = position_size
         self.save_directory = save_directory
@@ -56,6 +58,9 @@ class WACModels():
         if word not in self.vocab:
             raise ValueError(f"Word {word} is not in the WAC model vocabulary")
         
+        if word in self.special_vocab:
+            return
+
         # Do not add the visual feature to the WAC dataset to train if it already exists
         else:
             if label == 1 and feature_id in self.used_feature_ids[word]:
@@ -194,6 +199,9 @@ class WACModels():
                 word_prob = 0.0
             
             probability_dict[word] = word_prob
+
+        for word in self.special_vocab:
+            probability_dict[word] = 0.0
         
         return probability_dict
 
@@ -223,6 +231,7 @@ class WACModels():
         wac_metadata["embedding_size"] = self.embedding_size
         wac_metadata["position_size"] = self.position_size
         wac_metadata["vocab"] = self.vocab
+        wac_metadata["special_vocab"] = self.special_vocab
 
         with open(os.path.join(self.save_directory, "wac_metadata.json"), "w") as json_file:
             json.dump(wac_metadata, json_file)
@@ -243,6 +252,7 @@ class WACModels():
             self.embedding_size = wac_metadata["embedding_size"]
             self.position_size = wac_metadata["position_size"]
             self.vocab = wac_metadata["vocab"]
+            self.special_vocab = wac_metadata["special_vocab"]
 
         # Load each WAC model from disk
         for word in self.vocab:
