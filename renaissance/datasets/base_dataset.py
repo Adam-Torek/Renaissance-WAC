@@ -217,11 +217,6 @@ class BaseDataset(torch.utils.data.Dataset):
         text = self.all_texts[index][caption_index]
 
         return_dict = {}
-
-        if self.include_wac_data:
-            tokenized_text = self.tokenizer.tokenize(text)
-            return_dict["tokenized_text"] = tokenized_text
-
         encoding = self.tokenizer(
             text,
             padding="max_length",
@@ -231,6 +226,10 @@ class BaseDataset(torch.utils.data.Dataset):
             # return_tensors='pt'
         )
 
+        if self.include_wac_data:
+            tokenized_text = self.tokenizer.tokenize(text)
+            return_dict["tokenized_words"] = tokenized_text
+        
         return_dict["text"] = (text, encoding)
         return_dict["img_index"] = index
         return_dict["cap_index"] = caption_index
@@ -324,6 +323,7 @@ class BaseDataset(torch.utils.data.Dataset):
                     encodings = [[d[1] for d in dict_batch[txt_key]] for txt_key in txt_keys]
                     draw_text_len = len(encodings)
                     flatten_encodings = [e for encoding in encodings for e in encoding]
+
                     flatten_mlms = mlm_collator(flatten_encodings)
         
                     for i, txt_key in enumerate(txt_keys):

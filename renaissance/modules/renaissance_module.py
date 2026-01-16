@@ -53,6 +53,15 @@ class RenaissanceTransformer(pl.LightningModule):
             self.new_max_text_len = config['max_text_len']
             self.original_image_size = ckpt['hyper_parameters']['config']['original_image_size']
             self.new_image_size = config['image_size']
+
+        # Set default WAC model settings in the Renaissance transformer. These may be overriden
+        # depending on configuration settings
+        self.wac_models = None
+        self.wac_image_encoder = None
+        self.wac_image_preprocessor = None
+        self.use_wac_embeddings = False
+        self.wac_distribution_matrix = None
+        self.current_training_epoch = None
         
         if self.model_type == 'one-tower':
             self.pooler_type = config['pooler_type']
@@ -141,13 +150,6 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_models = WACModels(**wac_args)
                 self.current_training_epoch = 0
-            else:
-                self.wac_models = None
-                self.wac_image_encoder = None
-                self.wac_image_preprocessor = None
-                self.use_wac_embeddings = False
-                self.wac_distribution_matrix = None
-                self.current_training_epoch = None
 
             two_tower_config = TwoTowerConfig(config)
 
@@ -376,6 +378,8 @@ class RenaissanceTransformer(pl.LightningModule):
             )
             return ret
         elif self.model_type == 'two-tower':
+            if self.wac_models is not None:
+                pass
             ret = self.encoder(
                 batch,
                 mask_text=mask_text,
