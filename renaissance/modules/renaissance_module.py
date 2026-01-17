@@ -102,9 +102,6 @@ class RenaissanceTransformer(pl.LightningModule):
 
                 self.wac_image_preprocessor = AutoImageProcessor.from_pretrained(wac_image_encoder_path)
                 self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
-
-                if hasattr(self.wac_image_encoder, "vision_model"):
-                    self.wac_image_encoder = self.wac_image_encoder.vision_model
                 
                 self.wac_image_encoder = self.wac_image_encoder.eval()
 
@@ -377,18 +374,85 @@ class RenaissanceTransformer(pl.LightningModule):
                 image_masks=image_masks,
             )
             return ret
+        
         elif self.model_type == 'two-tower':
+
             if self.wac_models is not None:
-                pass
-            ret = self.encoder(
-                batch,
-                mask_text=mask_text,
-                mask_image=mask_image,
-                image_token_type_idx=image_token_type_idx,
-                img=img,
-            )
+                subimages = batch["subimage"][0]
+                input_ids = batch["text_ids"]
+                attention_mask = batch["text_masks"]
+                tokenized_words = batch["tokenized_words"]
+                position_data = torch.stack(batch["position_data"])
+
+                with torch.no_grad():
+                    clip_output = self.wac_image_encoder(input_ids=input_ids, 
+                                                         attention_mask=attention_mask, 
+                                                         pixel_values=subimages)
+                    
+                    image_features = clip_output.image_embeds
+                
+                wac_features = torch.concat([image_features, position_data], dim=1)
+
+                if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0:
+                    indices = batch["raw_index"]
+                    
+                    for tokenized_sentence in tokenized_words:
+                        for word in tokenized_sentence:
+                            for index, wac_feature in zip(indices, wac_features):
+                                wac_feature = wac_feature.cpu().numpy()
+                                self.wac_models.add_positive(word, feature_id=index, embedding=wac_feature)
+                    
+                    self.wac_models.sample_negatives()
+                    self.wac_models.train_models()
+                                
+                if self.use_wac_embeddings:
+                    batch_size, seq_length = input_ids.shape
+                    wac_embedding_size = self.encoder.config.wac_embedding_size
+                    wac_embedding_tensor = torch.zeros((batch_size, seq_length, wac_embedding_size))
+                    j = 0
+                    for words in tokenized_words:
+                        word_embeddings = self.wac_models.get_embeddings(words=words)
+                        word_embeddings = torch.tensor(word_embeddings)
+                        wac_embedding_tensor[j,1:len(words),:] = word_embeddings
+                        j += 1
+                    
+                    wac_embedding_tensor = wac_embedding_tensor.to(input_ids.device)
+                else:
+                    wac_embedding_tensor = None
+
+                if self.wac_distribution_matrix is not None:
+                    wac_features_numpy = wac_features.cpu().numpy()
+                    vocab_size = self.encoder.config.vocab_size
+                    batch_size = input_ids.shape[0]
+                    wac_distributions_tensor = torch.zeros((batch_size, vocab_size))
+                    wac_distributions = self.wac_models.get_distributions(wac_features_numpy)
+
+                    for i, distribution_values in enumerate(wac_distributions.values()):
+                        distribution_values = torch.tensor(distribution_values)
+                        wac_distributions_tensor[i, :] = distribution_values
+                else:
+                    wac_distributions_tensor = None
+
+                ret = self.encoder(
+                        batch,
+                        mask_text=mask_text,
+                        mask_image=mask_image,
+                        image_token_type_idx=image_token_type_idx,
+                        img=img,
+                        wac_embeddings=wac_embedding_tensor,
+                        wac_distributions=wac_distributions_tensor,
+                )
+
+            else:
+                ret = self.encoder(
+                    batch,
+                    mask_text=mask_text,
+                    mask_image=mask_image,
+                    image_token_type_idx=image_token_type_idx,
+                    img=img,
+                )
+            
             return ret
-        return ret
     
     
     # Review and if update, if needed for one-tower

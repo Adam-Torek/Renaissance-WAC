@@ -46,7 +46,7 @@ class WACModels():
             self.wac_models[word] = SGDClassifier(**wac_kwargs)
             self.used_feature_ids[word] = set()
             self.current_feature_ids[word] = set()
-            self.current_wac_datasets[word] = {"pos": [], "neg": []}
+            self.current_wac_datasets[word] = None
 
     def add_word_sample(self, 
                         word: str, 
@@ -63,9 +63,13 @@ class WACModels():
 
         # Do not add the visual feature to the WAC dataset to train if it already exists
         else:
-            if label == 1 and feature_id in self.used_feature_ids[word]:
+            if label == 1 and feature_id in self.used_feature_ids[word] or feature_id in self.current_feature_ids[word]:
                 return
         
+        # Create the temporary training dataset dict if it does not exist
+        if self.current_wac_datasets[word] is None:
+            self.current_wac_datasets[word] = {"pos": [], "neg": []}
+
         # Add visual feature and feature ID to current WAC database
         if label == 1:
             self.current_wac_datasets[word]["pos"].append((embedding, feature_id))
@@ -83,7 +87,7 @@ class WACModels():
         # Get the possible sample feature space for each word that
         # has positive features added to it 
         for word, dataset in self.current_wac_datasets.items():
-            if len(dataset["pos"]) == 0:
+            if dataset is None:
                 continue
             feature_sample_space[word] = dataset["pos"]
 
@@ -115,7 +119,7 @@ class WACModels():
                 
                 # Get a random number of negative samples to collect and add them to the negatives samples list
                 num_negatives_to_sample = random.uniform(1, len(negative_word_samples))
-                negative_samples = negative_samples + random.sample(negative_word_samples, k=num_negatives_to_sample)
+                negative_samples = negative_samples + random.sample(negative_word_samples, k=int(num_negatives_to_sample))
             
             # Add the negative samples to the current word dataset 
             for sample in negative_samples:
@@ -163,7 +167,7 @@ class WACModels():
             num_cores = self.num_cores
 
         # Get the WAC models to train
-        words_to_use = list(self.current_wac_datasets.keys())
+        words_to_use = [key for key, value in self.current_wac_datasets.items() if value is not None]
         trained_model_list = []
 
         # Attempt to train models using multi-processing 
@@ -181,7 +185,7 @@ class WACModels():
         # Save the trained wac models, clear out temporary datasets, and add feature IDs to 
         # use feature IDS list
         for word, trained_model, feature_ids in trained_model_list:
-            self.current_wac_datasets[word] = {"pos": [], "neg": []}
+            self.current_wac_datasets[word] = None
             self.current_feature_ids[word] = set()
 
             self.used_feature_ids[word].update(feature_ids)
@@ -194,14 +198,14 @@ class WACModels():
         probability_dict = {}
         for word, model in self.wac_models.items():
             try:
-                word_prob = model.predict_proba(word_features)[0,1]
+                word_prob = model.predict_proba(word_features)[:,1]
             except Exception as e:
-                word_prob = 0.0
+                word_prob = np.zeros((word_features.shape[0],))
             
             probability_dict[word] = word_prob
 
         for word in self.special_vocab:
-            probability_dict[word] = 0.0
+            probability_dict[word] = np.zeros((word_features.shape[0],))
         
         return probability_dict
 
