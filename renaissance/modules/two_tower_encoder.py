@@ -107,6 +107,7 @@ class BertSelfAttention(nn.Module):
 
         if wac_distributions is not None and self.wac_distribution_matrix is not None:
             wac_distributions = self.wac_distribution_projection(wac_distributions)
+            wac_distributions = wac_distributions[:, None, :]
             wac_distributions = wac_distributions.expand(-1, query_layer.shape[2], -1)
             wac_distributions = self.transpose_for_scores(wac_distributions)
 
@@ -658,13 +659,23 @@ class TwoTowerEncoder(PreTrainedModel):
             text_ids = batch[f"text_ids{do_mlm}"]
             text_labels = batch[f"text_labels{do_mlm}"]
             text_masks = batch["text_masks"]
+            
+            if "wac_embeddings" in batch.keys():
+                wac_embeddings = batch["wac_embeddings"]
+                text_embeds = self.text_transformer.embeddings(input_ids=text_ids, wac_embeddings=wac_embeddings)
+            else:
+                text_embeds = self.text_transformer.embeddings(input_ids=text_ids)
 
-            text_embeds = self.text_transformer.embeddings(input_ids=text_ids)
             device = text_embeds.device
             input_shape = text_masks.size()
-            extend_text_masks = self.text_transformer.get_extended_attention_mask(text_masks, input_shape)#, device)
+            extend_text_masks = self.text_transformer.get_extended_attention_mask(text_masks, input_shape)
             
-            text_embeds = self.text_transformer(inputs_embeds=text_embeds).last_hidden_state
+            if "wac_distributions" in batch.keys():
+                wac_distributions = batch["wac_distributions"]
+                text_embeds = self.text_transformer(inputs_embeds=text_embeds, wac_distributions=wac_distributions).last_hidden_state
+            else: 
+                text_embeds = self.text_transformer(inputs_embeds=text_embeds).last_hidden_state
+                
             if self.image_encoder is not None:
                 text_embeds = self.cross_modal_text_transform(text_embeds)
             else:

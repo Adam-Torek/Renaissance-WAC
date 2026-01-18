@@ -6,6 +6,7 @@ import multiprocessing as mp
 import os
 import json
 import pickle
+import re
 
 class WACModels():
 
@@ -20,10 +21,18 @@ class WACModels():
                  **wac_kwargs: Unpack[dict],) -> None:
         
         self.save_directory = save_directory
-        self.vocab = vocab
-        self.special_vocab = special_vocab
+        self.vocab = []
+        self.special_vocab = []
+
+        for word in vocab:
+            word = re.sub(r"/", "{slash}", word)
+            self.vocab.append(word)
+        
+        for word in special_vocab:
+            self.special_vocab.append(word)
+
         self.embedding_size = embedding_size
-        self.positon_size = position_size
+        self.position_size = position_size
         self.save_directory = save_directory
         self.neg_to_pos = neg_to_pos
         self.num_cores = num_cores
@@ -43,7 +52,7 @@ class WACModels():
         # empty past feature ID for each word
         self.wac_models = {}
         for word in self.vocab:
-            self.wac_models[word] = SGDClassifier(**wac_kwargs)
+            self.wac_models[word] = SGDClassifier(loss="log_loss",**wac_kwargs)
             self.used_feature_ids[word] = set()
             self.current_feature_ids[word] = set()
             self.current_wac_datasets[word] = None
@@ -157,6 +166,14 @@ class WACModels():
         trained_model = model_to_train.fit(wac_training_features, wac_training_labels)
 
         return (word, trained_model, word_training_ids)
+    
+    def _train_models_single_thread(self, words_to_use: list[str]) -> list:
+        trained_model_list = []
+        for word in words_to_use:
+            trained_model_tuple = self._train_single_model(word)
+            trained_model_list.append(trained_model_tuple)
+
+        return trained_model_list
         
     def train_models(self) -> None:
 
@@ -171,16 +188,17 @@ class WACModels():
         trained_model_list = []
 
         # Attempt to train models using multi-processing 
-        try:
-            with mp.Pool(processes=num_cores) as pool:
-                trained_model_list = pool.map(self._train_single_model, words_to_use)
+        if self.num_cores == -1 or self.num_cores > 0:
+            try:
+                with mp.Pool(processes=num_cores) as pool:
+                    trained_model_list = pool.map(self._train_single_model, words_to_use)
 
-        # Train models in single-threaded mode if an error occurs in multiprocess mode
-        except Exception as e:
-            print(f"Unable to use multiprocessing due to the following error: {str(e)}. Running in single process mode.")
-            for word in words_to_use:
-                trained_model_tuple = self._train_single_model(word)
-                trained_model_list.append(trained_model_tuple)
+            # Train models in single-threaded mode if an error occurs in multiprocess mode
+            except Exception as e:
+                print(f"Unable to use multiprocessing due to the following error: {str(e)}. Running in single process mode.")
+                trained_model_list = self._train_models_single_thread(words_to_use)
+        else:
+            trained_model_list = self._train_models_single_thread(words_to_use)
 
         # Save the trained wac models, clear out temporary datasets, and add feature IDs to 
         # use feature IDS list
@@ -197,6 +215,7 @@ class WACModels():
         # words dict
         probability_dict = {}
         for word, model in self.wac_models.items():
+            word = re.sub("{slash}", "/", word)
             try:
                 word_prob = model.predict_proba(word_features)[:,1]
             except Exception as e:
@@ -214,6 +233,7 @@ class WACModels():
         # Get embeddings for each word from the WAC model if it exists, and a vector of zeros if it does not
         embeddings_list = []
         for word in words:
+            word = re.sub(r"/", "{slash}", word)
             try:
                 random_features = np.random((self.embedding_size + self.position_size + 1,))
                 _ = self.wac_models[word].predict(random_features)

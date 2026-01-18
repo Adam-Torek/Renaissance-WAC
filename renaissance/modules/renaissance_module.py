@@ -3,9 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+
 import os
+import zipfile
+
 from safetensors.torch import save_file
-from huggingface_hub import upload_folder, create_repo
+from huggingface_hub import upload_folder, create_repo, upload_file
 
 from transformers.models.bert.modeling_bert import BertConfig#, BertModel, BertEmbeddings
 from transformers.models.vit.modeling_vit import ViTEmbeddings, ViTConfig
@@ -58,10 +61,10 @@ class RenaissanceTransformer(pl.LightningModule):
         # depending on configuration settings
         self.wac_models = None
         self.wac_image_encoder = None
-        self.wac_image_preprocessor = None
-        self.use_wac_embeddings = False
+        self.wac_embedding_size = None
         self.wac_distribution_matrix = None
         self.current_training_epoch = None
+        self.vocab = []
         
         if self.model_type == 'one-tower':
             self.pooler_type = config['pooler_type']
@@ -97,10 +100,10 @@ class RenaissanceTransformer(pl.LightningModule):
                 if tokenizer_path is None:
                     raise ValueError("Tokenizer must be defined for WAC models so the vocabulary can be defined")
                 
-                self.use_wac_embeddings = config['wac_embedding_size'] is not None
-                self.wac_distribution_matrix = config['wac_distribution_matrix']
+                if config["huggingface_save_directory"] is not None:
+                    huggingface_save_name = config["huggingface_save_name"].split("/")[-1]
+                    save_directory = os.path.join(config["huggingface_save_directory"], huggingface_save_name, save_directory)
 
-                self.wac_image_preprocessor = AutoImageProcessor.from_pretrained(wac_image_encoder_path)
                 self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
                 
                 self.wac_image_encoder = self.wac_image_encoder.eval()
@@ -114,8 +117,6 @@ class RenaissanceTransformer(pl.LightningModule):
                     elif hasattr(wac_image_encoder_config, 'hidden_size'):
                         wac_embedding_size = wac_image_encoder_config.hidden_size
 
-                config['wac_embedding_size'] = wac_embedding_size + config['position_size'] + 1
-
                 wac_args = {}
                 wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
                 vocab = []
@@ -125,6 +126,12 @@ class RenaissanceTransformer(pl.LightningModule):
                 special_vocab = []
                 for special_word in wac_tokenizer.special_tokens_map.values():
                     special_vocab.append(special_word)
+
+                config['wac_embedding_size'] = wac_embedding_size + config['position_size'] + 1
+
+                self.wac_embedding_size = config['wac_embedding_size']
+                self.wac_distribution_matrix = config['wac_distribution_matrix']
+                self.vocab = vocab
                 
                 wac_args['vocab'] = vocab
                 wac_args['special_vocab'] = special_vocab
@@ -405,45 +412,35 @@ class RenaissanceTransformer(pl.LightningModule):
                     self.wac_models.sample_negatives()
                     self.wac_models.train_models()
                                 
-                if self.use_wac_embeddings:
+                if self.wac_embedding_size is not None:
                     batch_size, seq_length = input_ids.shape
-                    wac_embedding_size = self.encoder.config.wac_embedding_size
+                    wac_embedding_size = self.wac_embedding_size
                     wac_embedding_tensor = torch.zeros((batch_size, seq_length, wac_embedding_size))
                     j = 0
                     for words in tokenized_words:
                         word_embeddings = self.wac_models.get_embeddings(words=words)
                         word_embeddings = torch.tensor(word_embeddings)
-                        wac_embedding_tensor[j,1:len(words),:] = word_embeddings
+                        wac_embedding_tensor[j,1:len(words)+1,:] = word_embeddings
                         j += 1
                     
                     wac_embedding_tensor = wac_embedding_tensor.to(input_ids.device)
-                else:
-                    wac_embedding_tensor = None
+                    batch["wac_embeddings"] = wac_embedding_tensor
 
                 if self.wac_distribution_matrix is not None:
                     wac_features_numpy = wac_features.cpu().numpy()
-                    vocab_size = self.encoder.config.vocab_size
+                    vocab_size = self.encoder.config.text_config.vocab_size
                     batch_size = input_ids.shape[0]
                     wac_distributions_tensor = torch.zeros((batch_size, vocab_size))
                     wac_distributions = self.wac_models.get_distributions(wac_features_numpy)
 
-                    for i, distribution_values in enumerate(wac_distributions.values()):
+                    for word, distribution_values in wac_distributions.items():
+                        i = self.vocab.index(word)
                         distribution_values = torch.tensor(distribution_values)
-                        wac_distributions_tensor[i, :] = distribution_values
-                else:
-                    wac_distributions_tensor = None
+                        wac_distributions_tensor[:, i] = distribution_values
 
-                ret = self.encoder(
-                        batch,
-                        mask_text=mask_text,
-                        mask_image=mask_image,
-                        image_token_type_idx=image_token_type_idx,
-                        img=img,
-                        wac_embeddings=wac_embedding_tensor,
-                        wac_distributions=wac_distributions_tensor,
-                )
-
-            else:
+                    wac_distributions_tensor = wac_distributions_tensor.to(input_ids.device)
+                    batch["wac_distributions"] = wac_distributions_tensor
+            
                 ret = self.encoder(
                     batch,
                     mask_text=mask_text,
@@ -521,17 +518,31 @@ class RenaissanceTransformer(pl.LightningModule):
         config.save_pretrained(save_directory)
         model_save_name = os.path.join(save_directory, "model.safetensors")
 
+        self.save_directory = save_directory
+
         save_file(self.encoder.state_dict(), 
                   model_save_name)
 
-        self.save_directory = save_directory
+        if self.wac_models is not None:
+            self.wac_models.save_models()
+
+            wac_zip_file = zipfile.ZipFile(os.path.join(self.save_directory, "wac_models.zip"), "w")
+            for file in os.listdir(self.wac_models.save_directory):
+                wac_zip_file.write(os.path.join(self.wac_models.save_directory, file))
+            
+            wac_zip_file.close()
+
+            for file in os.listdir(self.wac_models.save_directory):
+                os.remove(os.path.join(self.wac_models.save_directory, file))
+
+            os.rmdir(self.wac_models.save_directory)
 
     def push_to_hub(self, model_hub_name, **kwargs):
         
         create_repo(repo_id=model_hub_name, 
                     exist_ok=True, 
                     private=False)
-
+        
         upload_folder(repo_id=model_hub_name, 
                       folder_path=self.save_directory, 
                       repo_type='model',

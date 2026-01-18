@@ -94,7 +94,12 @@ class TwoTowerConfig(PretrainedConfig):
                         self.text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
                 else:
                     if 'wac' in config['text_encoder']:
-                        self.text_config = WACConfig()
+                        wac_encoder_kwargs = {
+                            'wac_embedding_size': config['wac_embedding_size'],
+                            'wac_distribution_matrix': config['wac_distribution_matrix'],
+                            }
+                        
+                        self.text_config = WACConfig(**wac_encoder_kwargs)
                     else:
                         self.text_config = AutoConfig.from_pretrained(config['text_encoder'])
             else:

@@ -172,6 +172,7 @@ def config():
     neg_to_pos = None
     wac_kwargs = None
     num_cores = None
+    load_wac_models = False
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -229,7 +230,7 @@ def pretrain_mlm_onetower_electrasmall():
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 1
-    max_steps = 50
+    max_steps = 2
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -252,8 +253,10 @@ def pretrain_mlm_onetower_electrasmall():
 
     # WAC model settings
     wac_embedding_size = 512
+    wac_distribution_matrix = "value"
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
+    num_cores = 0
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
