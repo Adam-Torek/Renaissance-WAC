@@ -172,7 +172,7 @@ def config():
     neg_to_pos = None
     wac_kwargs = None
     num_cores = None
-    load_wac_models = False
+    huggingface_wac_repo = None
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -257,6 +257,7 @@ def pretrain_mlm_onetower_electrasmall():
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
     num_cores = 0
+    huggingface_wac_repo = "ajtorek/electra-renaissance-test"
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"

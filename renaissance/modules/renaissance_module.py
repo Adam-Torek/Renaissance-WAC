@@ -6,9 +6,10 @@ import pytorch_lightning as pl
 
 import os
 import zipfile
+import shutil
 
 from safetensors.torch import save_file
-from huggingface_hub import upload_folder, create_repo, upload_file
+from huggingface_hub import upload_folder, create_repo, hf_hub_download
 
 from transformers.models.bert.modeling_bert import BertConfig#, BertModel, BertEmbeddings
 from transformers.models.vit.modeling_vit import ViTEmbeddings, ViTConfig
@@ -105,7 +106,6 @@ class RenaissanceTransformer(pl.LightningModule):
                     save_directory = os.path.join(config["huggingface_save_directory"], huggingface_save_name, save_directory)
 
                 self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
-                
                 self.wac_image_encoder = self.wac_image_encoder.eval()
 
                 if hasattr(self.wac_image_encoder, 'config'):
@@ -153,6 +153,36 @@ class RenaissanceTransformer(pl.LightningModule):
                     wac_args['num_cores'] = num_cores
                 
                 self.wac_models = WACModels(**wac_args)
+
+                if config['huggingface_wac_repo'] is not None:
+                    wac_repo = config['huggingface_wac_repo']
+                    wac_model_save_directory = config['huggingface_save_directory']
+                    wac_model_save_directory = os.path.join(wac_model_save_directory, wac_repo.split("/")[-1])
+
+                    if not os.path.exists(os.path.join(wac_model_save_directory, "wac_models")):
+                        hf_hub_download(repo_id=wac_repo, 
+                                        filename="wac_models.zip", 
+                                        local_dir=wac_model_save_directory)
+                        
+                        compressed_wac_path = os.path.join(wac_model_save_directory, "wac_models.zip")
+                        destination_directory = os.path.join(wac_model_save_directory, "wac_models")
+                        os.makedirs(destination_directory, exist_ok=True)
+
+                        with zipfile.ZipFile(compressed_wac_path, "r") as wac_file:
+                            for subpath in wac_file.namelist():
+                                if not os.path.basename(subpath):
+                                    continue
+
+                                file_source = wac_file.open(subpath)
+                                subpath = subpath.split("/")[-1]
+                                file_target = open(os.path.join(destination_directory, subpath), "wb")
+                                with file_source, file_target:
+                                    shutil.copyfileobj(file_source, file_target)
+                        
+                        os.remove(compressed_wac_path)
+
+                    self.wac_models.load_models()
+
                 self.current_training_epoch = 0
 
             two_tower_config = TwoTowerConfig(config)

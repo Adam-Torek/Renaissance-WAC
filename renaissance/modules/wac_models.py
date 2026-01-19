@@ -281,5 +281,5 @@ class WACModels():
         # Load each WAC model from disk
         for word in self.vocab:
             with open(os.path.join(self.save_directory, f"{word}.pkl"), "rb") as model_file:
-                self.wac_datasets[word] = pickle.load(model_file)
+                self.wac_models[word] = pickle.load(model_file)
     
