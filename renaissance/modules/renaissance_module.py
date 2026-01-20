@@ -65,6 +65,8 @@ class RenaissanceTransformer(pl.LightningModule):
         self.wac_embedding_size = None
         self.wac_distribution_matrix = None
         self.current_training_epoch = None
+        self.current_training_step = 0
+        self.wac_train_steps = None
         self.vocab = []
         
         if self.model_type == 'one-tower':
@@ -131,6 +133,8 @@ class RenaissanceTransformer(pl.LightningModule):
 
                 self.wac_embedding_size = config['wac_embedding_size']
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
+                self.wac_train_steps = config['wac_train_steps']
+                self.current_training_step = 0
                 self.vocab = vocab
                 
                 wac_args['vocab'] = vocab
@@ -439,8 +443,9 @@ class RenaissanceTransformer(pl.LightningModule):
                                 wac_feature = wac_feature.cpu().numpy()
                                 self.wac_models.add_positive(word, feature_id=index, embedding=wac_feature)
                     
-                    self.wac_models.sample_negatives()
-                    self.wac_models.train_models()
+                    if self.current_training_step > 1 and self.current_training_step % self.wac_train_steps == 0:
+                        self.wac_models.sample_negatives()
+                        self.wac_models.train_models()
                                 
                 if self.wac_embedding_size is not None:
                     batch_size, seq_length = input_ids.shape
@@ -471,14 +476,14 @@ class RenaissanceTransformer(pl.LightningModule):
                     wac_distributions_tensor = wac_distributions_tensor.to(input_ids.device)
                     batch["wac_distributions"] = wac_distributions_tensor
             
-                ret = self.encoder(
-                    batch,
-                    mask_text=mask_text,
-                    mask_image=mask_image,
-                    image_token_type_idx=image_token_type_idx,
-                    img=img,
-                )
-            
+            ret = self.encoder(
+                batch,
+                mask_text=mask_text,
+                mask_image=mask_image,
+                image_token_type_idx=image_token_type_idx,
+                img=img,
+            )
+        
             return ret
     
     
@@ -508,6 +513,8 @@ class RenaissanceTransformer(pl.LightningModule):
         renaissance_utils.set_task(self)
         output = self(batch)
         total_loss = sum([v for k, v in output.items() if "loss" in k])
+
+        self.current_training_step += 1
 
         return total_loss
 

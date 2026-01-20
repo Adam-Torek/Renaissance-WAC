@@ -30,5 +30,3 @@ class BabyLMDataset(BaseDataset):
         return_dict["text_mask"] = encoding_output["attention_mask"].squeeze()
 
         return return_dict
-
-    

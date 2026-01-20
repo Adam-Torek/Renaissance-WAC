@@ -82,6 +82,7 @@ class WACModels():
         # Add visual feature and feature ID to current WAC database
         if label == 1:
             self.current_wac_datasets[word]["pos"].append((embedding, feature_id))
+            self.current_feature_ids[word].add(feature_id)
         elif label == 0:
             self.current_wac_datasets[word]["neg"].append((embedding, feature_id))
         else:
@@ -128,7 +129,16 @@ class WACModels():
                 
                 # Get a random number of negative samples to collect and add them to the negatives samples list
                 num_negatives_to_sample = random.uniform(1, len(negative_word_samples))
-                negative_samples = negative_samples + random.sample(negative_word_samples, k=int(num_negatives_to_sample))
+                current_samples = 0
+                while current_samples < num_negatives_to_sample:
+                    negative_sample = random.choice(negative_word_samples)
+
+                    # Avoid sampling features from a negative word that are also in this word as well
+                    negative_feature_id = negative_sample[1]
+                    if negative_feature_id in self.current_feature_ids[word]:
+                        continue
+                    else:
+                        negative_samples.append(negative_sample)
             
             # Add the negative samples to the current word dataset 
             for sample in negative_samples:
@@ -141,7 +151,6 @@ class WACModels():
         model_to_train = self.wac_models[word]
         wac_dataset = self.current_wac_datasets[word]
 
-        word_training_ids = set()
         wac_training_features = []
         wac_training_labels = []
 
@@ -152,7 +161,6 @@ class WACModels():
                 # Get the feature embedding and feature ID 
                 # And add them to the training dataset
                 feature_embedding, feature_id = feature
-                word_training_ids.add(feature_id)
                 wac_training_features.append(feature_embedding)
 
                 label = 1 if feature_key == "pos" else 0
@@ -165,7 +173,7 @@ class WACModels():
         # Train the model and return it, the word, and training IDs
         trained_model = model_to_train.fit(wac_training_features, wac_training_labels)
 
-        return (word, trained_model, word_training_ids)
+        return (word, trained_model)
     
     def _train_models_single_thread(self, words_to_use: list[str]) -> list:
         trained_model_list = []
@@ -202,11 +210,11 @@ class WACModels():
 
         # Save the trained wac models, clear out temporary datasets, and add feature IDs to 
         # use feature IDS list
-        for word, trained_model, feature_ids in trained_model_list:
+        for word, trained_model in trained_model_list:
+            self.used_feature_ids[word].update(self.current_feature_ids[word])
+            self.current_feature_ids[word] = None
+            
             self.current_wac_datasets[word] = None
-            self.current_feature_ids[word] = set()
-
-            self.used_feature_ids[word].update(feature_ids)
             self.wac_models[word] = trained_model
 
     def get_distributions(self, word_features: np.ndarray) -> dict:

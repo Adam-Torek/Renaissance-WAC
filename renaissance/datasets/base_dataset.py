@@ -93,7 +93,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 for i, name in enumerate(names):
                     self.table_names += [name] * len(tables[i])
     
-                self.table = pa.concat_tables(tables, mode='default')
+                self.table = pa.concat_tables(tables)
                 if text_column_name != "":
                     self.text_column_name = text_column_name
                     self.all_texts = self.table[text_column_name].to_pandas().tolist()
@@ -146,7 +146,7 @@ class BaseDataset(torch.utils.data.Dataset):
         # Get the right bounding box using an index mapper to a text-image pair index
         if "bboxes" in self.table.column_names:
             text_index, _ = self.index_mapper[index]
-            label = int(self.table["labels"][text_index])
+            label = self.table["labels"][text_index].as_py()
             bbox = self.table["bboxes"][text_index][label].as_py()
             bbox_torch = torch.tensor(bbox)
         else: 

@@ -172,6 +172,7 @@ def config():
     neg_to_pos = None
     wac_kwargs = None
     num_cores = None
+    wac_train_steps = 5
     huggingface_wac_repo = None
 
     # HuggingFace settings to save and upload model
@@ -225,12 +226,11 @@ def pretrain_mlm_itm_twotower_exp2_deittiny_electrasmall():
 def pretrain_mlm_onetower_electrasmall():
     exp_name = "mlm_itm_onetower_electrasmall"
     model_type = "two-tower"
-    datasets = ["coco"]
+    datasets = ["babylm"]
     loss_names = _loss_names({"mlm": 1})
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 1
-    max_steps = 2
+    max_epoch = 50
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -246,7 +246,49 @@ def pretrain_mlm_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/coco/"
+    data_root = "data/arrow/babylm"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+    # WAC model settings
+    # wac_embedding_size = 512
+    # wac_distribution_matrix = "value"
+    # wac_image_encoder = "openai/clip-vit-base-patch16"
+    # save_directory = "wac_models"
+    # wac_train_steps = 5
+    # num_cores = 0
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-renaissance-test"
+    push_to_hub = False
+    
+@ex.named_config
+def pretrain_mlm_wac_onetower_electrasmall():
+    exp_name = "mlm_wac_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["coco"]
+    loss_names = _loss_names({"mlm": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 50
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "bert_wac"
+    random_init_text_encoder = True
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/babylm"
 
     # Image settings to not use image encoders
     use_image_encoder = False
@@ -256,12 +298,12 @@ def pretrain_mlm_onetower_electrasmall():
     wac_distribution_matrix = "value"
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
+    wac_train_steps = 5
     num_cores = 0
-    huggingface_wac_repo = "ajtorek/electra-renaissance-test"
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
-    huggingface_save_name = "ajtorek/electra-renaissance-test"
+    huggingface_save_name = "ajtorek/electra-renaissance-wac"
     push_to_hub = True
 
 @ex.named_config
