@@ -77,7 +77,24 @@ class BaseDataset(torch.utils.data.Dataset):
         if self.hugging_face:
             if self.split=='val':
                 self.split = 'validation'
-            self.data_dict = load_dataset(hf_dataset_key, self.task, split=self.split).to_dict()
+            
+            if self.task == "mnli":
+                if self.split == "validation" or self.split == "test":
+                    matched_dataset = load_dataset(hf_dataset_key, self.task, split = self.split + "_matched").to_dict()
+                    mismatched_dataset = load_dataset(hf_dataset_key, self.task, split = self.split + "_mismatched").to_dict()
+                
+                    combined_data_dict = {}
+
+                    for column, values in matched_dataset.items():
+                        combined_values = values + mismatched_dataset[column]
+                        combined_data_dict[column] = combined_values
+                    
+                    self.data_dict = combined_data_dict
+                else:
+                    self.data_dict = load_dataset(hf_dataset_key, self.task, split=self.split).to_dict()
+                
+            else:
+                self.data_dict = load_dataset(hf_dataset_key, self.task, split=self.split).to_dict()
         # Use local files with pyarrow for data processing and loading
         else:
             if len(names) != 0:

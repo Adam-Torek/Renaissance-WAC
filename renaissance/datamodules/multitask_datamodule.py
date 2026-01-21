@@ -7,7 +7,6 @@ from torch.utils.data.distributed import DistributedSampler
 
 from . import _datamodules
 
-
 class MTDataModule(LightningDataModule):
     def __init__(self, _config, dist=False):
         datamodule_keys = _config["datasets"]
@@ -22,8 +21,6 @@ class MTDataModule(LightningDataModule):
         self.batch_size = self.dms[0].batch_size
         self.vocab_size = self.dms[0].vocab_size
         self.num_workers = self.dms[0].num_workers
-
-        self.dist = dist
 
     def prepare_data(self):
         for dm in self.dms:

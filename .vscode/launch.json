@@ -13,7 +13,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "with", "pretrain_wac_onetower_electrasmall"
+                "with", "finetune_glue_onetower_electrasmall"
             ]
         },
          {
@@ -29,9 +29,9 @@
             "request": "launch",
             "program": "renaissance/utils/run_write.py",
             "console": "integratedTerminal",
-            "args": ["--dataset_to_write", "babylm", 
-                     "--dataset_source_path", "data/babylm_data/", 
-                     "--dataset_destination_path", "data/arrow/babylm"]
+            "args": ["--dataset_to_write", "glue", 
+                     "--dataset_source_path", "data/glue/", 
+                     "--dataset_destination_path", "data/arrow/glue/"]
         },
         {
             "name": "Upload Model to HuggingFace",

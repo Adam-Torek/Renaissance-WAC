@@ -90,6 +90,7 @@ class ElectraEmbeddings(nn.Module):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.embedding_size, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.embedding_size)
+        self.token_type_embeddings = nn.Embedding(config.type_vocab_size, config.embedding_size)
 
         # self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load
         # any TensorFlow checkpoint file
@@ -102,6 +103,10 @@ class ElectraEmbeddings(nn.Module):
         )
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
 
+        self.register_buffer(
+            "token_type_ids", torch.zeros(self.position_ids.size(), dtype=torch.long), persistent=False
+        )
+
         if config.wac_embedding_size is not None:
             self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
         else:
@@ -111,7 +116,7 @@ class ElectraEmbeddings(nn.Module):
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
-        # token_type_ids: Optional[torch.LongTensor] = None,
+        token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         inputs_embeds: Optional[torch.FloatTensor] = None,
         wac_embeddings: Optional[torch.FloatTensor] = None,
@@ -122,16 +127,25 @@ class ElectraEmbeddings(nn.Module):
         else:
             input_shape = inputs_embeds.size()[:-1]
 
-        seq_length = input_shape[1]
+        batch_size = input_shape[0]
+        seq_length = input_shape[1]  
 
         if position_ids is None:
             position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
 
+        if token_type_ids is None:
+            if hasattr(self, "token_type_ids"):
+                buffered_token_type_ids = self.token_type_ids.expand(position_ids.shape[0], -1)
+                buffered_token_type_ids = torch.gather(buffered_token_type_ids, dim=1, index=position_ids)
+                token_type_ids = buffered_token_type_ids.expand(batch_size, seq_length)
+            else:
+                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.token_type_ids.device)
 
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
 
-        embeddings = inputs_embeds 
+        token_type_embeddings = self.token_type_embeddings(token_type_ids)
+        embeddings = inputs_embeds + token_type_embeddings
 
         if wac_embeddings is not None:
             if wac_embeddings.shape[2] != embeddings.shape[2]:

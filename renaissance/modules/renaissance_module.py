@@ -280,7 +280,11 @@ class RenaissanceTransformer(pl.LightningModule):
         if self.model_type == 'one-tower':
             self.text_hs = self.hidden_size
         else:
-            self.text_hs = config['text_encoder_hidden_size']
+            if self.encoder.text_transformer is not None:
+                self.text_hs = self.encoder.text_transformer.config.hidden_size
+            else:
+                self.text_hs = None
+
         
         self.text_only = False
      
@@ -372,7 +376,10 @@ class RenaissanceTransformer(pl.LightningModule):
         if self.model_type == 'one-tower':
             self.image_hs = self.hidden_size
         else:
-            self.image_hs = config['image_encoder_hidden_size']
+            if self.encoder.image_encoder is not None:
+                self.image_hs = self.encoder.image_encoder.config.hidden_state
+            else:
+                self.image_hs = None
         
         # CIFAR-10 Image Classifier
         if self.hparams.config["loss_names"]['cifar10'] > 0:

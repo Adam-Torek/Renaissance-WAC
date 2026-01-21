@@ -15,6 +15,7 @@ class GlueDataset(BaseDataset):
             # self.data_dict = load_dataset('glue', self.task, split=self.split).to_dict()
             if  split not in ["train", "val", "test"]:
                 raise ValueError(f"{split} is not a recognized data split.")
+
             self.split = split
             # self.tokenizer = tokenizer
             self.task = task

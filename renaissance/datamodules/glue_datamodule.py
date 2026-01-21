@@ -3,7 +3,6 @@ from renaissance.datasets.glue_dataset import GlueDataset
 
 class GlueDataModule(BaseDataModule):
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
         
         self.hf_dataset_key = "glue"

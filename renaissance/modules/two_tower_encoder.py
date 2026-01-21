@@ -398,6 +398,7 @@ class BertWACTransformer(BertWACPreTrainedModel):
                 attention_mask=None, 
                 position_ids=None, 
                 inputs_embeds=None, 
+                token_type_ids=None,
                 wac_embeddings=None, 
                 encoder_hidden_states=None, 
                 encoder_attention_mask=None,
@@ -438,9 +439,10 @@ class BertWACTransformer(BertWACPreTrainedModel):
 
         hidden_states = self.embeddings(input_ids=input_ids, 
                                         position_ids=position_ids, 
+                                        token_type_ids=token_type_ids,
                                         inputs_embeds=inputs_embeds, 
                                         past_key_values_length=past_key_values_length,
-                                        wac_embeddings=wac_embeddings)
+                                        wac_embeddings=wac_embeddings,)
         
         if self.embeddings_projection is not None:
             hidden_states = self.embeddings_projection(hidden_states)
