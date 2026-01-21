@@ -231,7 +231,7 @@ def pretrain_mlm_onetower_electrasmall():
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 10
-    max_steps = 100000
+    max_steps = 1000000
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -263,7 +263,7 @@ def pretrain_mlm_onetower_electrasmall():
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-test"
-    push_to_hub = False
+    push_to_hub = True
     
 @ex.named_config
 def pretrain_wac_onetower_electrasmall():
