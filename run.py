@@ -164,6 +164,7 @@ def main(_config):
         log_every_n_steps=10,
         fast_dev_run=_config["fast_dev_run"],
         val_check_interval=_config["val_check_interval"],
+        num_sanity_val_steps=0,
     )
 
     if not _config["test_only"]:

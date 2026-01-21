@@ -230,7 +230,8 @@ def pretrain_mlm_onetower_electrasmall():
     loss_names = _loss_names({"mlm": 1})
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 50
+    max_epoch = 10
+    max_steps = 100000
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -265,8 +266,8 @@ def pretrain_mlm_onetower_electrasmall():
     push_to_hub = False
     
 @ex.named_config
-def pretrain_mlm_wac_onetower_electrasmall():
-    exp_name = "mlm_wac_onetower_electrasmall"
+def pretrain_wac_onetower_electrasmall():
+    exp_name = "wac_onetower_electrasmall"
     model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"mlm": 1})
@@ -288,7 +289,7 @@ def pretrain_mlm_wac_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/babylm"
+    data_root = "data/arrow/coco"
 
     # Image settings to not use image encoders
     use_image_encoder = False

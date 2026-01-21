@@ -7,6 +7,7 @@ import os
 import json
 import pickle
 import re
+import math
 
 class WACModels():
 
@@ -16,7 +17,7 @@ class WACModels():
                  special_vocab: list[str],
                  embedding_size: int, 
                  position_size: int, 
-                 neg_to_pos: int=5,
+                 neg_to_pos: int=3,
                  num_cores: int=-1,
                  **wac_kwargs: Unpack[dict],) -> None:
         
@@ -128,7 +129,7 @@ class WACModels():
                         negative_word_samples.pop()
                 
                 # Get a random number of negative samples to collect and add them to the negatives samples list
-                num_negatives_to_sample = random.uniform(1, len(negative_word_samples))
+                num_negatives_to_sample = math.ceil(random.uniform(1, len(negative_word_samples)))
                 current_samples = 0
                 while current_samples < num_negatives_to_sample:
                     negative_sample = random.choice(negative_word_samples)
@@ -139,6 +140,7 @@ class WACModels():
                         continue
                     else:
                         negative_samples.append(negative_sample)
+                        current_samples += 1
             
             # Add the negative samples to the current word dataset 
             for sample in negative_samples:
