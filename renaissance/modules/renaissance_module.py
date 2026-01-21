@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 import os
 import zipfile
 import shutil
+import tqdm
 
 from safetensors.torch import save_file
 from huggingface_hub import upload_folder, create_repo, hf_hub_download
@@ -419,33 +420,19 @@ class RenaissanceTransformer(pl.LightningModule):
         elif self.model_type == 'two-tower':
 
             if self.wac_models is not None:
-                subimages = batch["subimage"][0]
                 input_ids = batch["text_ids"]
-                attention_mask = batch["text_masks"]
                 tokenized_words = batch["tokenized_words"]
-                position_data = torch.stack(batch["position_data"])
-
-                with torch.no_grad():
-                    clip_output = self.wac_image_encoder(input_ids=input_ids, 
-                                                         attention_mask=attention_mask, 
-                                                         pixel_values=subimages)
-                    
-                    image_features = clip_output.image_embeds
-                
-                wac_features = torch.concat([image_features, position_data], dim=1)
 
                 if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0:
                     indices = batch["raw_index"]
                     
                     for tokenized_sentence in tokenized_words:
                         for word in tokenized_sentence:
-                            for index, wac_feature in zip(indices, wac_features):
-                                wac_feature = wac_feature.cpu().numpy()
-                                self.wac_models.add_positive(word, feature_id=index, embedding=wac_feature)
+                            for index in indices:
+                                self.wac_models.add_positive(word, feature_id=index)
                     
-                    if self.current_training_step > 1 and self.current_training_step % self.wac_train_steps == 0:
-                        self.wac_models.sample_negatives()
-                        self.wac_models.train_models()
+                    self.wac_models.sample_negatives()
+                    self.wac_models.train_models()
                                 
                 if self.wac_embedding_size is not None:
                     batch_size, seq_length = input_ids.shape
@@ -462,11 +449,10 @@ class RenaissanceTransformer(pl.LightningModule):
                     batch["wac_embeddings"] = wac_embedding_tensor
 
                 if self.wac_distribution_matrix is not None:
-                    wac_features_numpy = wac_features.cpu().numpy()
                     vocab_size = self.encoder.config.text_config.vocab_size
                     batch_size = input_ids.shape[0]
                     wac_distributions_tensor = torch.zeros((batch_size, vocab_size))
-                    wac_distributions = self.wac_models.get_distributions(wac_features_numpy)
+                    wac_distributions = self.wac_models.get_distributions(indices)
 
                     for word, distribution_values in wac_distributions.items():
                         i = self.vocab.index(word)
@@ -586,3 +572,26 @@ class RenaissanceTransformer(pl.LightningModule):
                       **kwargs)
         
         del self.save_directory
+
+    def build_wac_features(self, dm):
+        with torch.no_grad():
+            device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+            self.wac_image_encoder = self.wac_image_encoder.to(device)
+
+            for batch in tqdm.tqdm(dm):
+                subimages = batch["subimage"][0].to(device)
+                input_ids = batch["text_ids"].to(device)
+                attention_mask = batch["text_masks"].to(device)
+                position_data = torch.stack(batch["position_data"]).to(device)
+                feature_ids = batch["raw_index"]
+              
+                image_features = self.wac_image_encoder(pixel_values=subimages, 
+                                                        input_ids=input_ids, 
+                                                        attention_mask=attention_mask).image_embeds
+                
+                wac_features = torch.cat([image_features, position_data], dim=1)
+                wac_features = wac_features.cpu().numpy()
+                
+                self.wac_models.add_features(feature_ids, wac_features)
+
+        self.wac_image_encoder = None

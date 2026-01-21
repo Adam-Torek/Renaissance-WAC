@@ -7,7 +7,6 @@ import os
 import json
 import pickle
 import re
-import math
 
 class WACModels():
 
@@ -38,15 +37,17 @@ class WACModels():
         self.neg_to_pos = neg_to_pos
         self.num_cores = num_cores
 
-        # Exclusionary labels dictionary to stop image
-        # features from being used again once they
-        # were used for training 
-        self.used_feature_ids = {}
+        # Exclusionary labels dictionary to stop positive WAC
+        # features from being used for the given word 
+        # multiple times
+        self.positive_feature_ids = {}
+
+        # Dictionary used to store WAC features
+        self.wac_features = {}
 
         # Keep track of active features to be used
         # in the next training round
         self.current_wac_datasets = {}
-        self.current_feature_ids = {}
         
         # Create WAC models for each word and add 
         # an empty dataset, empty current feature ID, and 
@@ -54,14 +55,12 @@ class WACModels():
         self.wac_models = {}
         for word in self.vocab:
             self.wac_models[word] = SGDClassifier(loss="log_loss",**wac_kwargs)
-            self.used_feature_ids[word] = set()
-            self.current_feature_ids[word] = set()
+            self.positive_feature_ids[word] = set()
             self.current_wac_datasets[word] = None
 
     def add_word_sample(self, 
                         word: str, 
                         feature_id: tuple, 
-                        embedding: np.ndarray, 
                         label: int) -> None:
 
         # Raise error if word is not defined in vocab
@@ -73,7 +72,7 @@ class WACModels():
 
         # Do not add the visual feature to the WAC dataset to train if it already exists
         else:
-            if label == 1 and feature_id in self.used_feature_ids[word] or feature_id in self.current_feature_ids[word]:
+            if label == 1 and feature_id in self.positive_feature_ids[word]:
                 return
         
         # Create the temporary training dataset dict if it does not exist
@@ -82,15 +81,19 @@ class WACModels():
 
         # Add visual feature and feature ID to current WAC database
         if label == 1:
-            self.current_wac_datasets[word]["pos"].append((embedding, feature_id))
-            self.current_feature_ids[word].add(feature_id)
+            self.current_wac_datasets[word]["pos"].append(feature_id)
+            self.positive_feature_ids[word].add(feature_id)
         elif label == 0:
-            self.current_wac_datasets[word]["neg"].append((embedding, feature_id))
+            self.current_wac_datasets[word]["neg"].append(feature_id)
         else:
             raise ValueError(f"Label {str(label)} is not 0 (negative) or 1 (positive)")
         
-    def add_positive(self, word, feature_id, embedding) -> None:
-        self.add_word_sample(word, feature_id, embedding, 1)
+    def add_features(self, feature_ids, wac_features):
+        for feature_id, wac_feature in zip(feature_ids, wac_features):
+            self.wac_features[feature_id] = wac_feature
+        
+    def add_positive(self, word, feature_id) -> None:
+        self.add_word_sample(word, feature_id, 1)
 
     def sample_negatives(self) -> None:
         feature_sample_space = {}
@@ -102,50 +105,23 @@ class WACModels():
                 continue
             feature_sample_space[word] = dataset["pos"]
 
-        # Get the list of words with current datasets to sample from
-        possible_words = list(feature_sample_space.keys())
-
         # Do the negative sampling for each word with a defined dataset
         for word, dataset in feature_sample_space.items():
             # Get the number of negatives to sample for this word
             num_negatives = len(self.current_wac_datasets[word]["pos"]) * self.neg_to_pos
             negative_samples = []
 
-            # Do negative sampling for this current word 
-            while len(negative_samples) < num_negatives:
-                # Choose a negative word to sample from and skip over the sampled word
-                # if it is the current word 
-                negative_word = random.choice(possible_words)
-                if negative_word == word:
-                    continue
+            # Get a possible list of negative features to sample
+            sample_space = list(self.wac_features.keys())
+            for feature_id in self.positive_feature_ids[word]:
+                sample_space.remove(feature_id)
 
-                # Get the negative word samples for the current word
-                negative_word_samples = self.current_wac_datasets[negative_word]["pos"]
-
-                # Cut down the number of possible negatives if it is greater than the 
-                # number of negative samples 
-                if len(negative_samples) > num_negatives:
-                    for _ in range(0, negative_word_samples):
-                        negative_word_samples.pop()
-                
-                # Get a random number of negative samples to collect and add them to the negatives samples list
-                num_negatives_to_sample = math.ceil(random.uniform(1, len(negative_word_samples)))
-                current_samples = 0
-                while current_samples < num_negatives_to_sample:
-                    negative_sample = random.choice(negative_word_samples)
-
-                    # Avoid sampling features from a negative word that are also in this word as well
-                    negative_feature_id = negative_sample[1]
-                    if negative_feature_id in self.current_feature_ids[word]:
-                        continue
-                    else:
-                        negative_samples.append(negative_sample)
-                        current_samples += 1
+            # Get the actual sample of negative features for this word
+            negative_samples = random.sample(sample_space, k=num_negatives)
             
             # Add the negative samples to the current word dataset 
-            for sample in negative_samples:
-                embedding, feature_id = sample
-                self.add_word_sample(word, feature_id, embedding, 0)
+            for feature_id in negative_samples:
+                self.add_word_sample(word, feature_id, 0)
 
     def _train_single_model(self, word: str) -> tuple:
 
@@ -158,11 +134,11 @@ class WACModels():
 
         # Assemble the dataset and feature IDs
         for feature_key in ["pos","neg"]:
-            for feature in wac_dataset[feature_key]:
+            for feature_id in wac_dataset[feature_key]:
 
                 # Get the feature embedding and feature ID 
                 # And add them to the training dataset
-                feature_embedding, feature_id = feature
+                feature_embedding = self.wac_features[feature_id]
                 wac_training_features.append(feature_embedding)
 
                 label = 1 if feature_key == "pos" else 0
@@ -213,16 +189,18 @@ class WACModels():
         # Save the trained wac models, clear out temporary datasets, and add feature IDs to 
         # use feature IDS list
         for word, trained_model in trained_model_list:
-            self.used_feature_ids[word].update(self.current_feature_ids[word])
-            self.current_feature_ids[word] = None
-            
             self.current_wac_datasets[word] = None
             self.wac_models[word] = trained_model
 
-    def get_distributions(self, word_features: np.ndarray) -> dict:
+    def get_distributions(self, indices: list[int]) -> dict:
 
         # Get a list of distributions for all words in the provided 
         # words dict
+        word_features = []
+        for index in indices:
+            word_features.append(self.wac_features[index])
+        word_features = np.stack(word_features)
+
         probability_dict = {}
         for word, model in self.wac_models.items():
             word = re.sub("{slash}", "/", word)
@@ -292,4 +270,5 @@ class WACModels():
         for word in self.vocab:
             with open(os.path.join(self.save_directory, f"{word}.pkl"), "rb") as model_file:
                 self.wac_models[word] = pickle.load(model_file)
+ 
     

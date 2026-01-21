@@ -147,7 +147,13 @@ def main(_config):
     max_steps = _config["max_steps"] if _config["max_steps"] is not None else None
     torch.set_float32_matmul_precision('medium')
     
-    
+    if model.wac_models is not None:
+        print("WAC models enabled. Starting construction of WAC features.")
+        dm.setup(stage="fit")
+        training_dataloader = dm.train_dataloader()
+        model.build_wac_features(training_dataloader)
+        print("WAC datasets constructed. Starting model training.")
+
     trainer = pl.Trainer(
         devices= _config["num_gpus"],
         num_nodes=_config["num_nodes"],
