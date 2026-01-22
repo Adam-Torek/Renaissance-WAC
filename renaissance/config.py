@@ -276,6 +276,7 @@ def pretrain_wac_onetower_electrasmall():
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 50
+    max_train_steps = 500
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -317,15 +318,15 @@ def finetune_glue_onetower_electrasmall():
     loss_names = _loss_names({"mnli": 1})
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 50
+    max_epoch = 3
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
     # Text Setting
-    text_encoder = "bert_wac"
-    random_init_text_encoder = True
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
@@ -333,7 +334,7 @@ def finetune_glue_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mrpc"
+    data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
     use_image_encoder = False
@@ -347,9 +348,9 @@ def finetune_glue_onetower_electrasmall():
     # num_cores = 0
 
     # HuggingFace settings
-    huggingface_save_directory = "results/huggingface_outputs"
-    huggingface_save_name = "ajtorek/electra-renaissance-wac"
-    push_to_hub = True
+    huggingface_save_directory = None
+    huggingface_save_name = None
+    push_to_hub = False
 
 @ex.named_config
 def pretrain_mlm_itm_twotower_exp2_deitsmall_electrasmall():

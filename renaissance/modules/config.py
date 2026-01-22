@@ -32,7 +32,8 @@ class WACConfig(ElectraConfig):
                  pad_token_id=0,
                  position_embedding_type="absolute",
                  use_cache=True,
-                 classifier_dropout=None,) -> None:
+                 classifier_dropout=None,
+                 **kwargs) -> None:
         
         super().__init__(vocab_size=vocab_size,
                          embedding_size=embedding_size,
@@ -54,7 +55,8 @@ class WACConfig(ElectraConfig):
                          pad_token_id=pad_token_id,
                          position_embedding_type=position_embedding_type,
                          use_cache=use_cache,
-                         classifier_dropout=classifier_dropout)
+                         classifier_dropout=classifier_dropout,
+                         **kwargs)
         
         self.wac_embedding_size = wac_embedding_size
         self.wac_distribution_matrix = wac_distribution_matrix
