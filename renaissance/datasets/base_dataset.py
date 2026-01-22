@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image 
 from PIL.Image import Resampling
 from ..transforms import keys_to_transforms
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from torch.utils.data._utils.collate import default_collate
 
 
@@ -80,19 +80,14 @@ class BaseDataset(torch.utils.data.Dataset):
             
             if self.task == "mnli":
                 if self.split == "validation" or self.split == "test":
-                    matched_dataset = load_dataset(hf_dataset_key, self.task, split = self.split + "_matched").to_dict()
-                    mismatched_dataset = load_dataset(hf_dataset_key, self.task, split = self.split + "_mismatched").to_dict()
+                    matched_dataset = load_dataset(hf_dataset_key, self.task, split = self.split + "_matched")
+                    mismatched_dataset = load_dataset(hf_dataset_key, self.task, split = self.split + "_mismatched")
                 
-                    combined_data_dict = {}
-
-                    for column, values in matched_dataset.items():
-                        combined_values = values + mismatched_dataset[column]
-                        combined_data_dict[column] = combined_values
+                    combined_data_dict = concatenate_datasets([matched_dataset, mismatched_dataset]).to_dict()
                     
                     self.data_dict = combined_data_dict
                 else:
                     self.data_dict = load_dataset(hf_dataset_key, self.task, split=self.split).to_dict()
-                
             else:
                 self.data_dict = load_dataset(hf_dataset_key, self.task, split=self.split).to_dict()
         # Use local files with pyarrow for data processing and loading
@@ -390,11 +385,18 @@ class BaseDataset(torch.utils.data.Dataset):
             dict_batch = default_collate(batch)
             if "input_ids" in dict_batch:
                 dict_batch["text_ids"] = dict_batch["input_ids"]
+                del dict_batch["input_ids"]
 
             if "attention_mask" in dict_batch:
                 dict_batch["text_masks"] = dict_batch["attention_mask"]
+                del dict_batch["attention_mask"]
+
+            if "token_type_ids" in dict_batch:
+                dict_batch["text_type_ids"] = dict_batch["token_type_ids"]
+                del dict_batch["token_type_ids"]
 
             if "label" in dict_batch:
                 dict_batch["text_labels"] = dict_batch["label"]
+                del dict_batch["label"]
 
         return dict_batch

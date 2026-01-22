@@ -34,7 +34,15 @@ objective_dict = {
     "snli": objectives.compute_snli,
     "irtr": objectives.compute_irtr,
     "ref": objectives.compute_ref,
+    "cola": objectives.compute_cola,
+    "mnli": objectives.compute_mnli,
     "mrpc": objectives.compute_mrpc,
+    "qnli": objectives.compute_qnli,
+    "qqp": objectives.compute_qqp,
+    "rte": objectives.compute_rte,
+    "sst2": objectives.compute_sst2,
+    "stsb": objectives.compute_stsb,
+    "wnli": objectives.compute_wnli,
 }
 
 class RenaissanceTransformer(pl.LightningModule):
@@ -284,7 +292,6 @@ class RenaissanceTransformer(pl.LightningModule):
                 self.text_hs = self.encoder.text_transformer.config.hidden_size
             else:
                 self.text_hs = None
-
         
         self.text_only = False
      
@@ -299,7 +306,6 @@ class RenaissanceTransformer(pl.LightningModule):
             )
             self.mrpc_classifier.apply(objectives.init_weights)
             
-        
         # rte Text Classifier
         if self.hparams.config["loss_names"]['rte'] > 0:
             # self.text_only = True
@@ -482,8 +488,21 @@ class RenaissanceTransformer(pl.LightningModule):
     
     # Review and if update, if needed for one-tower
     def infer_text_only(self, batch):
+        input_ids = batch["text_ids"]
+        if "text_masks" in batch:
+            attention_mask = batch["text_masks"]
+        else:
+            attention_mask = None
+
+        if "text_type_ids" in batch:
+            token_type_ids = batch["text_type_ids"]
+        else:
+            token_type_ids = None
+        
         if self.model_type == 'two-tower':
-            hidden_state = self.encoder.text_transformer(**batch).last_hidden_state
+            hidden_state = self.encoder.text_transformer(input_ids=input_ids, 
+                                                         attention_mask=attention_mask, 
+                                                         token_type_ids=token_type_ids).last_hidden_state
         elif self.model_type == 'one-tower':
             hidden_state = self.encoder.forward_text(batch)
         
@@ -499,8 +518,6 @@ class RenaissanceTransformer(pl.LightningModule):
             if task in objective_dict:
                 objective_function = objective_dict[task]
                 ret.update(objective_function(self, batch))
-            else:
-                ret.update(objectives.compute_text_accuracy(self, batch, task))
         return ret
 
     def training_step(self, batch, batch_idx):

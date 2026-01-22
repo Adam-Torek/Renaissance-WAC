@@ -43,12 +43,12 @@ def compute_mlm(pl_module, batch):
     return ret
 
 def compute_text_accuracy(pl_module, batch, task):
+    accuracy_labels = batch.pop("text_labels", None)
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
-    infer_results = pl_module.infer(batch, mask_text=False, mask_image=False)
+    hidden_states = pl_module.infer_text_only(batch)
     accuracy_module = getattr(pl_module, f"{task}_classifier")
 
-    accuracy_logits = accuracy_module(infer_results["text_feats"])
-    accuracy_labels = batch["text_labels"]
+    accuracy_logits = accuracy_module(hidden_states)
 
     accuracy_loss_targets = F.one_hot(accuracy_labels, num_classes=accuracy_module.num_labels).to(torch.float)
     accuracy_loss = F.binary_cross_entropy_with_logits(accuracy_logits, accuracy_loss_targets)
@@ -68,6 +68,34 @@ def compute_text_accuracy(pl_module, batch, task):
     pl_module.log(f"{task}/{phase}/acc", acc, batch_size=batch_size, sync_dist=True)
 
     return ret
+
+# Glue task objectives
+def compute_cola(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="cola")
+
+def compute_mnli(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="mnli")
+
+def compute_mrpc(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="mrpc")
+
+def compute_qnli(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="qnli")
+
+def compute_qqp(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="qqp")
+
+def compute_rte(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="rte")
+
+def compute_sst2(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="sst2")
+
+def compute_stsb(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="stsb")
+
+def compute_wnli(pl_module, batch):
+    return compute_text_accuracy(pl_module, batch, task="wnli")
 
 def compute_itm(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
@@ -463,34 +491,6 @@ def compute_irtr_recall(pl_module):
     ir_r1 = (tiids.unsqueeze(0) == topk1_iids).float().max(dim=0)[0].mean()
 
     return (ir_r1, ir_r5, ir_r10, tr_r1, tr_r5, tr_r10)
-
-def compute_mrpc(pl_module, batch):
-    mrpc_labels = batch.pop('label', None)
-    hidden_state = pl_module.infer_text_only(batch)
-    mrpc_logits = pl_module.mrpc_classifier(hidden_state)
-    mrpc_loss = F.cross_entropy(mrpc_logits, mrpc_labels)
-    
-    ret = {
-        'mrpc_logits' : mrpc_logits,
-        'mrpc_targets' : mrpc_labels,
-        'mrpc_loss' : mrpc_loss
-    }
-    
-    phase = "train" if pl_module.training else "val"
-    loss = getattr(pl_module, f"{phase}_mrpc_loss")(ret["mrpc_loss"])
-    acc = getattr(pl_module, f"{phase}_mrpc_accuracy")(
-        ret["mrpc_logits"], ret["mrpc_targets"]
-    )
-    preds = mrpc_logits.argmax(dim=-1)
-    f1 = getattr(pl_module, f"{phase}_mrpc_f1")(
-        preds, ret["mrpc_targets"]
-    )
-    pl_module.log(f"mrpc/{phase}/loss", loss)
-    pl_module.log(f"mrpc/{phase}/accuracy", acc)
-    pl_module.log(f"mrpc/{phase}/f1", f1)
-    
-    return ret
-
 
 def init_weights(module):
     if isinstance(module, (nn.Linear, nn.Embedding)):

@@ -11,7 +11,6 @@ from transformers.models.bert.modeling_bert import BertPredictionHeadTransform
 
 from typing import List, Optional, Tuple, Union
 
-
 class Pooler(nn.Module):
     def __init__(self, hidden_size):
         super().__init__()
@@ -24,7 +23,6 @@ class Pooler(nn.Module):
         pooled_output = self.activation(pooled_output)
         return pooled_output
 
-
 class ITMHead(nn.Module):
     def __init__(self, hidden_size):
         super().__init__()
@@ -33,7 +31,6 @@ class ITMHead(nn.Module):
     def forward(self, x):
         x = self.fc(x)
         return x
-
 
 # this needs fixing to accomodate one or tow tower model
 class MLMHead(nn.Module):
