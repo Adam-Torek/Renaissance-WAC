@@ -187,7 +187,7 @@ def main(_config):
             
             model_save_directory = os.path.join(_config["huggingface_save_directory"], model_save_name)
 
-            model.save_pretrained(model_save_directory)
+            model.save_pretrained(model_save_directory, subsection_to_save=_config["subsection_to_save"])
             if _config["push_to_hub"]:
                 model.push_to_hub(_config["huggingface_save_name"])
         

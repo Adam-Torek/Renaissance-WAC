@@ -42,6 +42,33 @@ def compute_mlm(pl_module, batch):
 
     return ret
 
+def compute_text_accuracy(pl_module, batch, task):
+    batch_size = pl_module.hparams.config['per_gpu_batchsize']
+    infer_results = pl_module.infer(batch, mask_text=False, mask_image=False)
+    accuracy_module = getattr(pl_module, f"{task}_classifier")
+
+    accuracy_logits = accuracy_module(infer_results["text_feats"])
+    accuracy_labels = batch["text_labels"]
+
+    accuracy_loss_targets = F.one_hot(accuracy_labels, num_classes=accuracy_module.num_labels).to(torch.float)
+    accuracy_loss = F.binary_cross_entropy_with_logits(accuracy_logits, accuracy_loss_targets)
+
+    ret = {
+        f"{task}_loss": accuracy_loss,
+        f"{task}_logits": accuracy_logits,
+        f"{task}_labels": accuracy_labels,
+    }
+
+    phase = "train" if pl_module.training else "val"
+
+    loss = getattr(pl_module, f"{phase}_{task}_loss")(ret[f"{task}_loss"])
+    acc = getattr(pl_module, f"{phase}_{task}_accuracy")(ret[f"{task}_logits"], ret[f"{task}_labels"])
+
+    pl_module.log(f"{task}/{phase}/loss", loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"{task}/{phase}/acc", acc, batch_size=batch_size, sync_dist=True)
+
+    return ret
+
 def compute_itm(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
     pos_len = len(batch["text"]) // 2

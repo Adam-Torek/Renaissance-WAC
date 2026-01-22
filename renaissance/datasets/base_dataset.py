@@ -388,5 +388,13 @@ class BaseDataset(torch.utils.data.Dataset):
         # Collate function for datasets derived from guggingface
         else:
             dict_batch = default_collate(batch)
+            if "input_ids" in dict_batch:
+                dict_batch["text_ids"] = dict_batch["input_ids"]
+
+            if "attention_mask" in dict_batch:
+                dict_batch["text_masks"] = dict_batch["attention_mask"]
+
+            if "label" in dict_batch:
+                dict_batch["text_labels"] = dict_batch["label"]
 
         return dict_batch

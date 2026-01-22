@@ -499,7 +499,8 @@ class RenaissanceTransformer(pl.LightningModule):
             if task in objective_dict:
                 objective_function = objective_dict[task]
                 ret.update(objective_function(self, batch))
-            
+            else:
+                ret.update(objectives.compute_text_accuracy(self, batch, task))
         return ret
 
     def training_step(self, batch, batch_idx):
@@ -542,6 +543,7 @@ class RenaissanceTransformer(pl.LightningModule):
 
     def save_pretrained(self, 
                         save_directory,
+                        subsection_to_save=None,
                         **kwargs):
         
         config = self.encoder.config
@@ -550,7 +552,12 @@ class RenaissanceTransformer(pl.LightningModule):
 
         self.save_directory = save_directory
 
-        save_file(self.encoder.state_dict(), 
+        if subsection_to_save is not None:
+            model_to_save = getattr(self.encoder, subsection_to_save)
+        else:
+            model_to_save = self.encoder
+
+        save_file(model_to_save.state_dict(), 
                   model_save_name)
 
         if self.wac_models is not None:

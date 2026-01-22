@@ -179,6 +179,7 @@ def config():
     huggingface_save_directory = None
     huggingface_save_name = None
     push_to_hub = False
+    subsection_to_save = None
 
 # ===================== Experiment 2 Cofigs ===================== #
 
@@ -224,14 +225,14 @@ def pretrain_mlm_itm_twotower_exp2_deittiny_electrasmall():
 
 @ex.named_config
 def pretrain_mlm_onetower_electrasmall():
-    exp_name = "mlm_itm_onetower_electrasmall"
+    exp_name = "mlm_onetower_electrasmall"
     model_type = "two-tower"
     datasets = ["babylm"]
     loss_names = _loss_names({"mlm": 1})
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 10
-    max_steps = 1000000
+    max_steps = 5
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -262,7 +263,8 @@ def pretrain_mlm_onetower_electrasmall():
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
-    huggingface_save_name = "ajtorek/electra-renaissance-test"
+    huggingface_save_name = "ajtorek/electra-renaissance-babylm"
+    subsection_to_save = "text_transformer"
     push_to_hub = True
     
 @ex.named_config
