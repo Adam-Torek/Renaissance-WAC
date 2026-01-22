@@ -6,6 +6,7 @@ import glob
 import json
 import tqdm
 import functools
+import copy
 
 from torch.utils.data.distributed import DistributedSampler
 from einops import rearrange
@@ -42,10 +43,41 @@ def compute_mlm(pl_module, batch):
 
     return ret
 
-def compute_text_accuracy(pl_module, batch, task):
-    accuracy_labels = batch.pop("text_labels", None)
+def compute_stsb(pl_module, batch):
+    accuracy_labels = batch["text_labels"]
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
-    hidden_states = pl_module.infer_text_only(batch)
+
+    batch_without_text = copy.deepcopy(batch)
+    batch_without_text.pop("text_labels")
+    hidden_states = pl_module.infer_text_only(batch_without_text)
+    accuracy_logits = pl_module.stsb_regressor(hidden_states).squeeze()
+
+    accuracy_loss = F.mse_loss(accuracy_logits, accuracy_labels)
+
+    ret = {
+        "stsb_loss": accuracy_loss,
+        "stsb_logits": accuracy_logits,
+        "stsb_labels": accuracy_labels,
+    }
+
+    phase = "train" if pl_module.training else "val"
+
+    loss = getattr(pl_module, f"{phase}_stsb_loss")(ret[f"stsb_loss"])
+    acc = getattr(pl_module, f"{phase}_stsb_spearman")(ret["stsb_logits"], ret["stsb_labels"])
+
+    pl_module.log(f"{task}/stsb/loss", loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"{task}/stsb/spearman", acc, batch_size=batch_size, sync_dist=True)
+
+    return ret
+
+def compute_text_accuracy(pl_module, batch, task):
+    accuracy_labels = batch["text_labels"]
+    batch_size = pl_module.hparams.config['per_gpu_batchsize']
+
+    batch_without_text = copy.deepcopy(batch)
+    batch_without_text.pop("text_labels")
+    hidden_states = pl_module.infer_text_only(batch_without_text)
+
     accuracy_module = getattr(pl_module, f"{task}_classifier")
 
     accuracy_logits = accuracy_module(hidden_states)
@@ -90,9 +122,6 @@ def compute_rte(pl_module, batch):
 
 def compute_sst2(pl_module, batch):
     return compute_text_accuracy(pl_module, batch, task="sst2")
-
-def compute_stsb(pl_module, batch):
-    return compute_text_accuracy(pl_module, batch, task="stsb")
 
 def compute_wnli(pl_module, batch):
     return compute_text_accuracy(pl_module, batch, task="wnli")

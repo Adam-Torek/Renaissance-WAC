@@ -20,6 +20,7 @@ def _loss_names(d):
         "rte" : 0,
         'wnli' : 0,
         'sst2' : 0,
+        'stsb': 0,
         'qqp' : 0,
         'qnli' : 0,
         'mnli' : 0,
@@ -39,6 +40,7 @@ def config():
     batch_size = 256  # this is a desired batch size; pl trainer will accumulate gradients when per step batch is smaller.
     per_gpu_batchsize = 0  # you should define this manually with per_gpu_batch_size=#
     eval_batch_size = 32
+    task_list = None
     
     # Path to .ckpt file for fine-tuning or testing
     load_path = ""
@@ -107,7 +109,6 @@ def config():
     max_text_len = 40
     vocab_size = 30522
 
-    
     # Cross Layer Settings
     cross_layer_hidden_size = 256
     num_cross_layers = 6
@@ -145,7 +146,6 @@ def config():
     end_lr = 0
     lr_mult_head = 5  # multiply lr for downstream heads
     lr_mult_cross_modal = 5  # multiply lr for the cross-modal module
-    
     
     # PL Trainer Setting
     fast_dev_run = False
@@ -314,8 +314,9 @@ def pretrain_wac_onetower_electrasmall():
 def finetune_glue_onetower_electrasmall():
     exp_name = "finetune_glue_onetower_electrasmall"
     model_type = "two-tower"
-    datasets = ["glue"]
-    loss_names = _loss_names({"mnli": 1})
+    datasets = ["glue"] 
+    task_list = ["cola", "mnli", "mrpc", "qnli", "qqp", "rte", "sst2", "stsb", "wnli"]
+    
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 3

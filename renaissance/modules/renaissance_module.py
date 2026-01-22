@@ -325,6 +325,14 @@ class RenaissanceTransformer(pl.LightningModule):
                 num_labels=2
             )
             self.wnli_classifier.apply(objectives.init_weights)
+
+        if self.hparams.config["loss_names"]["stsb"] > 0:
+            self.stsb_regressor = heads.UniModalClassificationHead(
+                hidden_size=self.text_hs, 
+                num_labels=1
+                )
+
+            self.stsb_regressor.apply(objectives.init_weights) 
             
         # sst2 Text Classifier
         if self.hparams.config["loss_names"]['sst2'] > 0:

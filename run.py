@@ -19,25 +19,37 @@ import torch.distributed as dist
 
 from renaissance.modules.two_tower_encoder import BertWACTransformer
 
-@ex.automain
-def main(_config):
-    AutoConfig.register(model_type="bert_wac", 
-                        config=WACConfig)
-    
-    AutoModel.register(config_class=WACConfig, 
-                       model_class=BertWACTransformer)
-    
-    _config = copy.deepcopy(_config)
-    pl.seed_everything(_config["seed"])
+def parse_load_path(load_path):
+        drive, path_and_file = os.path.splitdrive(load_path)
+        path, file = os.path.split(path_and_file)
+        folders = []
+        while True:
+            path, folder = os.path.split(path)
+        
+            if folder != "":
+                folders.append(folder)
+            else:
+                if path != "":
+                    folders.append(path)
+                break
+        folders.reverse()
+        result_dir = folders[-3]
+        checkpoint_name = file.split("/")[-1][:-5]
+        parsed_string = f"{result_dir}_{checkpoint_name}"
+        return parsed_string
 
-    # print(_config)
+def run_experiment(_config, task=None):
+     # print(_config)
+    if task is not None:
+        _config['loss_names'] = {task: 1}
+    
     dm = MTDataModule(_config, dist=True)
 
     model = RenaissanceTransformer(_config)
     
     # Create name for directory to log results
     load_path = _config['load_path']
-    exp_name = f'{_config["exp_name"]}'
+    exp_name = f'{_config["exp_name"]}_{task}'
     seed = _config['seed']
     log_dir = _config['log_dir']
     
@@ -81,27 +93,7 @@ def main(_config):
     print("LR Mult Head: ", _config['lr_mult_head'])  
     print("LR Mult Cross Modal: ", _config['lr_mult_cross_modal'])
     print('\n\n')
-    
-    def parse_load_path(load_path):
-        drive, path_and_file = os.path.splitdrive(load_path)
-        path, file = os.path.split(path_and_file)
-        folders = []
-        while True:
-            path, folder = os.path.split(path)
-        
-            if folder != "":
-                folders.append(folder)
-            else:
-                if path != "":
-                    folders.append(path)
-                break
-        folders.reverse()
-        result_dir = folders[-3]
-        checkpoint_name = file.split("/")[-1][:-5]
-        parsed_string = f"{result_dir}_{checkpoint_name}"
-        return parsed_string
-        
-        
+               
     if not load_path:
         image_size = _config['image_size']
         patch_size = _config['patch_size']
@@ -146,13 +138,6 @@ def main(_config):
 
     max_steps = _config["max_steps"] if _config["max_steps"] is not None else None
     torch.set_float32_matmul_precision('medium')
-    
-    if model.wac_models is not None:
-        print("WAC models enabled. Starting construction of WAC features.")
-        dm.setup(stage="fit")
-        training_dataloader = dm.train_dataloader()
-        model.build_wac_features(training_dataloader)
-        print("WAC datasets constructed. Starting model training.")
 
     trainer = pl.Trainer(
         devices= _config["num_gpus"],
@@ -172,6 +157,13 @@ def main(_config):
         val_check_interval=_config["val_check_interval"],
         num_sanity_val_steps=0,
     )
+
+    if model.wac_models is not None:
+        print("WAC models enabled. Starting construction of WAC features.")
+        dm.setup(stage="fit")
+        training_dataloader = dm.train_dataloader()
+        model.build_wac_features(training_dataloader)
+        print("WAC datasets constructed. Starting model training.")
 
     if not _config["test_only"]:
         if _config["resume_from"]:
@@ -199,6 +191,22 @@ def main(_config):
         
     else:
         trainer.test(model, datamodule=dm)
+    pass
+
+@ex.automain
+def main(_config):
+    AutoConfig.register(model_type="bert_wac", 
+                        config=WACConfig)
+    
+    AutoModel.register(config_class=WACConfig, 
+                       model_class=BertWACTransformer)
+    
+    if _config['task_list'] is not None:
+        for task in _config['task_list']:
+            run_experiment(_config, task)
+
+    else:
+        run_experiment(_config)
 
    
     

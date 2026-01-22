@@ -12,6 +12,7 @@ from .objectives import compute_irtr_recall
 from ..gadgets.my_metrics import Accuracy, VQAScore, Scalar
 # from torchmetrics import F1Score
 from torchmetrics.classification import BinaryF1Score, MatthewsCorrCoef
+from torchmetrics import SpearmanCorrCoef
 
 # Creat a set_attribute type function to gneralize this
 def set_metrics(pl_module):
@@ -64,6 +65,9 @@ def set_metrics(pl_module):
                 setattr(pl_module, f"{split}_{k}_loss", Scalar())
             elif k == "sst2":
                 setattr(pl_module, f"{split}_{k}_accuracy", Accuracy())
+                setattr(pl_module, f"{split}_{k}_loss", Scalar())
+            elif k == "stsb":
+                setattr(pl_module, f"{split}_{k}_spearman", SpearmanCorrCoef())
                 setattr(pl_module, f"{split}_{k}_loss", Scalar())
             elif k == "qqp":
                 setattr(pl_module, f"{split}_{k}_accuracy", Accuracy())
@@ -260,6 +264,26 @@ def epoch_wrapup(pl_module):
                 f.write(loss_string)
                 acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
                 f.write(acc_string)
+                
+        elif loss_name == 'stsb':
+            epoch = pl_module.current_epoch
+            value = getattr(pl_module, f"{phase}_{loss_name}_spearman").compute()
+            pl_module.log(f"{loss_name}/{phase}/spearman_epoch", value)
+            getattr(pl_module, f"{phase}_{loss_name}_spearman").reset()
+            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
+            pl_module.log(
+                f"{loss_name}/{phase}/loss_epoch",
+                loss)
+            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
+            
+            log_dir = pl_module.logger.log_dir
+            file_path = os.path.join(log_dir, 'eval.txt')
+            with open(file_path,'a') as f:
+                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
+                f.write(loss_string)
+                spearman_string = f'Epoch: {epoch}, Spearman on {phase} Set: {value} \n\n'
+                f.write(spearman_string)
+            
         elif loss_name == 'qqp':
             epoch = pl_module.current_epoch
             value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
