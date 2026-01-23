@@ -17,6 +17,8 @@ class GlueDataModule(BaseDataModule):
             self.task = "wnli"
         elif self.config["loss_names"]["sst2"] > 0:
             self.task = "sst2"
+        elif self.config["loss_names"]["stsb"] > 0:
+            self.task = "stsb"
         elif self.config["loss_names"]["qqp"] > 0:
             self.task = "qqp"
         elif self.config["loss_names"]["qnli"] > 0:

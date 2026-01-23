@@ -13,7 +13,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "with", "finetune_glue_onetower_electrasmall"
+                "with", "finetune_stsb_onetower_electrasmall"
             ]
         },
          {

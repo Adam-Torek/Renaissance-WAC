@@ -38,10 +38,8 @@ def parse_load_path(load_path):
         parsed_string = f"{result_dir}_{checkpoint_name}"
         return parsed_string
 
-def run_experiment(_config, task=None):
+def run_experiment(_config):
      # print(_config)
-    if task is not None:
-        _config['loss_names'] = {task: 1}
     
     dm = MTDataModule(_config, dist=True)
 
@@ -49,7 +47,7 @@ def run_experiment(_config, task=None):
     
     # Create name for directory to log results
     load_path = _config['load_path']
-    exp_name = f'{_config["exp_name"]}_{task}'
+    exp_name = f'{_config["exp_name"]}'
     seed = _config['seed']
     log_dir = _config['log_dir']
     
@@ -108,7 +106,6 @@ def run_experiment(_config, task=None):
         
     # Info Variables
     exp_name = _config['exp_name']
-    
     
     os.makedirs(_config["log_dir"], exist_ok=True)
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -201,13 +198,6 @@ def main(_config):
     AutoModel.register(config_class=WACConfig, 
                        model_class=BertWACTransformer)
     
-    if _config['task_list'] is not None:
-        for task in _config['task_list']:
-            run_experiment(_config, task)
+    run_experiment(_config)
 
-    else:
-        run_experiment(_config)
-
-   
-    
     

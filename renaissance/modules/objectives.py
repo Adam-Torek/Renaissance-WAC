@@ -52,6 +52,9 @@ def compute_stsb(pl_module, batch):
     hidden_states = pl_module.infer_text_only(batch_without_text)
     accuracy_logits = pl_module.stsb_regressor(hidden_states).squeeze()
 
+    if accuracy_labels.dtype != accuracy_logits.dtype:
+        accuracy_labels = accuracy_labels.to(accuracy_logits.dtype)
+
     accuracy_loss = F.mse_loss(accuracy_logits, accuracy_labels)
 
     ret = {
@@ -65,8 +68,8 @@ def compute_stsb(pl_module, batch):
     loss = getattr(pl_module, f"{phase}_stsb_loss")(ret[f"stsb_loss"])
     acc = getattr(pl_module, f"{phase}_stsb_spearman")(ret["stsb_logits"], ret["stsb_labels"])
 
-    pl_module.log(f"{task}/stsb/loss", loss, batch_size=batch_size, sync_dist=True)
-    pl_module.log(f"{task}/stsb/spearman", acc, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"stsb/{phase}/loss", loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"stsb/{phase}/spearman", acc, batch_size=batch_size, sync_dist=True)
 
     return ret
 
@@ -81,7 +84,7 @@ def compute_text_accuracy(pl_module, batch, task):
     accuracy_module = getattr(pl_module, f"{task}_classifier")
 
     accuracy_logits = accuracy_module(hidden_states)
-
+    
     accuracy_loss_targets = F.one_hot(accuracy_labels, num_classes=accuracy_module.num_labels).to(torch.float)
     accuracy_loss = F.binary_cross_entropy_with_logits(accuracy_logits, accuracy_loss_targets)
 
@@ -94,10 +97,15 @@ def compute_text_accuracy(pl_module, batch, task):
     phase = "train" if pl_module.training else "val"
 
     loss = getattr(pl_module, f"{phase}_{task}_loss")(ret[f"{task}_loss"])
-    acc = getattr(pl_module, f"{phase}_{task}_accuracy")(ret[f"{task}_logits"], ret[f"{task}_labels"])
-
     pl_module.log(f"{task}/{phase}/loss", loss, batch_size=batch_size, sync_dist=True)
-    pl_module.log(f"{task}/{phase}/acc", acc, batch_size=batch_size, sync_dist=True)
+
+    metric = "mcc" if task == "cola" else "accuracy"
+    if metric == "mcc":
+        ret[f"{task}_logits"] = torch.argmax(ret[f"{task}_logits"], dim=1)
+    acc = getattr(pl_module, f"{phase}_{task}_{metric}")(ret[f"{task}_logits"], ret[f"{task}_labels"])
+
+    abbreviated_metric = "mcc" if task == "cola" else "acc"    
+    pl_module.log(f"{task}/{phase}/{abbreviated_metric}", acc, batch_size=batch_size, sync_dist=True)
 
     return ret
 

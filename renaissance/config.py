@@ -40,7 +40,6 @@ def config():
     batch_size = 256  # this is a desired batch size; pl trainer will accumulate gradients when per step batch is smaller.
     per_gpu_batchsize = 0  # you should define this manually with per_gpu_batch_size=#
     eval_batch_size = 32
-    task_list = None
     
     # Path to .ckpt file for fine-tuning or testing
     load_path = ""
@@ -311,15 +310,15 @@ def pretrain_wac_onetower_electrasmall():
     push_to_hub = True
 
 @ex.named_config
-def finetune_glue_onetower_electrasmall():
-    exp_name = "finetune_glue_onetower_electrasmall"
+def finetune_cola_onetower_electrasmall():
+    exp_name = "finetune_cola_onetower_electrasmall"
     model_type = "two-tower"
-    datasets = ["glue"] 
-    task_list = ["cola", "mnli", "mrpc", "qnli", "qqp", "rte", "sst2", "stsb", "wnli"]
+    datasets = ["glue"]
+    loss_names = _loss_names({"cola":1})
     
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 3
+    max_epoch = 10
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -340,18 +339,246 @@ def finetune_glue_onetower_electrasmall():
     # Image settings to not use image encoders
     use_image_encoder = False
 
-    # WAC model settings
-    # wac_embedding_size = 512
-    # wac_distribution_matrix = "value"
-    # wac_image_encoder = "openai/clip-vit-base-patch16"
-    # save_directory = "wac_models"
-    # wac_train_steps = 5
-    # num_cores = 0
+@ex.named_config
+def finetune_mnli_onetower_electrasmall():
+    exp_name = "finetune_mnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"mnli": 1})
 
-    # HuggingFace settings
-    huggingface_save_directory = None
-    huggingface_save_name = None
-    push_to_hub = False
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    
+
+@ex.named_config
+def finetune_mrpc_onetower_electrasmall():
+    exp_name = "finetune_mnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"mrpc": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+@ex.named_config
+def finetune_qqp_onetower_electrasmall():
+    exp_name = "finetune_qqp_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"qqp": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+@ex.named_config
+def finetune_qnli_onetower_electrasmall():
+    exp_name = "finetune_qnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"qnli": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+@ex.named_config
+def finetune_rte_onetower_electrasmall():
+    exp_name = "finetune_rte_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"rte": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+@ex.named_config
+def finetune_sst2_onetower_electrasmall():
+    exp_name = "finetune_sst2_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"sst2": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+@ex.named_config
+def finetune_stsb_onetower_electrasmall():
+    exp_name = "finetune_stsb_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"stsb": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+@ex.named_config
+def finetune_wnli_onetower_electrasmall():
+    exp_name = "finetune_wnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"wnli": 1})
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = True
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
 
 @ex.named_config
 def pretrain_mlm_itm_twotower_exp2_deitsmall_electrasmall():
