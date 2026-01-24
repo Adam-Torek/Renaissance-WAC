@@ -1,6 +1,8 @@
 import torch
 # import random
 import os
+import csv
+import functools
 
 from torch.optim import AdamW
 from transformers import (
@@ -13,6 +15,66 @@ from ..gadgets.my_metrics import Accuracy, VQAScore, Scalar
 # from torchmetrics import F1Score
 from torchmetrics.classification import BinaryF1Score, MatthewsCorrCoef
 from torchmetrics import SpearmanCorrCoef
+
+def write_to_summary_file(log_file_with_path, model_name, phase, epoch, metric_name, metric_value):
+    log_file_dir = os.path.split(log_file_with_path)[:-1]
+    if not os.path.exists(log_file_dir):
+        os.makedirs(log_file_dir)
+    
+    write_headers = False
+    if not os.path.exists(log_file_with_path):
+        write_headers = True
+        
+    with open(log_file_with_path, "w") as log_file:
+        dict_writer = csv.DictWriter(log_file, fieldnames=["model_name", "phase", "epoch", "metric_name", "metric_value"])
+        if write_headers: 
+            dict_writer.writeheader()
+        
+        dict_writer.writerow({"model_name": model_name, 
+                              "phase": phase,
+                              "epoch": epoch,
+                              "metric_name": metric_name, 
+                              "metric_value": metric_value})
+
+def write_metrics(pl_module, phase, loss_name, metric_names, include_summary_value=False):
+    epoch = pl_module.current_epoch
+
+    for metric_name in metric_names:
+        metric_value = getattr(pl_module, f"{phase}_{loss_name}_{metric_name}").compute()
+        pl_module.log(f"{loss_name}/{phase}/{metric_name}_{epoch}", metric_value, sync_dist=True)
+        getattr(pl_module, f"{phase}_{loss_name}_{metric_name}").reset()
+        
+        log_dir = pl_module.logger.log_dir
+        file_path = os.path.join(log_dir, 'eval.txt')
+        with open(file_path,'a') as f:
+            eval_write_string = f'Epoch: {epoch}, Final {metric_name} on {phase} Set: {loss_name} \n'
+            f.write(eval_write_string)
+        
+        if include_summary_value:
+            if hasattr(pl_module, "csv_log_file") and pl_module.csv_log_file is not None:
+                summary_log_file_path = pl_module.csv_log_file
+                model_name = pl_module.exp_name
+                summary_log_dirs = os.path.split(summary_log_file_path)[:-1]
+                summary_log_dirs = os.path.join(*summary_log_dirs)
+
+                if not os.path.exists(summary_log_dirs):
+                    os.makedirs(summary_log_dirs)
+                
+                if not os.path.exists(summary_log_file_path):
+                    write_mode = "w"
+                else:
+                    write_mode = "a"
+                
+                with open(summary_log_file_path, write_mode) as summary_log_file:
+                    dict_writer = csv.DictWriter(summary_log_file, fieldnames=["model_name", "phase", "epoch", "metric_name", "metric_value"])
+                    if write_mode == "w": 
+                        dict_writer.writeheader()
+                    
+                    dict_writer.writerow({"model_name": model_name, 
+                                        "phase": phase,
+                                        "epoch": epoch,
+                                        "metric_name": metric_name, 
+                                        "metric_value": metric_value.item()})
 
 # Creat a set_attribute type function to gneralize this
 def set_metrics(pl_module):
@@ -32,8 +94,8 @@ def set_metrics(pl_module):
                     setattr(pl_module, f"train_{k}_accuracy", Accuracy())
                     setattr(pl_module, f"train_{k}_loss", Scalar())
                 else:
-                    setattr(pl_module, f"dev_{k}_accuracy", Accuracy())
-                    setattr(pl_module, f"dev_{k}_loss", Scalar())
+                    setattr(pl_module, f"val_{k}_accuracy", Accuracy())
+                    setattr(pl_module, f"val_{k}_loss", Scalar())
                     setattr(pl_module, f"test_{k}_accuracy", Accuracy())
                     setattr(pl_module, f"test_{k}_loss", Scalar())
             elif k == "snli":
@@ -41,8 +103,8 @@ def set_metrics(pl_module):
                     setattr(pl_module, f"train_{k}_accuracy", Accuracy())
                     setattr(pl_module, f"train_{k}_loss", Scalar())
                 else:
-                    setattr(pl_module, f"dev_{k}_accuracy", Accuracy())
-                    setattr(pl_module, f"dev_{k}_loss", Scalar())
+                    setattr(pl_module, f"val_{k}_accuracy", Accuracy())
+                    setattr(pl_module, f"val_{k}_loss", Scalar())
                     setattr(pl_module, f"test_{k}_accuracy", Accuracy())
                     setattr(pl_module, f"test_{k}_loss", Scalar())
             elif k == "irtr":
@@ -137,23 +199,12 @@ def epoch_wrapup(pl_module):
             )
             getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
         elif loss_name == 'ref':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value, sync_dist=True)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss, sync_dist=True)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+             write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
+             
         elif loss_name == "nlvr2" or loss_name == 'snli':
             if phase == "train":
                 value = getattr(pl_module, f"train_{loss_name}_accuracy").compute()
@@ -186,194 +237,77 @@ def epoch_wrapup(pl_module):
                     sync_dist=True
                 )
                 getattr(pl_module, f"dev_{loss_name}_loss").reset()
+                
         elif loss_name == 'mrpc':
-            epoch = pl_module.current_epoch
-            # f1 = getattr(pl_module, f"{phase}_{loss_name}_f1").compute()
-            value = getattr(pl_module, f"{phase}_{loss_name}_f1").compute()
-            pl_module.log(f"{loss_name}/{phase}/f1_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_f1").reset()
-            acc = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", acc)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                f1_string = f'Epoch: {epoch}, F1 Score on {phase} Set: {value} \n\n'
-                f.write(f1_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {acc} \n\n'
-                f.write(acc_string)
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss","f1"], 
+                          include_summary_value=True)
+
         elif loss_name == 'rte':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
+
         elif loss_name == 'wnli':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
+
         elif loss_name == 'sst2':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
                 
         elif loss_name == 'stsb':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_spearman").compute()
-            pl_module.log(f"{loss_name}/{phase}/spearman_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_spearman").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                spearman_string = f'Epoch: {epoch}, Spearman on {phase} Set: {value} \n\n'
-                f.write(spearman_string)
+             write_metrics(pl_module, 
+                           phase, 
+                           loss_name, 
+                           ["loss","spearman"], 
+                           include_summary_value=True)
             
         elif loss_name == 'qqp':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
             
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
         elif loss_name == 'qnli':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+             write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
+             
         elif loss_name == 'mnli':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=True)
+             
         elif loss_name == 'cola':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_mcc").compute()
-            pl_module.log(f"{loss_name}/{phase}/mcc_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_mcc").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                mcc_string = f'Epoch: {epoch}, Matthews Correlation on {phase} Set: {value} \n\n'
-                f.write(mcc_string)
+             write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["mcc","loss"], 
+                          include_summary_value=True)
+             
         elif loss_name == 'cifar10':
-            epoch = pl_module.current_epoch
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            loss =  getattr(pl_module, f"{phase}_{loss_name}_loss").compute()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                loss)
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
-            
-            log_dir = pl_module.logger.log_dir
-            file_path = os.path.join(log_dir, 'eval.txt')
-            with open(file_path,'a') as f:
-                loss_string = f'Epoch: {epoch}, Final Loss on {phase} Set: {loss} \n'
-                f.write(loss_string)
-                acc_string = f'Epoch: {epoch}, Acurracy on {phase} Set: {value} \n\n'
-                f.write(acc_string)
+             write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["accuracy","loss"], 
+                          include_summary_value=False)
+             
         elif loss_name == "irtr":
             pl_module.log(
                 f"{loss_name}/{phase}/irtr_loss_epoch",
@@ -386,16 +320,13 @@ def epoch_wrapup(pl_module):
                 getattr(pl_module, f"{phase}_{loss_name}_loss").compute(),
             )
             getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
+
         elif loss_name == "itm":
-            value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
-            pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value, sync_dist=True)
-            getattr(pl_module, f"{phase}_{loss_name}_accuracy").reset()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                getattr(pl_module, f"{phase}_{loss_name}_loss").compute(),
-                sync_dist=True
-            )
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["loss"], 
+                          include_summary_value=False)
         else:
             value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()
             pl_module.log(f"{loss_name}/{phase}/accuracy_epoch", value, sync_dist=True)

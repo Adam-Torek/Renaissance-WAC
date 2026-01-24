@@ -154,6 +154,7 @@ def config():
     # below params varies with the environment
     data_root = 'data/arrow/' 
     log_dir = "result"
+    csv_log_file = None
     num_gpus = 2
     num_nodes = 1
     num_workers = 12
@@ -315,6 +316,7 @@ def finetune_cola_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"cola":1})
+    csv_log_file = "glue_results/glue.csv"
     
     batch_size = 128
     per_gpu_batchsize = 128
@@ -345,6 +347,7 @@ def finetune_mnli_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"mnli": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -376,6 +379,7 @@ def finetune_mrpc_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"mrpc": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -406,6 +410,7 @@ def finetune_qqp_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"qqp": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -436,6 +441,7 @@ def finetune_qnli_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"qnli": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -466,6 +472,7 @@ def finetune_rte_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"rte": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -496,6 +503,7 @@ def finetune_sst2_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"sst2": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -526,6 +534,7 @@ def finetune_stsb_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"stsb": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -556,6 +565,7 @@ def finetune_wnli_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"wnli": 1})
+    csv_log_file = "glue_results/glue.csv"
 
     batch_size = 128
     per_gpu_batchsize = 128

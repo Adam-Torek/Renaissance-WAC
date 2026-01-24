@@ -3,3 +3,4 @@ data/
 result/*
 results/*
 slurm_logs/*
+glue_results/*

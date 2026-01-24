@@ -58,6 +58,7 @@ class RenaissanceTransformer(pl.LightningModule):
         self.test_only = (self.hparams.config["load_path"] != "" 
             and self.hparams.config["test_only"])
         
+        self.exp_name = config["exp_name"]
         
         if self.fine_tune or self.test_only:
             ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
@@ -77,6 +78,8 @@ class RenaissanceTransformer(pl.LightningModule):
         self.current_training_step = 0
         self.wac_train_steps = None
         self.vocab = []
+        
+        self.csv_log_file = config['csv_log_file']
         
         if self.model_type == 'one-tower':
             self.pooler_type = config['pooler_type']
