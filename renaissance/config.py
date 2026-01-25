@@ -322,10 +322,11 @@ def finetune_cola_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -353,10 +354,11 @@ def finetune_mnli_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -385,10 +387,12 @@ def finetune_mrpc_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
+   
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -416,10 +420,11 @@ def finetune_qqp_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -447,10 +452,12 @@ def finetune_qnli_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
+
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -478,10 +485,12 @@ def finetune_rte_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
+
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -509,10 +518,12 @@ def finetune_sst2_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
+
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -540,10 +551,11 @@ def finetune_stsb_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
@@ -571,10 +583,12 @@ def finetune_wnli_onetower_electrasmall():
     per_gpu_batchsize = 128
     max_epoch = 10
     warmup_steps = 0.1
+    learning_rate = 5e-5
     whole_word_masking = False
+
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
