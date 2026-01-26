@@ -26,4 +26,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             iid = int(iid.split(".")[0].split("_")[-1])
             suite.update({"iid": iid})
 
+        text_index, _ = self.index_mapper[index]
+        suite["label"] = self.table["labels"][text_index].as_py()
+
         return suite

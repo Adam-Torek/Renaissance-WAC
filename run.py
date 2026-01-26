@@ -155,14 +155,20 @@ def run_experiment(_config):
         num_sanity_val_steps=0,
     )
 
-    if model.wac_models is not None:
-        print("WAC models enabled. Starting construction of WAC features.")
-        dm.setup(stage="fit")
-        training_dataloader = dm.train_dataloader()
-        model.build_wac_features(training_dataloader)
-        print("WAC datasets constructed. Starting model training.")
+    
 
     if not _config["test_only"]:
+        if model.wac_models is not None:
+            print("WAC models enabled. Starting construction of WAC features.")
+            dm.setup(stage="fit")
+            training_dataloader = dm.train_dataloader()
+            val_dataloader = dm.val_dataloader()
+
+            model.build_wac_features(training_dataloader, split="train")
+            model.build_wac_features(val_dataloader, split="val")
+
+            print("WAC datasets constructed. Starting model training.")
+
         if _config["resume_from"]:
             trainer.fit(model, datamodule=dm, ckpt_path=_config["resume_from"])
         else:
@@ -187,6 +193,14 @@ def run_experiment(_config):
         print()
         
     else:
+        if model.wac_models is not None:
+            print("WAC models enabled. Starting construction of WAC features.")
+            dm.setup(stage="test")
+            test_dataloader = dm.test_dataloader()
+            
+            model.build_wac_features(test_dataloader, split="test")
+            print("WAC datasets constructed. Starting model training.")
+
         trainer.test(model, datamodule=dm)
     pass
 

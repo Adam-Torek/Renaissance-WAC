@@ -67,6 +67,7 @@ class TwoTowerConfig(PretrainedConfig):
 
     def __init__(self, 
                  config=None, 
+                 wac_embedding_size=None,
                  **kwargs):
 
         if config is not None:
@@ -85,11 +86,11 @@ class TwoTowerConfig(PretrainedConfig):
                         'intermediate_size' : config["text_encoder_hidden_size"] * config["text_encoder_mlp_ratio"],
                         'hidden_dropout_prob' : config["text_encoder_drop_rate"],
                         'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
-                        'wac_embedding_size': config['wac_embedding_size'],
+                        'wac_embedding_size': wac_embedding_size,
                         'wac_distribution_matrix': config['wac_distribution_matrix'],
                     }
                     if 'wac' in config['text_encoder']:
-                        text_encoder_kwargs['wac_embedding_size'] = config['wac_embedding_size']
+                        text_encoder_kwargs['wac_embedding_size'] = wac_embedding_size
                         text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
                         self.text_config = WACConfig(**text_encoder_kwargs)
                     else:
@@ -97,7 +98,7 @@ class TwoTowerConfig(PretrainedConfig):
                 else:
                     if 'wac' in config['text_encoder']:
                         wac_encoder_kwargs = {
-                            'wac_embedding_size': config['wac_embedding_size'],
+                            'wac_embedding_size': wac_embedding_size,
                             'wac_distribution_matrix': config['wac_distribution_matrix'],
                             }
                         

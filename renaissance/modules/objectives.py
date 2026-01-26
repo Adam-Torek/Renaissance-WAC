@@ -182,18 +182,12 @@ def compute_itm(pl_module, batch):
 #  
 def compute_ref(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
-    targets = batch[1]
-    batch = batch[0]
-    logit_list = []
-    for i,b in enumerate(batch):
-
-        infer_dict = pl_module.infer(b)
-        logits = pl_module.ref_classifier(infer_dict['cls_feats'])
-        logit_list.append(logits.reshape(1,-1))
+    targets = batch["label"]
+    batch = batch.pop("label")
+   
+    infer_dict = pl_module.infer(batch)
+    logit_tensor = pl_module.ref_classifier(infer_dict['cls_feats'])
     
-        # print('Sanity Check')
-            
-    logit_tensor = torch.cat(logit_list)
     # target_tensor = torch.tensor(targets)#.to('cuda')
     loss = F.cross_entropy(logit_tensor, targets)
     

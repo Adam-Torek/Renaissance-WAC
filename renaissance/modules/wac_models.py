@@ -18,11 +18,14 @@ class WACModels():
                  position_size: int, 
                  neg_to_pos: int=3,
                  num_cores: int=-1,
+                 wac_feature_splits: list[str] = ["train","val","test"],
                  **wac_kwargs: Unpack[dict],) -> None:
         
         self.save_directory = save_directory
         self.vocab = []
         self.special_vocab = []
+        self.splits_to_use = wac_feature_splits
+        self.current_split = "train"
 
         for word in vocab:
             word = re.sub(r"/", "{slash}", word)
@@ -42,12 +45,19 @@ class WACModels():
         # multiple times
         self.positive_feature_ids = {}
 
-        # Dictionary used to store WAC features
-        self.wac_features = {}
-
         # Keep track of active features to be used
         # in the next training round
         self.current_wac_datasets = {}
+
+        # Dictionary used to store WAC features
+        self.wac_features = {}
+        for split in self.splits_to_use:
+            self.wac_features[split] = {}
+            self.positive_feature_ids[split] = {} 
+            self.current_wac_datasets[split] = {}
+            for word in self.vocab:
+                self.positive_feature_ids[split][word] = set()
+                self.current_wac_datasets[split][word] = None
         
         # Create WAC models for each word and add 
         # an empty dataset, empty current feature ID, and 
@@ -55,8 +65,11 @@ class WACModels():
         self.wac_models = {}
         for word in self.vocab:
             self.wac_models[word] = SGDClassifier(loss="log_loss",**wac_kwargs)
-            self.positive_feature_ids[word] = set()
-            self.current_wac_datasets[word] = None
+
+    def set_current_split(self, split: str) -> None:
+        if split not in self.splits_to_use:
+            raise ValueError(f"Split {split} is not an available split. You must select from the following: {str(self.splits_to_use)}")
+        self.current_split = split
 
     def add_word_sample(self, 
                         word: str, 
@@ -72,27 +85,31 @@ class WACModels():
 
         # Do not add the visual feature to the WAC dataset to train if it already exists
         else:
-            if label == 1 and feature_id in self.positive_feature_ids[word]:
+            if label == 1 and feature_id in self.positive_feature_ids[self.current_split][word]:
                 return
         
         # Create the temporary training dataset dict if it does not exist
-        if self.current_wac_datasets[word] is None:
-            self.current_wac_datasets[word] = {"pos": [], "neg": []}
+        if self.current_wac_datasets[self.current_split][word] is None:
+            self.current_wac_datasets[self.current_split][word] = {"pos": [], "neg": []}
 
         # Add visual feature and feature ID to current WAC database
         if label == 1:
-            self.current_wac_datasets[word]["pos"].append(feature_id)
-            self.positive_feature_ids[word].add(feature_id)
+            self.current_wac_datasets[self.current_split][word]["pos"].append(feature_id)
+            self.positive_feature_ids[self.current_split][word].add(feature_id)
         elif label == 0:
-            self.current_wac_datasets[word]["neg"].append(feature_id)
+            self.current_wac_datasets[self.current_split][word]["neg"].append(feature_id)
         else:
             raise ValueError(f"Label {str(label)} is not 0 (negative) or 1 (positive)")
         
-    def add_features(self, feature_ids, wac_features):
-        for feature_id, wac_feature in zip(feature_ids, wac_features):
-            self.wac_features[feature_id] = wac_feature
+    def add_features(self, 
+                     feature_ids: list[int], 
+                     wac_features: list[np.ndarray],
+                     split: str):
         
-    def add_positive(self, word, feature_id) -> None:
+        for feature_id, wac_feature in zip(feature_ids, wac_features):
+            self.wac_features[split][feature_id] = wac_feature
+        
+    def add_positive(self, word: str, feature_id: int) -> None:
         self.add_word_sample(word, feature_id, 1)
 
     def sample_negatives(self) -> None:
@@ -100,20 +117,20 @@ class WACModels():
 
         # Get the possible sample feature space for each word that
         # has positive features added to it 
-        for word, dataset in self.current_wac_datasets.items():
+        for word, dataset in self.current_wac_datasets[self.current_split].items():
             if dataset is None:
                 continue
-            feature_sample_space[word] = dataset["pos"]
+            feature_sample_space[self.current_split][word] = dataset["pos"]
 
         # Do the negative sampling for each word with a defined dataset
         for word, dataset in feature_sample_space.items():
             # Get the number of negatives to sample for this word
-            num_negatives = len(self.current_wac_datasets[word]["pos"]) * self.neg_to_pos
+            num_negatives = len(self.current_wac_datasets[self.current_split][word]["pos"]) * self.neg_to_pos
             negative_samples = []
 
             # Get a possible list of negative features to sample
-            sample_space = list(self.wac_features.keys())
-            for feature_id in self.positive_feature_ids[word]:
+            sample_space = list(self.wac_features[self.current_split].keys())
+            for feature_id in self.positive_feature_ids[self.current_split][word]:
                 sample_space.remove(feature_id)
 
             # Get the actual sample of negative features for this word
@@ -127,7 +144,7 @@ class WACModels():
 
         # Get the model to train and the assembled dataset
         model_to_train = self.wac_models[word]
-        wac_dataset = self.current_wac_datasets[word]
+        wac_dataset = self.current_wac_datasets[self.current_split][word]
 
         wac_training_features = []
         wac_training_labels = []
@@ -170,7 +187,7 @@ class WACModels():
             num_cores = self.num_cores
 
         # Get the WAC models to train
-        words_to_use = [key for key, value in self.current_wac_datasets.items() if value is not None]
+        words_to_use = [key for key, value in self.current_wac_datasets[self.current_split].items() if value is not None]
         trained_model_list = []
 
         # Attempt to train models using multi-processing 
@@ -189,7 +206,7 @@ class WACModels():
         # Save the trained wac models, clear out temporary datasets, and add feature IDs to 
         # use feature IDS list
         for word, trained_model in trained_model_list:
-            self.current_wac_datasets[word] = None
+            self.current_wac_datasets[self.current_split][word] = None
             self.wac_models[word] = trained_model
 
     def get_distributions(self, indices: list[int]) -> dict:
@@ -198,7 +215,7 @@ class WACModels():
         # words dict
         word_features = []
         for index in indices:
-            word_features.append(self.wac_features[index])
+            word_features.append(self.wac_features[self.current_split][index])
         word_features = np.stack(word_features)
 
         probability_dict = {}

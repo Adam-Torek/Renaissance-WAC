@@ -102,7 +102,7 @@ class RenaissanceTransformer(pl.LightningModule):
         
         elif self.model_type == 'two-tower':
 
-            if config['wac_embedding_size'] is not None or config['wac_distribution_matrix'] is not None:
+            if config['use_wac_embeddings'] or config['wac_distribution_matrix'] is not None:
                 wac_image_encoder_path = config['wac_image_encoder']
                 if wac_image_encoder_path is None:
                     raise ValueError("WAC image encoder must be defined if WAC models are enabled")
@@ -141,9 +141,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 for special_word in wac_tokenizer.special_tokens_map.values():
                     special_vocab.append(special_word)
 
-                config['wac_embedding_size'] = wac_embedding_size + config['position_size'] + 1
-
-                self.wac_embedding_size = config['wac_embedding_size']
+                self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
                 self.wac_train_steps = config['wac_train_steps']
                 self.current_training_step = 0
@@ -201,7 +199,7 @@ class RenaissanceTransformer(pl.LightningModule):
 
                 self.current_training_epoch = 0
 
-            two_tower_config = TwoTowerConfig(config)
+            two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
             self.encoder = TwoTowerEncoder(
                 two_tower_config,
@@ -539,9 +537,17 @@ class RenaissanceTransformer(pl.LightningModule):
         self.current_training_step += 1
 
         return total_loss
-
+    
+    def on_train_epoch_start(self):
+        if self.wac_models is not None:
+            self.wac_models.set_current_split("train")
+    
     def on_train_epoch_end(self):
         renaissance_utils.epoch_wrapup(self)
+
+    def on_validation_epoch_start(self):
+        if self.wac_models is not None:
+            self.wac_models.set_current_split("val")
 
     def validation_step(self, batch, batch_idx):
         renaissance_utils.set_task(self)
@@ -615,7 +621,7 @@ class RenaissanceTransformer(pl.LightningModule):
         
         del self.save_directory
 
-    def build_wac_features(self, dm):
+    def build_wac_features(self, dm, split):
         with torch.no_grad():
             device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
             self.wac_image_encoder = self.wac_image_encoder.to(device)
@@ -634,6 +640,4 @@ class RenaissanceTransformer(pl.LightningModule):
                 wac_features = torch.cat([image_features, position_data], dim=1)
                 wac_features = wac_features.cpu().numpy()
                 
-                self.wac_models.add_features(feature_ids, wac_features)
-
-        self.wac_image_encoder = None
+                self.wac_models.add_features(feature_ids, wac_features, split)

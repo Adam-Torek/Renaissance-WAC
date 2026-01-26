@@ -161,12 +161,11 @@ def config():
     precision = 32
 
     # WAC distribution and embedding settings
-    wac_embedding_size = None
+    use_wac_embeddings = False
     wac_distribution_matrix = None
     wac_image_encoder = None
 
     # WAC model settings
-    embedding_size = None
     position_size = 7
     save_directory = None
     neg_to_pos = None
@@ -276,7 +275,7 @@ def pretrain_wac_onetower_electrasmall():
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 50
-    max_train_steps = 500
+    max_steps = 500
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -298,7 +297,7 @@ def pretrain_wac_onetower_electrasmall():
     use_image_encoder = False
 
     # WAC model settings
-    wac_embedding_size = 512
+    use_wac_embeddings = True
     wac_distribution_matrix = "value"
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
