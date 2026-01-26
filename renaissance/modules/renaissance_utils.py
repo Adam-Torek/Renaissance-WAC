@@ -47,7 +47,7 @@ def write_metrics(pl_module, phase, loss_name, metric_names, include_summary_val
         log_dir = pl_module.logger.log_dir
         file_path = os.path.join(log_dir, 'eval.txt')
         with open(file_path,'a') as f:
-            eval_write_string = f'Epoch: {epoch}, Final {metric_name} on {phase} Set: {loss_name} \n'
+            eval_write_string = f'Epoch: {epoch}, Final {metric_name} on {phase} Set: {metric_value} \n'
             f.write(eval_write_string)
         
         if include_summary_value:

@@ -134,6 +134,9 @@ def config():
     # Visual Question Answering
     vqav2_label_size = 3129
 
+    # RefCOCO label size
+    refcoco_label_size = 75
+
     # Optimizer Setting
     optim_type = "adamw"
     learning_rate = 1e-5
@@ -299,10 +302,10 @@ def pretrain_wac_onetower_electrasmall():
     # WAC model settings
     use_wac_embeddings = True
     wac_distribution_matrix = "value"
-    wac_image_encoder = "openai/clip-vit-base-patch16"
+    wac_image_encoder = "openai/clip-vit-base-patch32"
     save_directory = "wac_models"
-    wac_train_steps = 5
-    num_cores = 0
+    #wac_train_steps = 5
+    num_cores = 32
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"

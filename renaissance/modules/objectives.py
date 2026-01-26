@@ -13,7 +13,6 @@ from einops import rearrange
 
 from .dist_utils import all_gather
 
-
 def compute_mlm(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
     infer = pl_module.infer(batch, mask_text=True, mask_image=False)
@@ -182,13 +181,23 @@ def compute_itm(pl_module, batch):
 #  
 def compute_ref(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
-    targets = batch["label"]
-    batch = batch.pop("label")
+    targets = batch.pop("label")
    
     infer_dict = pl_module.infer(batch)
-    logit_tensor = pl_module.ref_classifier(infer_dict['cls_feats'])
+    if pl_module.model_type == "two-tower":
+        if pl_module.encoder.fusion_encoder is not None:
+            class_feats = infer_dict["cls_feats"]
+        elif pl_module.encoder.text_transformer is not None:
+            class_feats = infer_dict["text_feats"][:, 0, :]
+        elif pl_module.encoder.image_encoder is not None:
+            class_feats = infer_dict["img_feats"]
+    else:
+        class_feats = infer_dict["cls_feats"]
     
-    # target_tensor = torch.tensor(targets)#.to('cuda')
+    logit_tensor = pl_module.ref_classifier(class_feats)
+    
+    if targets.dim() == 1 and logit_tensor.dim() == 2 and logit_tensor.shape[1] == 1:
+        logit_tensor = logit_tensor.squeeze()
     loss = F.cross_entropy(logit_tensor, targets)
     
     # losses.append(loss.item())                                                       
@@ -208,7 +217,6 @@ def compute_ref(pl_module, batch):
     # pl_module.log(f"ref/{phase}/score", score)
     
     return ret
-  
 
 def compute_snli(pl_module, batch):
     infer = pl_module.infer(

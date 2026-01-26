@@ -219,7 +219,12 @@ class RenaissanceTransformer(pl.LightningModule):
             elif self.pooler_type == 'double':
                 hs = 2*self.hidden_size
         else:
-            hs = 2*self.hparams.config["cross_layer_hidden_size"]
+            if config["use_text_encoder"] is False or config["use_image_encoder"] is False:
+                hs_multiplier = 1
+            else:
+                hs_multiplier = 2
+
+            hs = hs_multiplier*self.hparams.config["cross_layer_hidden_size"]
         
         # Masked Language Modeling
         if self.hparams.config["loss_names"]["mlm"] > 0:
@@ -279,9 +284,10 @@ class RenaissanceTransformer(pl.LightningModule):
         
         # Initialize Reference Resolution Classifier
         if self.hparams.config["loss_names"]['ref'] > 0:
+            vs = config["refcoco_label_size"]
             self.ref_classifier = heads.MultiModalClassificationHead(
                 hidden_size=hs, 
-                num_labels=1
+                num_labels=vs,
             )
             self.ref_classifier.apply(objectives.init_weights)
         
@@ -621,11 +627,13 @@ class RenaissanceTransformer(pl.LightningModule):
         
         del self.save_directory
 
+    def delete_wac_image_encoder(self):
+        self.wac_image_encoder = None
+
     def build_wac_features(self, dm, split):
         with torch.no_grad():
             device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
             self.wac_image_encoder = self.wac_image_encoder.to(device)
-
             for batch in tqdm.tqdm(dm):
                 subimages = batch["subimage"][0].to(device)
                 input_ids = batch["text_ids"].to(device)
@@ -641,3 +649,4 @@ class RenaissanceTransformer(pl.LightningModule):
                 wac_features = wac_features.cpu().numpy()
                 
                 self.wac_models.add_features(feature_ids, wac_features, split)
+

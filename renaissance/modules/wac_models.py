@@ -1,8 +1,9 @@
 from typing import Unpack
 from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import random
-import multiprocessing as mp
+from multiprocessing import Pool
 import os
 import json
 import pickle
@@ -58,6 +59,8 @@ class WACModels():
             for word in self.vocab:
                 self.positive_feature_ids[split][word] = set()
                 self.current_wac_datasets[split][word] = None
+
+        self.scaler = MinMaxScaler()
         
         # Create WAC models for each word and add 
         # an empty dataset, empty current feature ID, and 
@@ -104,7 +107,7 @@ class WACModels():
     def add_features(self, 
                      feature_ids: list[int], 
                      wac_features: list[np.ndarray],
-                     split: str):
+                     split: str) -> None:
         
         for feature_id, wac_feature in zip(feature_ids, wac_features):
             self.wac_features[split][feature_id] = wac_feature
@@ -120,7 +123,7 @@ class WACModels():
         for word, dataset in self.current_wac_datasets[self.current_split].items():
             if dataset is None:
                 continue
-            feature_sample_space[self.current_split][word] = dataset["pos"]
+            feature_sample_space[word] = dataset["pos"]
 
         # Do the negative sampling for each word with a defined dataset
         for word, dataset in feature_sample_space.items():
@@ -131,7 +134,8 @@ class WACModels():
             # Get a possible list of negative features to sample
             sample_space = list(self.wac_features[self.current_split].keys())
             for feature_id in self.positive_feature_ids[self.current_split][word]:
-                sample_space.remove(feature_id)
+                if feature_id in sample_space:
+                    sample_space.remove(feature_id)
 
             # Get the actual sample of negative features for this word
             negative_samples = random.sample(sample_space, k=num_negatives)
@@ -140,40 +144,22 @@ class WACModels():
             for feature_id in negative_samples:
                 self.add_word_sample(word, feature_id, 0)
 
-    def _train_single_model(self, word: str) -> tuple:
-
-        # Get the model to train and the assembled dataset
-        model_to_train = self.wac_models[word]
-        wac_dataset = self.current_wac_datasets[self.current_split][word]
-
-        wac_training_features = []
-        wac_training_labels = []
-
-        # Assemble the dataset and feature IDs
-        for feature_key in ["pos","neg"]:
-            for feature_id in wac_dataset[feature_key]:
-
-                # Get the feature embedding and feature ID 
-                # And add them to the training dataset
-                feature_embedding = self.wac_features[feature_id]
-                wac_training_features.append(feature_embedding)
-
-                label = 1 if feature_key == "pos" else 0
-                wac_training_labels.append(label)
-        
-        # Create the training dataset and labels for training
-        wac_training_features = np.array(wac_training_features)
-        wac_training_labels = np.array(wac_training_labels)
+    def _train_single_model(self, 
+                            word: str, 
+                            wac_training_features: np.array, 
+                            wac_training_labels: np.array) -> tuple:
 
         # Train the model and return it, the word, and training IDs
-        trained_model = model_to_train.fit(wac_training_features, wac_training_labels)
+        model_to_train = self.wac_models[word]
+        wac_training_features = self.scaler.fit_transform(wac_training_features)
+        model_to_train.fit(wac_training_features, wac_training_labels)
 
-        return (word, trained_model)
+        return (word, model_to_train)
     
-    def _train_models_single_thread(self, words_to_use: list[str]) -> list:
+    def _train_models_single_thread(self, datasets_to_train: list[tuple]) -> list:
         trained_model_list = []
-        for word in words_to_use:
-            trained_model_tuple = self._train_single_model(word)
+        for word, training_features, training_labels in datasets_to_train:
+            trained_model_tuple = self._train_single_model(word, training_features, training_labels)
             trained_model_list.append(trained_model_tuple)
 
         return trained_model_list
@@ -187,21 +173,36 @@ class WACModels():
             num_cores = self.num_cores
 
         # Get the WAC models to train
-        words_to_use = [key for key, value in self.current_wac_datasets[self.current_split].items() if value is not None]
-        trained_model_list = []
+        datasets_to_train = []
+        for word, dataset in self.current_wac_datasets[self.current_split].items():
+            if dataset is None:
+                continue
+            wac_training_features = []
+            wac_training_labels = []
+            for feature_key in ["pos","neg"]:
+                for feature_id in dataset[feature_key]:
+                    feature_embedding = self.wac_features[self.current_split][feature_id]
+                    wac_training_features.append(feature_embedding)
 
+                    label = 1 if feature_key == "pos" else 0
+                    wac_training_labels.append(label)
+            
+            wac_training_features = np.array(wac_training_features)
+            wac_training_labels = np.array(wac_training_labels)
+            datasets_to_train.append((word, wac_training_features, wac_training_labels))
+    
         # Attempt to train models using multi-processing 
         if self.num_cores == -1 or self.num_cores > 0:
             try:
-                with mp.Pool(processes=num_cores) as pool:
-                    trained_model_list = pool.map(self._train_single_model, words_to_use)
+                with Pool(processes=num_cores) as process_pool:
+                    trained_model_list = process_pool.starmap(self._train_single_model, datasets_to_train)
 
             # Train models in single-threaded mode if an error occurs in multiprocess mode
             except Exception as e:
                 print(f"Unable to use multiprocessing due to the following error: {str(e)}. Running in single process mode.")
-                trained_model_list = self._train_models_single_thread(words_to_use)
+                trained_model_list = self._train_models_single_thread(datasets_to_train)
         else:
-            trained_model_list = self._train_models_single_thread(words_to_use)
+            trained_model_list = self._train_models_single_thread(datasets_to_train)
 
         # Save the trained wac models, clear out temporary datasets, and add feature IDs to 
         # use feature IDS list

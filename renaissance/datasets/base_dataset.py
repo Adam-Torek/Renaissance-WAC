@@ -379,6 +379,9 @@ class BaseDataset(torch.utils.data.Dataset):
                     dict_batch["text_ids_mlm"] = collation_result["input_ids"]
                     dict_batch["text_masks"] = collation_result["attention_mask"]
                     dict_batch["text_labels_mlm"] = collation_result["labels"]
+
+            if "label" in dict_batch and not isinstance(dict_batch["label"], torch.Tensor):
+                dict_batch["label"] = torch.tensor(dict_batch["label"])
                     
         # Collate function for datasets derived from guggingface
         else:

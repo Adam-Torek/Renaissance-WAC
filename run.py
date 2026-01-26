@@ -167,6 +167,8 @@ def run_experiment(_config):
             model.build_wac_features(training_dataloader, split="train")
             model.build_wac_features(val_dataloader, split="val")
 
+            model.delete_wac_image_encoder()
+
             print("WAC datasets constructed. Starting model training.")
 
         if _config["resume_from"]:
