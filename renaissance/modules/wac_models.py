@@ -9,7 +9,6 @@ import json
 import pickle
 import re
 from mpi4py.futures import MPIPoolExecutor
-from torch import negative_
 
 class WACModels():
 
