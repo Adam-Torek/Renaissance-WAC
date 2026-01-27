@@ -2,7 +2,6 @@ from sacred import Experiment
 
 ex = Experiment("renaissance")
 
-
 def _loss_names(d):
     ret = {
         "itm": 0,
@@ -305,7 +304,7 @@ def pretrain_wac_onetower_electrasmall():
     wac_image_encoder = "openai/clip-vit-base-patch32"
     save_directory = "wac_models"
     #wac_train_steps = 5
-    num_cores = 32
+    num_cores = 8
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"

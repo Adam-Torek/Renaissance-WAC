@@ -8,6 +8,7 @@ import os
 import json
 import pickle
 import re
+from mpi4py.futures import MPIPoolExecutor
 
 class WACModels():
 
@@ -67,7 +68,7 @@ class WACModels():
         # empty past feature ID for each word
         self.wac_models = {}
         for word in self.vocab:
-            self.wac_models[word] = SGDClassifier(loss="log_loss",**wac_kwargs)
+            self.wac_models[word] = SGDClassifier(loss="log_loss", early_stopping=True, n_iter_no_change=5, **wac_kwargs)
 
     def set_current_split(self, split: str) -> None:
         if split not in self.splits_to_use:
@@ -115,32 +116,50 @@ class WACModels():
     def add_positive(self, word: str, feature_id: int) -> None:
         self.add_word_sample(word, feature_id, 1)
 
+    def _sample_word_negatives(self, word: str) -> tuple:
+        num_negatives = len(self.current_wac_datasets[self.current_split][word]["pos"]) * self.neg_to_pos
+        negative_samples = []
+
+        # Get a possible list of negative features to sample
+        sample_space = list(self.wac_features[self.current_split].keys())
+        for feature_id in self.positive_feature_ids[self.current_split][word]:
+            if feature_id in sample_space:
+                sample_space.remove(feature_id)
+
+        # Get the actual sample of negative features for this word
+        negative_samples = random.sample(sample_space, k=num_negatives)
+        return (word, negative_samples)
+
+    def update_wac_models(self, word_feature_ids: dict) -> None:
+        pass
+
     def sample_negatives(self) -> None:
-        feature_sample_space = {}
+        feature_sample_space = []
 
         # Get the possible sample feature space for each word that
         # has positive features added to it 
         for word, dataset in self.current_wac_datasets[self.current_split].items():
-            if dataset is None:
+            if dataset is None or len(dataset["pos"]) == 0:
                 continue
-            feature_sample_space[word] = dataset["pos"]
+            feature_sample_space.append(word)
 
+        negative_word_samples = []
         # Do the negative sampling for each word with a defined dataset
-        for word, dataset in feature_sample_space.items():
-            # Get the number of negatives to sample for this word
-            num_negatives = len(self.current_wac_datasets[self.current_split][word]["pos"]) * self.neg_to_pos
-            negative_samples = []
+        if self.num_cores == -1 or self.num_cores > 0:
+            num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
+            try: 
+                with MPIPoolExecutor(max_workers=num_cores) as process_pool:
+                    negative_word_samples = process_pool.map(self._sample_word_negatives, feature_sample_space)
+            except Exception as e:
+                print(f"Unable to do multi-process negative word sampling due to the following error: {str(e)}. \
+                        Performing word sampling in single-process mode instead.")
+                for word in feature_sample_space:
+                    negative_word_samples.append(self._sample_word_negatives(word))
+        else:
+            for word in feature_sample_space:
+                negative_word_samples.append(self._sample_word_negatives(word))
 
-            # Get a possible list of negative features to sample
-            sample_space = list(self.wac_features[self.current_split].keys())
-            for feature_id in self.positive_feature_ids[self.current_split][word]:
-                if feature_id in sample_space:
-                    sample_space.remove(feature_id)
-
-            # Get the actual sample of negative features for this word
-            negative_samples = random.sample(sample_space, k=num_negatives)
-            
-            # Add the negative samples to the current word dataset 
+        for word, negative_samples in negative_word_samples:
             for feature_id in negative_samples:
                 self.add_word_sample(word, feature_id, 0)
 
@@ -166,12 +185,6 @@ class WACModels():
         
     def train_models(self) -> None:
 
-        # Get the number of cores to use for multiprocessing
-        if self.num_cores == -1:
-            num_cores = os.cpu_count()
-        else:
-            num_cores = self.num_cores
-
         # Get the WAC models to train
         datasets_to_train = []
         for word, dataset in self.current_wac_datasets[self.current_split].items():
@@ -194,7 +207,8 @@ class WACModels():
         # Attempt to train models using multi-processing 
         if self.num_cores == -1 or self.num_cores > 0:
             try:
-                with Pool(processes=num_cores) as process_pool:
+                num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
+                with MPIPoolExecutor(max_workers=num_cores) as process_pool:
                     trained_model_list = process_pool.starmap(self._train_single_model, datasets_to_train)
 
             # Train models in single-threaded mode if an error occurs in multiprocess mode

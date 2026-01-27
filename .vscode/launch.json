@@ -16,6 +16,18 @@
                 "with", "pretrain_wac_onetower_electrasmall"
             ]
         },
+
+        {
+            "name": "Test MPI Script",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "mpi_tester.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+              
+            ]
+        },
          {
             "name": "Create RefCOCO data",
             "type": "debugpy",

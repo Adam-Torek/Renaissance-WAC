@@ -91,6 +91,9 @@ def run_experiment(_config):
     print("LR Mult Head: ", _config['lr_mult_head'])  
     print("LR Mult Cross Modal: ", _config['lr_mult_cross_modal'])
     print('\n\n')
+
+    print()
+    print("Num WAC Cores: ", _config["num_cores"])
                
     if not load_path:
         image_size = _config['image_size']
