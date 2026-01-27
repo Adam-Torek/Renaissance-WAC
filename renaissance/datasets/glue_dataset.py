@@ -71,4 +71,3 @@ class GlueDataset(BaseDataset):
         ret['label'] = label
         return ret
     
-    

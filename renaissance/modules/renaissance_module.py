@@ -454,13 +454,13 @@ class RenaissanceTransformer(pl.LightningModule):
                 if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0:
                     indices = batch["raw_index"]
                     
+                    word_feature_ids = {}
                     for tokenized_sentence in tokenized_words:
                         for word in tokenized_sentence:
-                            for index in indices:
-                                self.wac_models.add_positive(word, feature_id=index)
+                            if word not in word_feature_ids:
+                                word_feature_ids[word] = indices
                     
-                    self.wac_models.sample_negatives()
-                    self.wac_models.train_models()
+                    self.wac_models.update_wac_models(word_feature_ids)
                                 
                 if self.wac_embedding_size is not None:
                     batch_size, seq_length = input_ids.shape

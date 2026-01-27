@@ -9,6 +9,7 @@ import json
 import pickle
 import re
 from mpi4py.futures import MPIPoolExecutor
+from torch import negative_
 
 class WACModels():
 
@@ -129,9 +130,70 @@ class WACModels():
         # Get the actual sample of negative features for this word
         negative_samples = random.sample(sample_space, k=num_negatives)
         return (word, negative_samples)
+    
+    def _update_wac_model_word(self, word: str, positive_feature_ids: list[int]) -> None:
+        positive_features = []
+        for pos_feature_id in positive_feature_ids:
+            self.positive_feature_ids[self.current_split][word].add(pos_feature_id)
+            positive_features.append(pos_feature_id)
+        
+        num_negative_features = len(positive_features) * self.neg_to_pos
+        negative_feature_space = list(self.wac_features.keys())
+        for pos_feature_id in self.positive_feature_ids[self.current_split][word]:
+            if pos_feature_id in self.positive_feature_ids:
+                negative_feature_space.remove(pos_feature_id)
+
+        negative_feature_ids = list(random.sample(negative_feature_ids, k=num_negative_features))
+
+        feature_dataset = []
+        feature_labels = []
+
+        for pos_feature_id in positive_feature_ids:
+            feature_dataset.append(self.wac_features[pos_feature_id])
+            feature_labels.append(1)
+        
+        for neg_feature_id in negative_feature_ids:
+            feature_dataset.append(self.wac_features[neg_feature_id])
+            feature_labels.append(0)
+
+        feature_dataset = np.array(feature_dataset)
+        feature_labels = np.array(feature_labels)
+
+        complete_dataset = np.concat([feature_dataset, feature_labels], dim=1)
+        randomizer = np.random.default_rng()
+        shuffled_dataset = randomizer.shuffle(complete_dataset, axis=0)
+
+        randomized_features = shuffled_dataset[:, :-1]
+        randomized_labels = shuffled_dataset[:, -1]
+
+        randomized_features = self.scaler.fit_transform(randomized_features)
+        model_to_train = self.wac_models[word]
+        model_to_train.fit(randomized_features, randomized_labels)
+
+        return (word, model_to_train, positive_feature_ids)
 
     def update_wac_models(self, word_feature_ids: dict) -> None:
-        pass
+        num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
+        trained_model_results = []
+        if num_cores == 0:
+            for word, pos_feature_ids in word_feature_ids.items():
+                word_model = self._update_wac_model_word(word, pos_feature_ids)
+                trained_model_results.append(word_model)
+        else:
+            try:
+                with get_context("spawn").Pool(processes=num_cores) as process_pool:
+                    training_model_arguments = list(word_feature_ids.items())
+                    trained_model_results = process_pool.starmap(self._update_wac_model_word, training_model_arguments)
+            except Exception as e:
+                print(f"Unable to use multi-process approach due to the following exception: {str(e)}. \
+                        Using single-process approach instead.")
+                for word, pos_feature_ids in word_feature_ids.items():
+                    word_model = self._update_wac_model_word(word, pos_feature_ids)
+                    trained_model_results.append(word_model)
+        
+        for word, model, pos_feature_ids in trained_model_results:
+            self.wac_models[word] = model
+            self.positive_feature_ids[self.current_split][word].update(pos_feature_ids)
 
     def sample_negatives(self) -> None:
         feature_sample_space = []
