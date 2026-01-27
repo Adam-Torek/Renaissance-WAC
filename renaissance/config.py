@@ -274,8 +274,8 @@ def pretrain_wac_onetower_electrasmall():
     model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    batch_size = 128
-    per_gpu_batchsize = 128
+    batch_size = 64
+    per_gpu_batchsize = 64
     max_epoch = 50
     max_steps = 500
     warmup_steps = 0.1
@@ -304,7 +304,7 @@ def pretrain_wac_onetower_electrasmall():
     wac_image_encoder = "openai/clip-vit-base-patch32"
     save_directory = "wac_models"
     #wac_train_steps = 5
-    num_cores = 8
+    num_cores = 0
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"

@@ -3,7 +3,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import random
-from multiprocessing import Pool
+from multiprocessing import get_context
 import os
 import json
 import pickle
@@ -148,7 +148,7 @@ class WACModels():
         if self.num_cores == -1 or self.num_cores > 0:
             num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
             try: 
-                with MPIPoolExecutor(max_workers=num_cores) as process_pool:
+                with get_context("spawn").Pool(processes=num_cores) as process_pool:
                     negative_word_samples = process_pool.map(self._sample_word_negatives, feature_sample_space)
             except Exception as e:
                 print(f"Unable to do multi-process negative word sampling due to the following error: {str(e)}. \
@@ -208,7 +208,7 @@ class WACModels():
         if self.num_cores == -1 or self.num_cores > 0:
             try:
                 num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
-                with MPIPoolExecutor(max_workers=num_cores) as process_pool:
+                with get_context("spawn").Pool(processes=num_cores) as process_pool:
                     trained_model_list = process_pool.starmap(self._train_single_model, datasets_to_train)
 
             # Train models in single-threaded mode if an error occurs in multiprocess mode
