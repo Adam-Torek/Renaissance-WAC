@@ -28,5 +28,6 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
         text_index, _ = self.index_mapper[index]
         suite["label"] = self.table["labels"][text_index].as_py()
+        suite["ann_id"] = self.table["ann_ids"][text_index].as_py()
 
         return suite

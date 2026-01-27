@@ -69,7 +69,7 @@ class WACModels():
         # empty past feature ID for each word
         self.wac_models = {}
         for word in self.vocab:
-            self.wac_models[word] = SGDClassifier(loss="log_loss", early_stopping=True, n_iter_no_change=5, **wac_kwargs)
+            self.wac_models[word] = SGDClassifier(loss="log_loss", **wac_kwargs)
 
     def set_current_split(self, split: str) -> None:
         if split not in self.splits_to_use:
@@ -138,33 +138,34 @@ class WACModels():
             positive_features.append(pos_feature_id)
         
         num_negative_features = len(positive_features) * self.neg_to_pos
-        negative_feature_space = list(self.wac_features.keys())
+        negative_feature_space = list(self.wac_features[self.current_split].keys())
+
         for pos_feature_id in self.positive_feature_ids[self.current_split][word]:
-            if pos_feature_id in self.positive_feature_ids:
+            if pos_feature_id in negative_feature_space:
                 negative_feature_space.remove(pos_feature_id)
 
-        negative_feature_ids = list(random.sample(negative_feature_ids, k=num_negative_features))
+        negative_feature_ids = list(random.sample(negative_feature_space, k=num_negative_features))
 
         feature_dataset = []
         feature_labels = []
 
         for pos_feature_id in positive_feature_ids:
-            feature_dataset.append(self.wac_features[pos_feature_id])
+            feature_dataset.append(self.wac_features[self.current_split][pos_feature_id])
             feature_labels.append(1)
         
         for neg_feature_id in negative_feature_ids:
-            feature_dataset.append(self.wac_features[neg_feature_id])
+            feature_dataset.append(self.wac_features[self.current_split][neg_feature_id])
             feature_labels.append(0)
 
         feature_dataset = np.array(feature_dataset)
-        feature_labels = np.array(feature_labels)
+        feature_labels = np.expand_dims(np.array(feature_labels), axis=1)
 
-        complete_dataset = np.concat([feature_dataset, feature_labels], dim=1)
+        complete_dataset = np.concatenate([feature_dataset, feature_labels], axis=1)
         randomizer = np.random.default_rng()
-        shuffled_dataset = randomizer.shuffle(complete_dataset, axis=0)
+        randomizer.shuffle(complete_dataset, axis=0)
 
-        randomized_features = shuffled_dataset[:, :-1]
-        randomized_labels = shuffled_dataset[:, -1]
+        randomized_features = complete_dataset[:, :-1]
+        randomized_labels =complete_dataset[:, -1]
 
         randomized_features = self.scaler.fit_transform(randomized_features)
         model_to_train = self.wac_models[word]

@@ -38,7 +38,7 @@ def process_ref(ref, path, Imgs, imgToAnns):
         bboxes.append(ann['bbox'])
     label = obj_ids.index(ann_id)
         
-    return [binary, sents, bboxes, label]    
+    return [binary, sents, bboxes, label, ann_id]    
 
 
 def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc'):
@@ -82,7 +82,7 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
             refs = [ref for ref in tqdm(data['refs']) if ref['split'] == split]
     
         item_list = [process_ref(ref, IMAGE_DIR, Imgs, imgToAnns) for ref in refs]
-        df = pd.DataFrame(item_list, columns=['image', 'sentences', 'bboxes', 'labels'])
+        df = pd.DataFrame(item_list, columns=['image', 'sentences', 'bboxes', 'labels', 'ann_ids'])
         table = pa.Table.from_pandas(df)
         
         os.makedirs(outfile_root, exist_ok=True)

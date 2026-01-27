@@ -452,13 +452,17 @@ class RenaissanceTransformer(pl.LightningModule):
                 tokenized_words = batch["tokenized_words"]
 
                 if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0:
-                    indices = batch["raw_index"]
+                    indices = batch["ann_id"]
                     
                     word_feature_ids = {}
-                    for tokenized_sentence in tokenized_words:
+                    for feat_index, tokenized_sentence in zip(indices, tokenized_words):
                         for word in tokenized_sentence:
                             if word not in word_feature_ids:
-                                word_feature_ids[word] = indices
+                                word_feature_ids[word] = set()
+                            word_feature_ids[word].add(feat_index)
+                    
+                    for word, ann_ids in word_feature_ids.items():
+                        word_feature_ids[word] = list(ann_ids)
                     
                     self.wac_models.update_wac_models(word_feature_ids)
                                 
@@ -634,12 +638,13 @@ class RenaissanceTransformer(pl.LightningModule):
         with torch.no_grad():
             device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
             self.wac_image_encoder = self.wac_image_encoder.to(device)
+
             for batch in tqdm.tqdm(dm):
                 subimages = batch["subimage"][0].to(device)
                 input_ids = batch["text_ids"].to(device)
                 attention_mask = batch["text_masks"].to(device)
                 position_data = torch.stack(batch["position_data"]).to(device)
-                feature_ids = batch["raw_index"]
+                feature_ids = batch["ann_id"]
               
                 image_features = self.wac_image_encoder(pixel_values=subimages, 
                                                         input_ids=input_ids, 
@@ -649,4 +654,3 @@ class RenaissanceTransformer(pl.LightningModule):
                 wac_features = wac_features.cpu().numpy()
                 
                 self.wac_models.add_features(feature_ids, wac_features, split)
-

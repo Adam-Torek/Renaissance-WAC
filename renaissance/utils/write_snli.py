@@ -18,8 +18,6 @@ def process(root, imgid, ann):
 
     return [img, sentences, labels]
 
-
-
 def write_snli(root, dataset_root):
     train_data = list(
         map(json.loads, open(f"{root}/snli_ve_train.jsonl").readlines())
@@ -31,13 +29,11 @@ def write_snli(root, dataset_root):
         map(json.loads, open(f"{root}/snli_ve_dev.jsonl").readlines())
     )
 
-
     splits = [
         "train",
         "dev",
         "test",
     ]
-
 
     annotations = dict()
     annotations['train'] = train_data
