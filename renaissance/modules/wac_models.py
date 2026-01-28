@@ -181,7 +181,7 @@ class WACModels():
                 trained_model_results.append(word_model)
         else:
             try:
-                with get_context("spawn").Pool(processes=num_cores) as process_pool:
+                with MPIPoolExecutor(max_workers=num_cores) as process_pool:
                     training_model_arguments = list(word_feature_ids.items())
                     trained_model_results = process_pool.starmap(self._update_wac_model_word, training_model_arguments)
             except Exception as e:

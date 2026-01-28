@@ -398,7 +398,7 @@ class RenaissanceTransformer(pl.LightningModule):
             self.image_hs = self.hidden_size
         else:
             if self.encoder.image_encoder is not None:
-                self.image_hs = self.encoder.image_encoder.config.hidden_state
+                self.image_hs = self.encoder.image_encoder.config.hidden_size
             else:
                 self.image_hs = None
         

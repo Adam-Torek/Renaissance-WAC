@@ -496,20 +496,10 @@ class LxmertCrossModalEncoder(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        lxmert_config = LxmertConfig(
-            vocab_size=config["vocab_size"],
-            hidden_size=config["cross_layer_hidden_size"],
-            num_attention_heads=config["num_cross_layer_heads"],
-            intermediate_size=config["cross_layer_hidden_size"] * config["cross_layer_mlp_ratio"],
-            max_position_embeddings=config["max_text_len"],
-            hidden_dropout_prob=config["cross_layer_drop_rate"],
-            attention_probs_dropout_prob=config["cross_layer_drop_rate"],
-        )        
-
-        self.cross_modal_layers = nn.ModuleList([LxmertXLayer(lxmert_config) for _ in range(config['num_cross_layers'])])
+        self.cross_modal_layers = nn.ModuleList([LxmertXLayer(config) for _ in range(config.num_hidden_layers['cross_encoder'])])
         
-        self.cross_modal_image_pooler = Pooler(config["cross_layer_hidden_size"])
-        self.cross_modal_text_pooler = Pooler(config["cross_layer_hidden_size"])
+        self.cross_modal_image_pooler = Pooler(config.hidden_size)
+        self.cross_modal_text_pooler = Pooler(config.hidden_size)
         
     def forward(
         self,
@@ -598,6 +588,7 @@ class TwoTowerEncoder(PreTrainedModel):
                     self.text_transformer = BertWACTransformer.from_pretrained(config.text_encoder_path)
                 else:
                     self.text_transformer = AutoModel.from_pretrained(config.text_encoder_path)
+                self.text_transformer.train()
             
             # Freeze Parameters for self.text_transformer
             if config.freeze_text_encoder:
