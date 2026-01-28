@@ -276,7 +276,7 @@ def pretrain_wac_twotower_electrasmall_deit_tiny():
     loss_names = _loss_names({"ref": 1})
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 10
+    max_epoch = 20
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
