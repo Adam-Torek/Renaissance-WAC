@@ -176,14 +176,7 @@ def compute_itm(pl_module, batch):
 
     return ret
 
-## Complete this method for batching
-#  Must also decide on how to organize batch in dataset and dataloader
-#  
-def compute_ref(pl_module, batch):
-    batch_size = pl_module.hparams.config['per_gpu_batchsize']
-    targets = batch.pop("label")
-   
-    infer_dict = pl_module.infer(batch)
+def get_output_features(infer_dict):
     if pl_module.model_type == "two-tower":
         if pl_module.encoder.fusion_encoder is not None:
             class_feats = infer_dict["cls_feats"]
@@ -193,6 +186,18 @@ def compute_ref(pl_module, batch):
             class_feats = infer_dict["img_feats"]
     else:
         class_feats = infer_dict["cls_feats"]
+    return class_feats
+
+
+## Complete this method for batching
+#  Must also decide on how to organize batch in dataset and dataloader
+#  
+def compute_ref(pl_module, batch):
+    batch_size = pl_module.hparams.config['per_gpu_batchsize']
+    targets = batch.pop("label")
+   
+    infer_dict = pl_module.infer(batch)
+    class_feats = get_output_features(infer_dict)
     
     logit_tensor = pl_module.ref_classifier(class_feats)
     
@@ -217,6 +222,13 @@ def compute_ref(pl_module, batch):
     # pl_module.log(f"ref/{phase}/score", score)
     
     return ret
+
+def compute_ref_bbox(pl_module, batch):
+    batch_size = pl_module.hparams.config['per_gpu_batchsize']
+    targets = batch.pop("label")
+    target_bboxes = batch.pop("bboxes")
+    
+    pass
 
 def compute_snli(pl_module, batch):
     infer = pl_module.infer(

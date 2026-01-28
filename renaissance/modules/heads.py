@@ -107,6 +107,34 @@ class MultiModalClassificationHead(nn.Module):
         x = self.activation(x)  # although BERT uses tanh here, it seems Electra authors used gelu here
         x = self.out_proj(x)
         return x
+
+class ObjectDetectionHead(nn.Module):
+
+    def __init__(self, hidden_size = None, num_labels = None, output_size=4, num_hidden_layers=3):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.num_labels = num_labels
+        self.num_hidden_layers = num_hidden_layers
+        self.output_size = output_size
+        self.classifier_layer = nn.Linear(hidden_size, num_labels)
+
+        h = [hidden_size] * (num_hidden_layers-1)
+        self.hidden_layers = nn.ModuleList([nn.Linear(n, k) for n, k in zip([hidden_size] + h, h + [output_size])])
+
+    def forward(self, features):
+        x = self.hidden_layers[0]
+        x = nn.functional.relu(x)
+        i = 1
+        for layer in self.hidden_layers[1:]:
+            x = layer(x)
+            i += 1
+            if i < self.num_hidden_layers - 1:
+                x = nn.functional.relu(x)
+
+        logits = self.clasifier_layer(features)
+        pred_bboxes = x
+        return (logits, pred_bboxes)
+        
     
 class NLVR2ClassificationHead(nn.Module):
     """Head for NLVR2 classification tasks."""

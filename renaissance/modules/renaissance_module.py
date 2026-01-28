@@ -290,6 +290,14 @@ class RenaissanceTransformer(pl.LightningModule):
                 num_labels=vs,
             )
             self.ref_classifier.apply(objectives.init_weights)
+
+        if self.hparams.config["loss_names"]["ref_bbox"] > 0:
+            vs = config["refcoco_label_size"]
+            self.ref_bbox = heads.ObjectDetectionHead(
+                hidden_size=hs,
+                num_labels=vs,
+            )
+            self.ref_bbox.apply(objectives.init_weights)
         
         # Text-Only Classification
         if self.model_type == 'one-tower':
