@@ -551,7 +551,10 @@ class RenaissanceTransformer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         renaissance_utils.set_task(self)
         output = self(batch)
-        total_loss = sum([v for k, v in output.items() if "loss" in k])
+        if "ref_bbox" in self.current_tasks:
+            total_loss = output["ref_bbox_loss"]
+        else:
+            total_loss = sum([v for k, v in output.items() if "loss" in k])
 
         self.current_training_step += 1
 
