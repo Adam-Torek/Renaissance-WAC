@@ -8,7 +8,6 @@ import os
 from tqdm import tqdm
 from glob import glob
 
-
 def path2rest(path, iid2captions):
     split, _, name = path.split("/")[-3:]
     split = split.split("_")[-1]
@@ -25,7 +24,6 @@ def path2rest(path, iid2captions):
         iid,
         split,
     ]
-
 
 def write_conceptual_caption(root, dataset_root):
     for split in ["val", "train"]:

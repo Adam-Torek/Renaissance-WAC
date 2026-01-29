@@ -34,6 +34,7 @@ objective_dict = {
     "snli": objectives.compute_snli,
     "irtr": objectives.compute_irtr,
     "ref": objectives.compute_ref,
+    "ref_bbox": objectives.compute_ref_bbox,
     "cola": objectives.compute_cola,
     "mnli": objectives.compute_mnli,
     "mrpc": objectives.compute_mrpc,

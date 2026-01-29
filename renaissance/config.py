@@ -15,6 +15,7 @@ def _loss_names(d):
         "contras": 0,
         "snli": 0,
         "ref": 0,
+        "ref_bbox": 0,
         "mrpc" : 0,
         "rte" : 0,
         'wnli' : 0,
@@ -135,6 +136,11 @@ def config():
 
     # RefCOCO label size
     refcoco_label_size = 75
+
+    #Bounding box weights
+    giou_weight = 5.0
+    cardinality_weight = 2.0
+    entropy_weight = 2.0
 
     # Optimizer Setting
     optim_type = "adamw"
@@ -273,7 +279,7 @@ def pretrain_wac_twotower_electrasmall_deit_tiny():
     exp_name = "wac_twotower_electrasmall_deit_tiny"
     model_type = "two-tower"
     datasets = ["coco"]
-    loss_names = _loss_names({"ref": 1})
+    loss_names = _loss_names({"ref_bbox": 1})
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 20

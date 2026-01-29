@@ -4,11 +4,14 @@ import torch.nn.functional as F
 import os
 import glob
 import json
+from torchvision.ops import giou_loss
 import tqdm
 import functools
 import copy
 
 from torch.utils.data.distributed import DistributedSampler
+from transformers.loss.loss_for_object_detection import generalized_box_iou
+from transformers.image_transforms import center_to_corners_format
 from einops import rearrange
 
 from .dist_utils import all_gather
@@ -176,7 +179,7 @@ def compute_itm(pl_module, batch):
 
     return ret
 
-def get_output_features(infer_dict):
+def get_output_features(pl_module, infer_dict):
     if pl_module.model_type == "two-tower":
         if pl_module.encoder.fusion_encoder is not None:
             class_feats = infer_dict["cls_feats"]
@@ -197,7 +200,7 @@ def compute_ref(pl_module, batch):
     targets = batch.pop("label")
    
     infer_dict = pl_module.infer(batch)
-    class_feats = get_output_features(infer_dict)
+    class_feats = get_output_features(pl_module, infer_dict)
     
     logit_tensor = pl_module.ref_classifier(class_feats)
     
@@ -226,9 +229,50 @@ def compute_ref(pl_module, batch):
 def compute_ref_bbox(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
     targets = batch.pop("label")
-    target_bboxes = batch.pop("bboxes")
-    
-    pass
+    target_bboxes = torch.stack(batch.pop("bounding_box")).to(targets.device)
+
+    giou_weight = pl_module.hparams.config['giou_weight']
+    cardinality_weight = pl_module.hparams.config['cardinality_weight']
+    entropy_weight = pl_module.hparams.config['entropy_weight']
+
+    infer_dict = pl_module.infer(batch)
+    class_feats = get_output_features(pl_module, infer_dict)
+
+    logits, pred_bboxes = pl_module.ref_bbox(class_feats)
+
+    target_bboxes = center_to_corners_format(pred_bboxes)
+    pred_bboxes = center_to_corners_format(pred_bboxes)
+
+    loss_giou = generalized_box_iou(pred_bboxes, target_bboxes).sum() / batch_size
+    loss_cardinality = F.l1_loss(pred_bboxes, target_bboxes)
+    loss_entropy = F.cross_entropy(logits, targets)
+   
+    loss_ref = (loss_giou * giou_weight) + (loss_cardinality * cardinality_weight) + (loss_entropy * entropy_weight)
+
+    ret = {
+        "ref_bbox_loss": loss_ref,
+        "ref_bbox_giou_loss": loss_giou,
+        "ref_bbox_cardinality_loss": loss_cardinality,
+        "ref_bbox_entropy_loss": loss_entropy,
+        "ref_bbox_logits": logits,
+        "ref_bbox_targets": targets,
+        "ref_bbox_pred_bboxes": pred_bboxes,
+        "ref_bbox_target_bboxes": target_bboxes,
+    }   
+
+    phase = "train" if pl_module.training else "val"
+    bbox_loss = getattr(pl_module, f"{phase}_ref_bbox_loss")(ret["ref_bbox_loss"])
+    giou_loss = getattr(pl_module, f"{phase}_ref_bbox_giou_loss")(ret["ref_bbox_giou_loss"])
+    cardinality_loss = getattr(pl_module, f"{phase}_ref_bbox_cardinality_loss")(ret["ref_bbox_cardinality_loss"])
+    entropy_loss = getattr(pl_module, f"{phase}_ref_bbox_entropy_loss")(ret["ref_bbox_entropy_loss"])
+    accuracy = getattr(pl_module, f"{phase}_ref_bbox_accuracy")(ret["ref_bbox_logits"], ret["ref_bbox_targets"])
+
+    pl_module.log(f"ref_bbox/{phase}/loss", bbox_loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"ref_bbox/{phase}/giou_loss", giou_loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"ref_bbox/{phase}/cardinality_loss", cardinality_loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"ref_bbox/{phase}/entropy_loss", entropy_loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"ref_bbox/{phase}/accuracy", accuracy, batch_size=batch_size, sync_dist=True)
+    return ret
 
 def compute_snli(pl_module, batch):
     infer = pl_module.infer(

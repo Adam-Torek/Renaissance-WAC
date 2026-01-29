@@ -122,17 +122,17 @@ class ObjectDetectionHead(nn.Module):
         self.hidden_layers = nn.ModuleList([nn.Linear(n, k) for n, k in zip([hidden_size] + h, h + [output_size])])
 
     def forward(self, features):
-        x = self.hidden_layers[0]
+        x = self.hidden_layers[0](features)
         x = nn.functional.relu(x)
         i = 1
         for layer in self.hidden_layers[1:]:
             x = layer(x)
-            i += 1
             if i < self.num_hidden_layers - 1:
                 x = nn.functional.relu(x)
+            i += 1
 
-        logits = self.clasifier_layer(features)
-        pred_bboxes = x
+        logits = self.classifier_layer(features)
+        pred_bboxes = x.sigmoid()
         return (logits, pred_bboxes)
         
     

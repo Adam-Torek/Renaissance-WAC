@@ -88,7 +88,12 @@ def set_metrics(pl_module):
             elif k == "ref":
                 setattr(pl_module, f"{split}_ref_accuracy", Accuracy())
                 setattr(pl_module, f"{split}_{k}_loss", Scalar())
-            
+            elif k == "ref_bbox":
+                setattr(pl_module, f"{split}_ref_bbox_loss", Scalar())
+                setattr(pl_module, f"{split}_ref_bbox_giou_loss", Scalar())
+                setattr(pl_module, f"{split}_ref_bbox_cardinality_loss", Scalar())
+                setattr(pl_module, f"{split}_ref_bbox_entropy_loss", Scalar())
+                setattr(pl_module, f"{split}_ref_bbox_accuracy", Accuracy())
             elif k == "nlvr2":
                 if split == "train":
                     setattr(pl_module, f"train_{k}_accuracy", Accuracy())
