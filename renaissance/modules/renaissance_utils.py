@@ -209,7 +209,16 @@ def epoch_wrapup(pl_module):
                           loss_name, 
                           ["accuracy","loss"], 
                           include_summary_value=True)
-             
+        elif loss_name == 'ref_bbox':
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["loss", 
+                           "giou_loss",
+                           "cardinality_loss",
+                           "entropy_loss",
+                           "accuracy"], 
+                          include_summary_value=False)
         elif loss_name == "nlvr2" or loss_name == 'snli':
             if phase == "train":
                 value = getattr(pl_module, f"train_{loss_name}_accuracy").compute()
