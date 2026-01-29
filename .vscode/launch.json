@@ -41,9 +41,9 @@
             "request": "launch",
             "program": "renaissance/utils/run_write.py",
             "console": "integratedTerminal",
-            "args": ["--dataset_to_write", "refcoco", 
-                     "--dataset_source_path", "data/coco/", 
-                     "--dataset_destination_path", "data/arrow/coco/"]
+            "args": ["--dataset_to_write", "sbu", 
+                     "--dataset_source_path", "data/sbucaptions/", 
+                     "--dataset_destination_path", "data/arrow/sbucaptions"]
         },
         {
             "name": "Upload Model to HuggingFace",
