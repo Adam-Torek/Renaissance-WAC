@@ -240,10 +240,9 @@ def compute_ref_bbox(pl_module, batch):
 
     logits, pred_bboxes = pl_module.ref_bbox(class_feats)
 
-    target_bboxes = center_to_corners_format(pred_bboxes)
-    pred_bboxes = center_to_corners_format(pred_bboxes)
-
-    loss_giou = generalized_box_iou(pred_bboxes, target_bboxes).sum() / batch_size
+    loss_giou = generalized_box_iou(center_to_corners_format(pred_bboxes), 
+                                    center_to_corners_format(target_bboxes)).sum() / batch_size
+    
     loss_cardinality = F.l1_loss(pred_bboxes, target_bboxes)
     loss_entropy = F.cross_entropy(logits, targets)
    

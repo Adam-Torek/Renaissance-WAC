@@ -138,9 +138,9 @@ def config():
     refcoco_label_size = 75
 
     #Bounding box weights
-    giou_weight = 5.0
-    cardinality_weight = 2.0
-    entropy_weight = 2.0
+    giou_weight = 2.0
+    cardinality_weight = 5.0
+    entropy_weight = 1.0
 
     # Optimizer Setting
     optim_type = "adamw"
