@@ -4,8 +4,8 @@
 #SBATCH -o slurm_logs/renaissance_wac/sbu_setup.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=48      # Number of CPU nodes per task to run
-#SBATCH -p cpu                    # queue (partition)
+#SBATCH --cpus-per-task=32      # Number of CPU nodes per task to run
+#SBATCH -p bsudfq                    # queue (partition)
 #SBATCH -t 24:00:00                    # run time (hh:mm:ss)
 
 source activate renaissance
