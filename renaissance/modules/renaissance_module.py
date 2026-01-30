@@ -237,7 +237,14 @@ class RenaissanceTransformer(pl.LightningModule):
             self.itm_score = heads.ITMHead(hs)
             self.itm_score.apply(objectives.init_weights)
 
-        
+        if config["loss_names"]["mim"] > 0:
+            hs = self.hparams.config["image_encoder_hidden_size"]
+            im_size = self.hparams.config["image_size"]
+            ps = self.hparams.config["patch_size"]
+            es = self.hparams.config["encoder_stride"]
+            nc = self.hparams.config["num_channels"]
+            self.mim_score = heads.MIMHead(hs, im_size, ps, es, nc)
+            self.mim_score.apply(objectives.init_weights)
         # ===================== Downstream  ===================== #
         
         # Initialize Visual Question Answering V2 Classifier

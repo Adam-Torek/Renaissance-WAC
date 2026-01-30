@@ -45,6 +45,13 @@ def compute_mlm(pl_module, batch):
 
     return ret
 
+def compute_mim(pl_module, batch):
+    batch_size = pl_module.hparams.config["per_gpu_batchsize"]
+    pixel_values = batch["image"][0]
+    mask_values = batch["image_mask"]
+    
+    infer_results = pl_module.infer_image_only(batch)
+
 def compute_stsb(pl_module, batch):
     accuracy_labels = batch["text_labels"]
     batch_size = pl_module.hparams.config['per_gpu_batchsize']

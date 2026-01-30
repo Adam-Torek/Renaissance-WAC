@@ -85,6 +85,8 @@ def config():
     image_size = 224
     original_image_size = 224 # Image size model is pretrained with, used in fine-tuning and testing
     patch_size = 16
+    encoder_stride = 16
+    num_channels = 3
     image_only = False
     use_text_encoder = True
     use_image_encoder = True

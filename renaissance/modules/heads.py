@@ -57,6 +57,32 @@ class MLMHead(nn.Module):
         x = self.decoder(x) + self.bias
         return x
 
+class MIMHead(nn.Module):
+
+    def __init__(self, hidden_size=None, image_size=224, patch_size=16, encoder_stride=16, num_channels=3):
+        self.image_size = image_size
+        self.patch_size = patch_size
+
+        self.decoder = nn.Sequential(
+            nn.Conv2d(in_channels=hidden_size, out_channels=encoder_stride ** 2 * num_channels, kernel_size=1), 
+            nn.PixelShuffle(encoder_stride)
+            )
+        
+    def forward(self, features, bool_mask_pos):
+        batch_size, seq_length, num_channels = features.shape
+        height = width = math.floor(seq_lenth**2)
+        x = features.permute(0, 2, 1).reshape(batch_size, num_channels, height, width)
+
+        reconstructed_pixels = self.decoder(x)
+
+        size = self.image_size // self.patch_size
+        bool_mask_pos = bool_masked_pos.reshape(-1, size, size)
+        complete_mask = (bool_mask_pos.repeat_interleave(self.patch_size, 1)
+                         .repeat_interleave(self.patch_size, 2)
+                         .unsqueeze(1)
+                         .contiguous())
+        
+        return reconstructed_pixels, complete_mask
 # class MultiModalClassificationHead(nn.Module):
     
 #     def __init__(self,  hidden_size = None, num_labels = None):
