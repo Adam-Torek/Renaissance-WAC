@@ -73,6 +73,7 @@ class TwoTowerConfig(PretrainedConfig):
         if config is not None:
             self.random_init_text_encoder = config['random_init_text_encoder']
             self.random_init_vision_encoder = config['random_init_vision_encoder']
+            self.use_mask_token = config["loss_names"]["mim"] > 0
 
             if config['use_text_encoder']:
                 self.text_encoder_path = config["text_encoder"]
@@ -146,7 +147,7 @@ class TwoTowerConfig(PretrainedConfig):
                 self.fusion_config = None      
 
         else:
-
+            self.use_mask_token = False
             self.text_config = ElectraConfig()
             self.image_config = ViTConfig()
             self.fusion_config = LxmertConfig(vocab_size=self.text_config.vocab_size,

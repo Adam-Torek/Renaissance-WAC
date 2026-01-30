@@ -18,6 +18,8 @@ class BaseDataset(torch.utils.data.Dataset):
         data_dir = "",
         transform_keys = [],
         image_size = 224,
+        patch_size = 16,
+        image_mask_prob=0.0,
         names = [],
         text_column_name: str = "",
         remove_duplicate=True,
@@ -59,6 +61,8 @@ class BaseDataset(torch.utils.data.Dataset):
         self.data_dir = data_dir
         
         self.image_size = image_size
+        self.patch_size = patch_size
+        self.image_mask_prob = image_mask_prob
         self.tokenizer = tokenizer
         # Suppresses a warning associated with the tokenizer
         # from https://github.com/huggingface/transformers/issues/22638
@@ -164,6 +168,12 @@ class BaseDataset(torch.utils.data.Dataset):
         else: 
             bbox_torch = None
 
+        if self.image_mask_prob > 0.0:
+            num_patches = (self.image_size // self.patch_size) ** 2
+            image_mask_torch = torch.bernoulli(torch.full(size=(num_patches,), fill_value=self.image_mask_prob)).bool()
+        else:
+            image_mask_torch = None
+
         # Get subimage and position data for WAC models if needed
         if self.include_wac_data and bbox_torch is not None:
 
@@ -215,6 +225,9 @@ class BaseDataset(torch.utils.data.Dataset):
 
         if subimage_tensor is not None:
             return_dict["subimage"] = subimage_tensor
+
+        if image_mask_torch is not None:
+            return_dict["image_masks"] = image_mask_torch
 
         return return_dict
 
@@ -296,6 +309,8 @@ class BaseDataset(torch.utils.data.Dataset):
                 img_sizes = list()
         
                 for img_key in img_keys:
+                    if img_key == "image_masks":
+                        continue
                     img = dict_batch[img_key]
                     img_sizes += [ii.shape for i in img if i is not None for ii in i]
         
@@ -309,6 +324,8 @@ class BaseDataset(torch.utils.data.Dataset):
                     max_width = max([i[2] for i in img_sizes])
         
                 for img_key in img_keys:
+                    if img_key == "image_masks":
+                        continue
                     img = dict_batch[img_key]
                     view_size = len(img[0])
         
@@ -365,6 +382,9 @@ class BaseDataset(torch.utils.data.Dataset):
                         dict_batch[f"{txt_key}_ids_mlm"] = mlm_ids
                         dict_batch[f"{txt_key}_labels_mlm"] = mlm_labels
                         dict_batch[f"{txt_key}_masks"] = attention_mask
+
+                if "image_masks" in img_keys:
+                    dict_batch["image_masks"] = torch.stack(dict_batch["image_masks"])
             else:
                 if "text_ids" in batch[0]:
                     data_to_collate = []

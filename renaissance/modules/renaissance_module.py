@@ -30,6 +30,7 @@ from .wac_models import WACModels
 objective_dict = {
     "mlm": objectives.compute_mlm,
     "itm": objectives.compute_itm,
+    "mim": objectives.compute_mim,
     "vqa": objectives.compute_vqa,
     "snli": objectives.compute_snli,
     "irtr": objectives.compute_irtr,
@@ -541,6 +542,24 @@ class RenaissanceTransformer(pl.LightningModule):
         elif self.model_type == 'one-tower':
             hidden_state = self.encoder.forward_text(batch)
         
+        return hidden_state
+
+    def infer_image_only(self, batch):
+        images = batch["image"][0]
+        if "image_masks" in batch:
+            image_masks = batch["image_masks"]
+        else:
+            image_masks = None
+        
+        if self.model_type == "two-tower":
+            if image_masks is not None:
+                hidden_state = self.encoder.image_encoder(pixel_values=images, 
+                                                          bool_masked_pos=image_masks).last_hidden_state
+            else:
+                hidden_state = self.encoder.image_encoder(pixel_values=images)
+        else:
+            hidden_state = self.encoder.forward_image(batch)
+
         return hidden_state
 
     def forward(self, batch):

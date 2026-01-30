@@ -5,6 +5,7 @@ ex = Experiment("renaissance")
 def _loss_names(d):
     ret = {
         "itm": 0,
+        "mim": 0,
         "mlm": 0,
         "mpp": 0,
         "vqa": 0,
@@ -87,6 +88,7 @@ def config():
     patch_size = 16
     encoder_stride = 16
     num_channels = 3
+    image_mask_prob = 0.75
     image_only = False
     use_text_encoder = True
     use_image_encoder = True
@@ -274,6 +276,33 @@ def pretrain_mlm_onetower_electrasmall():
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-babylm"
     subsection_to_save = "text_transformer"
+    push_to_hub = True
+
+@ex.named_config
+def pretrain_mim_onetower_deit_tiny():
+    exp_name = "pretrain_mim_onetower_deit_tiny"
+    model_type = "two-tower"
+    datasets = ["sbu"]
+    loss_names = _loss_names({"mim": 1})
+    batch_size = 256
+    per_gpu_batchsize = 256
+    max_epoch = 20
+    warmup_steps = 0.1
+    whole_word_masking = False
+    num_gpus = 1
+    data_root = "data/arrow/sbucaptions"
+
+    use_text_encoder = False
+
+    use_image_encoder = True
+    random_init_vision_encoder = True
+    image_encoder_manual_configuration = True
+    image_encoder = "facebook/deit-tiny-patch16-224"
+    image_encoder_mlp_ratio = 1
+
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/deit-tiny-renaissance"
+    subsection_to_save = "image_encoder"
     push_to_hub = True
     
 @ex.named_config

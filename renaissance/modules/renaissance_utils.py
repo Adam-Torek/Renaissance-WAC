@@ -119,6 +119,8 @@ def set_metrics(pl_module):
             elif k == "itm":
                 setattr(pl_module, f"{split}_{k}_accuracy", Accuracy())
                 setattr(pl_module, f"{split}_{k}_loss", Scalar())
+            elif k == "mim":
+                setattr(pl_module, f"{split}_{k}_loss", Scalar())
             elif k == "mrpc":
                 # f1 = BinaryF1Score()
                 setattr(pl_module, f"{split}_mrpc_f1", BinaryF1Score())
@@ -340,6 +342,13 @@ def epoch_wrapup(pl_module):
                           phase, 
                           loss_name, 
                           ["loss"], 
+                          include_summary_value=False)
+            
+        elif loss_name == "mim":
+            write_metrics(pl_module,
+                          phase,
+                          loss_name,
+                          ["loss"],
                           include_summary_value=False)
         else:
             value = getattr(pl_module, f"{phase}_{loss_name}_accuracy").compute()

@@ -556,7 +556,11 @@ class TwoTowerEncoder(PreTrainedModel):
         if config.image_encoder_path is not None:
             if self.random_init_vision_encoder:
                 image_encoder_config = config.image_config
-                self.image_encoder = AutoModel.from_config(image_encoder_config)
+                if config.use_mask_token:
+                    use_mask_kwargs = {"use_mask_token": True}
+                    self.image_encoder = AutoModel.from_config(image_encoder_config, **use_mask_kwargs)
+                else:
+                    self.image_encoder = AutoModel.from_config(image_encoder_config)
                 # if 'clip' in (config['image_encoder']):
                 #     self.image_encoder = self.image_encoder.vision_model
             

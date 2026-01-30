@@ -47,10 +47,24 @@ def compute_mlm(pl_module, batch):
 
 def compute_mim(pl_module, batch):
     batch_size = pl_module.hparams.config["per_gpu_batchsize"]
+    num_channels = pl_module.hparams.config["num_channels"]
     pixel_values = batch["image"][0]
-    mask_values = batch["image_mask"]
+    image_masks = batch["image_masks"]
     
-    infer_results = pl_module.infer_image_only(batch)
+    img_feats = pl_module.infer_image_only(batch)
+    reconstructed_pixels, mask = pl_module.mim_score(img_feats, image_masks)
+    reconstruction_loss = nn.functional.l1_loss(pixel_values, reconstructed_pixels, reduction="none")
+    mim_loss = (reconstruction_loss * mask).sum() / (mask.sum() + 1e-5) / num_channels
+
+    ret = {
+        "mim_loss": mim_loss
+    }
+
+    phase = "train" if pl_module.training else "val"
+    loss = getattr(pl_module, f"{phase}_mim_loss")(ret["mim_loss"])
+    pl_module.log(f"mim/{phase}/loss", loss, batch_size=batch_size, sync_dist=True)
+
+    return ret
 
 def compute_stsb(pl_module, batch):
     accuracy_labels = batch["text_labels"]

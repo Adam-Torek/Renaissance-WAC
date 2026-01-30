@@ -5,6 +5,7 @@ renaissance/modules/renaissance_module.py.
 """
 import torch
 import torch.nn as nn
+import math
 
 from transformers.models.bert.configuration_bert import BertConfig
 from transformers.models.bert.modeling_bert import BertPredictionHeadTransform
@@ -60,6 +61,7 @@ class MLMHead(nn.Module):
 class MIMHead(nn.Module):
 
     def __init__(self, hidden_size=None, image_size=224, patch_size=16, encoder_stride=16, num_channels=3):
+        super().__init__()
         self.image_size = image_size
         self.patch_size = patch_size
 
@@ -69,14 +71,15 @@ class MIMHead(nn.Module):
             )
         
     def forward(self, features, bool_mask_pos):
+        features = features[:, 1:]
         batch_size, seq_length, num_channels = features.shape
-        height = width = math.floor(seq_lenth**2)
+        height = width = math.floor(seq_length**0.5)
         x = features.permute(0, 2, 1).reshape(batch_size, num_channels, height, width)
 
         reconstructed_pixels = self.decoder(x)
 
         size = self.image_size // self.patch_size
-        bool_mask_pos = bool_masked_pos.reshape(-1, size, size)
+        bool_mask_pos = bool_mask_pos.reshape(-1, size, size)
         complete_mask = (bool_mask_pos.repeat_interleave(self.patch_size, 1)
                          .repeat_interleave(self.patch_size, 2)
                          .unsqueeze(1)

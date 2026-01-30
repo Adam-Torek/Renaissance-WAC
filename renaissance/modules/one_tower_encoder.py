@@ -390,7 +390,24 @@ class OneTowerEncoder(PreTrainedModel):
         hidden_states = self.encoder(hidden_states)[0]
         
         return hidden_states
+    
+    def forward_image(self, batch):
+        image_masks = None
+        images = batch["image"][0]
+
+        if "image_masks" in batch:
+            image_masks = batch["image_masks"]
+            
+        hidden_states = self.image_embeddings(images)
+        if hasattr(self, "image_embedding_projection"):
+            hidden_states = self.image_embedding_projection(hidden_states)
         
+        if image_masks is not None:
+            hidden_states = self.encoder(hidden_states, pool_mask_pos=image_masks)[0]
+        else:
+            hidden_states = self.encoder(hidden_states)[0]
+
+        return hidden_states
     
     def get_hidden_size(self):
         return self.hidden_size

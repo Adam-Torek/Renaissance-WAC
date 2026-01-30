@@ -18,6 +18,8 @@ class BaseDataModule(LightningDataModule):
         self.eval_batch_size = self.batch_size
 
         self.image_size = _config["image_size"]
+        self.patch_size = _config["patch_size"]
+        self.image_mask_prob = _config["image_mask_prob"] if _config["loss_names"]["mim"] > 0 else 0.0
         self.max_text_len = _config["max_text_len"]
         self.draw_false_image = _config["draw_false_image"]
         self.draw_false_text = _config["draw_false_text"]
@@ -67,6 +69,8 @@ class BaseDataModule(LightningDataModule):
             transform_keys =self.train_transform_keys,
             split="train",
             image_size=self.image_size,
+            patch_size=self.patch_size,
+            image_mask_prob=self.image_mask_prob,
             max_text_len=self.max_text_len,
             draw_false_image=self.draw_false_image,
             draw_false_text=self.draw_false_text,
@@ -83,6 +87,8 @@ class BaseDataModule(LightningDataModule):
             transform_keys =self.val_transform_keys,
             split="val",
             image_size=self.image_size,
+            patch_size=self.patch_size,
+            image_mask_prob=self.image_mask_prob,
             max_text_len=self.max_text_len,
             draw_false_image=self.draw_false_image,
             draw_false_text=self.draw_false_text,
@@ -99,6 +105,8 @@ class BaseDataModule(LightningDataModule):
                 transform_keys =self.val_transform_keys,
                 split="val",
                 image_size=self.image_size,
+                patch_size=self.patch_size,
+                image_mask_prob=self.image_mask_prob,
                 max_text_len=self.max_text_len,
                 draw_false_image=0,
                 draw_false_text=0,
@@ -115,6 +123,8 @@ class BaseDataModule(LightningDataModule):
             transform_keys =self.val_transform_keys,
             split="val",
             image_size=self.image_size,
+            patch_size=self.patch_size,
+            image_mask_prob=self.image_mask_prob,
             max_text_len=self.max_text_len,
             draw_false_image=0,
             draw_false_text=0,
@@ -131,6 +141,8 @@ class BaseDataModule(LightningDataModule):
             transform_keys =self.val_transform_keys,
             split="test",
             image_size=self.image_size,
+            patch_size=self.patch_size,
+            image_mask_prob=self.image_mask_prob,
             max_text_len=self.max_text_len,
             draw_false_image=self.draw_false_image,
             draw_false_text=self.draw_false_text,
