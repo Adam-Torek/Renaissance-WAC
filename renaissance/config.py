@@ -287,6 +287,7 @@ def pretrain_mim_onetower_deit_tiny():
     batch_size = 256
     per_gpu_batchsize = 256
     max_epoch = 20
+    max_steps = 1000000
     warmup_steps = 0.1
     whole_word_masking = False
     num_gpus = 1
