@@ -11,4 +11,4 @@
 
 source activate renaissance
 
-srun python3 run.py with pretrain_wac_twotower_electrasmall_deit_tiny
+srun python3 run.py with pretrain_wac_twotower_electrasmall_deit_small

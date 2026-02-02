@@ -13,7 +13,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "with", "pretrain_mim_onetower_deit_tiny"
+                "with", "pretrain_wac_twotower_electrasmall_deit_small"
             ]
         },
 

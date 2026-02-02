@@ -307,13 +307,13 @@ def pretrain_mim_onetower_deit_tiny():
     push_to_hub = True
     
 @ex.named_config
-def pretrain_wac_twotower_electrasmall_deit_tiny():
-    exp_name = "wac_twotower_electrasmall_deit_tiny"
+def pretrain_wac_twotower_electrasmall_deit_small():
+    exp_name = "wac_twotower_electrasmall_deit_small"
     model_type = "two-tower"
     datasets = ["coco"]
-    loss_names = _loss_names({"ref_bbox": 1})
-    batch_size = 128
-    per_gpu_batchsize = 128
+    loss_names = _loss_names({"itm": 1})
+    batch_size = 256
+    per_gpu_batchsize = 256
     max_epoch = 20
     warmup_steps = 0.1
     whole_word_masking = False
@@ -328,14 +328,20 @@ def pretrain_wac_twotower_electrasmall_deit_tiny():
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0
-    draw_false_image = 0
+    draw_false_image = 1
     num_gpus = 1
     data_root = "data/arrow/coco"
 
     # Image settings to not use image encoders
     use_image_encoder = True
-    random_init_vision_encoder = True
-    image_encoder = "facebook/deit-tiny-patch16-224"
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = False
@@ -349,6 +355,9 @@ def pretrain_wac_twotower_electrasmall_deit_tiny():
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-deit-lxmert-renaissance-wac"
     push_to_hub = True
+
+    # Two-tower model settings
+    learning_rate = 1e-4
 
 @ex.named_config
 def finetune_cola_onetower_electrasmall():
