@@ -21,6 +21,7 @@ class StrToBytes:
 def process_ref(ref, path, Imgs, imgToAnns):
     img = Imgs[ref['image_id']]
     image_path = osp.join(path, img['file_name'])
+    image_id = ref['image_id']
     with open(image_path, "rb") as fp:
         binary = fp.read()
 
@@ -28,7 +29,7 @@ def process_ref(ref, path, Imgs, imgToAnns):
     for sent in ref['sentences']:
         sents.append(sent['sent'])
     
-    anns = imgToAnns[ref['image_id']]
+    anns = imgToAnns[image_id]
     ann_id = ref['ann_id']
     obj_ids = []
     bboxes = []
@@ -38,7 +39,7 @@ def process_ref(ref, path, Imgs, imgToAnns):
         bboxes.append(ann['bbox'])
     label = obj_ids.index(ann_id)
         
-    return [binary, sents, bboxes, label, ann_id]    
+    return [binary, sents, bboxes, label, image_id, ann_id]    
 
 
 def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc'):
@@ -82,7 +83,7 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
             refs = [ref for ref in tqdm(data['refs']) if ref['split'] == split]
     
         item_list = [process_ref(ref, IMAGE_DIR, Imgs, imgToAnns) for ref in refs]
-        df = pd.DataFrame(item_list, columns=['image', 'sentences', 'bboxes', 'labels', 'ann_ids'])
+        df = pd.DataFrame(item_list, columns=['image', 'sentences', 'bboxes', 'labels', 'image_id', 'ann_ids'])
         table = pa.Table.from_pandas(df)
         
         os.makedirs(outfile_root, exist_ok=True)

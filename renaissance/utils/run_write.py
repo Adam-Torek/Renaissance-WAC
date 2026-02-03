@@ -59,7 +59,6 @@ def main() -> None:
     dataset_processing_function(dataset_source_path, dataset_destination_path)
 
     print(f"Finished processing dataset {dataset_to_write}")
-    pass
 
 if __name__ == "__main__":
     main()

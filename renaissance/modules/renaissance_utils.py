@@ -45,10 +45,23 @@ def write_metrics(pl_module, phase, loss_name, metric_names, include_summary_val
         getattr(pl_module, f"{phase}_{loss_name}_{metric_name}").reset()
         
         log_dir = pl_module.logger.log_dir
-        file_path = os.path.join(log_dir, 'eval.txt')
-        with open(file_path,'a') as f:
-            eval_write_string = f'Epoch: {epoch}, Final {metric_name} on {phase} Set: {metric_value} \n'
-            f.write(eval_write_string)
+        file_path = os.path.join(log_dir, 'eval.csv')
+        if os.path.exists(file_path):
+            write_mode = "a"
+        else:
+            write_mode = "w"
+        
+        with open(file_path, write_mode) as f:
+            dict_writer = csv.DictWriter(f, fieldnames=["phase", "metric_name", "epoch", "metric_value"])
+            if write_mode == "w":
+                dict_writer.writeheader()
+            
+            eval_write_dict = {'phase': phase,
+                               'metric_name': metric_name,
+                               'epoch': epoch,
+                               'metric_value': metric_value,}
+            
+            dict_writer.writerow(eval_write_dict)
         
         if include_summary_value:
             if hasattr(pl_module, "csv_log_file") and pl_module.csv_log_file is not None:

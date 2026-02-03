@@ -57,7 +57,11 @@ def config():
     pooler_type = 'double' # Supports ['single', 'double']
     tokenizer = "bert-base-uncased"
 
-    # Transformer Setting
+    # Transformer Settings
+
+    # Load pretrained model from HuggingFace
+    complete_encoder_path = None
+
     # Train encoder model from scratch
     random_init_encoder = False
     ## Manual Configuration
@@ -305,10 +309,10 @@ def pretrain_mim_onetower_deit_tiny():
     huggingface_save_name = "ajtorek/deit-tiny-renaissance"
     subsection_to_save = "image_encoder"
     push_to_hub = True
-    
+
 @ex.named_config
-def pretrain_wac_twotower_electrasmall_deit_small():
-    exp_name = "wac_twotower_electrasmall_deit_small"
+def pretrain_wac_itm_twotower_electrasmall_deit_small():
+    exp_name = "wac_itm_twotower_electrasmall_deit_small"
     model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"itm": 1})
@@ -331,6 +335,7 @@ def pretrain_wac_twotower_electrasmall_deit_small():
     draw_false_image = 1
     num_gpus = 1
     data_root = "data/arrow/coco"
+    test_only = False
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -351,9 +356,126 @@ def pretrain_wac_twotower_electrasmall_deit_small():
     #wac_train_steps = 5
     num_cores = 0
 
+    # Training settings
+    learning_rate = 1e-4
+
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
-    huggingface_save_name = "ajtorek/electra-deit-lxmert-renaissance-wac"
+    huggingface_save_name = "ajtorek/electra-deit-itm-renaissance-wac"
+    push_to_hub = True
+
+    # Two-tower model settings
+    learning_rate = 1e-4
+
+@ex.named_config
+def pretrain_wac_ref_twotower_electrasmall_deit_small():
+    exp_name = "wac_ref_twotower_electrasmall_deit_small"
+    model_type = "two-tower"
+    datasets = ["coco"]
+    loss_names = _loss_names({"ref": 1})
+    batch_size = 256
+    per_gpu_batchsize = 256
+    max_epoch = 20
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    random_init_text_encoder = False
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 1
+    num_gpus = 1
+    data_root = "data/arrow/coco"
+    test_only = False
+
+    # Image settings to not use image encoders
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = False
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    save_directory = None
+    #wac_train_steps = 5
+    num_cores = 0
+
+    # Training settings
+    learning_rate = 1e-4
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-deit-ref-renaissance-wac"
+    push_to_hub = True
+
+    # Two-tower model settings
+    learning_rate = 1e-4
+
+@ex.named_config
+def pretrain_wac_ref_bbox_twotower_electrasmall_deit_small():
+    exp_name = "wac_ref_bbox_twotower_electrasmall_deit_small"
+    model_type = "two-tower"
+    datasets = ["coco"]
+    loss_names = _loss_names({"ref_bbox": 1})
+    batch_size = 256
+    per_gpu_batchsize = 256
+    max_epoch = 20
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    random_init_text_encoder = False
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 1
+    num_gpus = 1
+    data_root = "data/arrow/coco"
+    test_only = False
+
+    # Image settings to not use image encoders
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = False
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    save_directory = None
+    #wac_train_steps = 5
+    num_cores = 0
+
+    # Training settings
+    learning_rate = 1e-4
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-deit-ref-bbox-renaissance-wac"
     push_to_hub = True
 
     # Two-tower model settings

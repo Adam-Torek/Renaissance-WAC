@@ -159,7 +159,6 @@ def run_experiment(_config):
     )
 
     
-
     if not _config["test_only"]:
         if model.wac_models is not None:
             print("WAC models enabled. Starting construction of WAC features.")
@@ -204,7 +203,7 @@ def run_experiment(_config):
             test_dataloader = dm.test_dataloader()
             
             model.build_wac_features(test_dataloader, split="test")
-            print("WAC datasets constructed. Starting model training.")
+            print("WAC datasets constructed. Starting model evaluation.")
 
         trainer.test(model, datamodule=dm)
     pass

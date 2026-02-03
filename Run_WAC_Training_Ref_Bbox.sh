@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J Renaissance-WAC         # job name
-#SBATCH -o slurm_logs/renaissance_wac/renaissance_WAC.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -J Electra-DeIT-Ref-Bbox        # job name
+#SBATCH -o slurm_logs/renaissance_wac/electra_deit_ref_bbox.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=48      # Number of CPU nodes per task to run
@@ -11,4 +11,4 @@
 
 source activate renaissance
 
-srun python3 run.py with pretrain_wac_twotower_electrasmall_deit_small
+srun python3 run.py with pretrain_wac_ref_bbox_twotower_electrasmall_deit_small

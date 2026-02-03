@@ -61,157 +61,161 @@ class RenaissanceTransformer(pl.LightningModule):
             and self.hparams.config["test_only"])
         
         self.exp_name = config["exp_name"]
-        
-        if self.fine_tune or self.test_only:
-            ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
-            state_dict = ckpt["state_dict"]
-            self.original_max_text_len = ckpt['hyper_parameters']['config']['max_text_len']
-            self.new_max_text_len = config['max_text_len']
-            self.original_image_size = ckpt['hyper_parameters']['config']['original_image_size']
-            self.new_image_size = config['image_size']
 
-        # Set default WAC model settings in the Renaissance transformer. These may be overriden
-        # depending on configuration settings
-        self.wac_models = None
-        self.wac_image_encoder = None
-        self.wac_embedding_size = None
-        self.wac_distribution_matrix = None
-        self.current_training_epoch = None
-        self.current_training_step = 0
-        self.wac_train_steps = None
-        self.vocab = []
-        
-        self.csv_log_file = config['csv_log_file']
-        
-        if self.model_type == 'one-tower':
-            self.pooler_type = config['pooler_type']
+        if config["complete_encoder_path"] is not None:
+            self.encoder = self.encoder.from_pretrained(config["complete_encoder_path"])
+        else:
             
             if self.fine_tune or self.test_only:
-                image_size = self.original_image_size
-                max_text_len = self.original_max_text_len
+                ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
+                state_dict = ckpt["state_dict"]
+                self.original_max_text_len = ckpt['hyper_parameters']['config']['max_text_len']
+                self.new_max_text_len = config['max_text_len']
+                self.original_image_size = ckpt['hyper_parameters']['config']['original_image_size']
+                self.new_image_size = config['image_size']
+
+            # Set default WAC model settings in the Renaissance transformer. These may be overriden
+            # depending on configuration settings
+            self.wac_models = None
+            self.wac_image_encoder = None
+            self.wac_embedding_size = None
+            self.wac_distribution_matrix = None
+            self.current_training_epoch = None
+            self.current_training_step = 0
+            self.wac_train_steps = None
+            self.vocab = []
+            
+            self.csv_log_file = config['csv_log_file']
+            
+            if self.model_type == 'one-tower':
+                self.pooler_type = config['pooler_type']
+                
+                if self.fine_tune or self.test_only:
+                    image_size = self.original_image_size
+                    max_text_len = self.original_max_text_len
+                else:
+                    image_size = config['image_size']
+                    max_text_len = config['max_text_len']
+
+                one_tower_config = OneTowerConfig(config, 
+                                                image_size, 
+                                                max_text_len)
+                
+                self.encoder = OneTowerEncoder(one_tower_config)
+
+                self.hidden_size = self.encoder.get_hidden_size()
+                self.embedding_size = self.encoder.get_embedding_size()
+            
+            elif self.model_type == 'two-tower':
+
+                if config['use_wac_embeddings'] or config['wac_distribution_matrix'] is not None:
+                    wac_image_encoder_path = config['wac_image_encoder']
+                    if wac_image_encoder_path is None:
+                        raise ValueError("WAC image encoder must be defined if WAC models are enabled")
+                    
+                    save_directory = config['save_directory']
+                    if save_directory is None:
+                        raise ValueError("WAC models save directory must be defined if they are enabled")
+
+                    tokenizer_path = config['tokenizer']
+                    if tokenizer_path is None:
+                        raise ValueError("Tokenizer must be defined for WAC models so the vocabulary can be defined")
+                    
+                    if config["huggingface_save_directory"] is not None:
+                        huggingface_save_name = config["huggingface_save_name"].split("/")[-1]
+                        save_directory = os.path.join(config["huggingface_save_directory"], huggingface_save_name, save_directory)
+
+                    self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
+                    self.wac_image_encoder = self.wac_image_encoder.eval()
+
+                    if hasattr(self.wac_image_encoder, 'config'):
+                        wac_image_encoder_config = self.wac_image_encoder.config
+                        if hasattr(wac_image_encoder_config, 'projection_dim'):
+                            wac_embedding_size = wac_image_encoder_config.projection_dim
+                        elif hasattr(wac_image_encoder_config, 'embedding_size'):
+                            wac_embedding_size = wac_image_encoder_config.embedding_size
+                        elif hasattr(wac_image_encoder_config, 'hidden_size'):
+                            wac_embedding_size = wac_image_encoder_config.hidden_size
+
+                    wac_args = {}
+                    wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+                    vocab = []
+                    for word in wac_tokenizer.vocab.keys():
+                        vocab.append(word)
+
+                    special_vocab = []
+                    for special_word in wac_tokenizer.special_tokens_map.values():
+                        special_vocab.append(special_word)
+
+                    self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
+                    self.wac_distribution_matrix = config['wac_distribution_matrix']
+                    self.wac_train_steps = config['wac_train_steps']
+                    self.current_training_step = 0
+                    self.vocab = vocab
+                    
+                    wac_args['vocab'] = vocab
+                    wac_args['special_vocab'] = special_vocab
+                
+                    wac_args['embedding_size'] = wac_embedding_size
+                    wac_args['save_directory'] = save_directory
+                    wac_args['position_size'] = config['position_size']
+                    
+                    neg_to_pos = config['neg_to_pos']
+                    if neg_to_pos is not None:
+                        wac_args['neg_to_pos'] = neg_to_pos
+
+                    wac_kwargs = config['wac_kwargs']
+                    if wac_kwargs is not None:
+                        wac_args['wac_kwargs'] = wac_kwargs
+
+                    num_cores = config['num_cores']
+                    if num_cores is not None:
+                        wac_args['num_cores'] = num_cores
+                    
+                    self.wac_models = WACModels(**wac_args)
+
+                    if config['huggingface_wac_repo'] is not None:
+                        wac_repo = config['huggingface_wac_repo']
+                        wac_model_save_directory = config['huggingface_save_directory']
+                        wac_model_save_directory = os.path.join(wac_model_save_directory, wac_repo.split("/")[-1])
+
+                        if not os.path.exists(os.path.join(wac_model_save_directory, "wac_models")):
+                            hf_hub_download(repo_id=wac_repo, 
+                                            filename="wac_models.zip", 
+                                            local_dir=wac_model_save_directory)
+                            
+                            compressed_wac_path = os.path.join(wac_model_save_directory, "wac_models.zip")
+                            destination_directory = os.path.join(wac_model_save_directory, "wac_models")
+                            os.makedirs(destination_directory, exist_ok=True)
+
+                            with zipfile.ZipFile(compressed_wac_path, "r") as wac_file:
+                                for subpath in wac_file.namelist():
+                                    if not os.path.basename(subpath):
+                                        continue
+
+                                    file_source = wac_file.open(subpath)
+                                    subpath = subpath.split("/")[-1]
+                                    file_target = open(os.path.join(destination_directory, subpath), "wb")
+                                    with file_source, file_target:
+                                        shutil.copyfileobj(file_source, file_target)
+                            
+                            os.remove(compressed_wac_path)
+
+                        self.wac_models.load_models()
+
+                    self.current_training_epoch = 0
+
+                two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
+
+                self.encoder = TwoTowerEncoder(
+                    two_tower_config,
+                    self.fine_tune,
+                    self.test_only
+                )
+                self.hidden_size = self.encoder.get_hidden_size()
+                
             else:
-                image_size = config['image_size']
-                max_text_len = config['max_text_len']
-
-            one_tower_config = OneTowerConfig(config, 
-                                              image_size, 
-                                              max_text_len)
-            
-            self.encoder = OneTowerEncoder(one_tower_config)
-
-            self.hidden_size = self.encoder.get_hidden_size()
-            self.embedding_size = self.encoder.get_embedding_size()
-        
-        elif self.model_type == 'two-tower':
-
-            if config['use_wac_embeddings'] or config['wac_distribution_matrix'] is not None:
-                wac_image_encoder_path = config['wac_image_encoder']
-                if wac_image_encoder_path is None:
-                    raise ValueError("WAC image encoder must be defined if WAC models are enabled")
-                
-                save_directory = config['save_directory']
-                if save_directory is None:
-                    raise ValueError("WAC models save directory must be defined if they are enabled")
-
-                tokenizer_path = config['tokenizer']
-                if tokenizer_path is None:
-                    raise ValueError("Tokenizer must be defined for WAC models so the vocabulary can be defined")
-                
-                if config["huggingface_save_directory"] is not None:
-                    huggingface_save_name = config["huggingface_save_name"].split("/")[-1]
-                    save_directory = os.path.join(config["huggingface_save_directory"], huggingface_save_name, save_directory)
-
-                self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
-                self.wac_image_encoder = self.wac_image_encoder.eval()
-
-                if hasattr(self.wac_image_encoder, 'config'):
-                    wac_image_encoder_config = self.wac_image_encoder.config
-                    if hasattr(wac_image_encoder_config, 'projection_dim'):
-                        wac_embedding_size = wac_image_encoder_config.projection_dim
-                    elif hasattr(wac_image_encoder_config, 'embedding_size'):
-                        wac_embedding_size = wac_image_encoder_config.embedding_size
-                    elif hasattr(wac_image_encoder_config, 'hidden_size'):
-                        wac_embedding_size = wac_image_encoder_config.hidden_size
-
-                wac_args = {}
-                wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-                vocab = []
-                for word in wac_tokenizer.vocab.keys():
-                    vocab.append(word)
-
-                special_vocab = []
-                for special_word in wac_tokenizer.special_tokens_map.values():
-                    special_vocab.append(special_word)
-
-                self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
-                self.wac_distribution_matrix = config['wac_distribution_matrix']
-                self.wac_train_steps = config['wac_train_steps']
-                self.current_training_step = 0
-                self.vocab = vocab
-                
-                wac_args['vocab'] = vocab
-                wac_args['special_vocab'] = special_vocab
-               
-                wac_args['embedding_size'] = wac_embedding_size
-                wac_args['save_directory'] = save_directory
-                wac_args['position_size'] = config['position_size']
-                
-                neg_to_pos = config['neg_to_pos']
-                if neg_to_pos is not None:
-                    wac_args['neg_to_pos'] = neg_to_pos
-
-                wac_kwargs = config['wac_kwargs']
-                if wac_kwargs is not None:
-                    wac_args['wac_kwargs'] = wac_kwargs
-
-                num_cores = config['num_cores']
-                if num_cores is not None:
-                    wac_args['num_cores'] = num_cores
-                
-                self.wac_models = WACModels(**wac_args)
-
-                if config['huggingface_wac_repo'] is not None:
-                    wac_repo = config['huggingface_wac_repo']
-                    wac_model_save_directory = config['huggingface_save_directory']
-                    wac_model_save_directory = os.path.join(wac_model_save_directory, wac_repo.split("/")[-1])
-
-                    if not os.path.exists(os.path.join(wac_model_save_directory, "wac_models")):
-                        hf_hub_download(repo_id=wac_repo, 
-                                        filename="wac_models.zip", 
-                                        local_dir=wac_model_save_directory)
-                        
-                        compressed_wac_path = os.path.join(wac_model_save_directory, "wac_models.zip")
-                        destination_directory = os.path.join(wac_model_save_directory, "wac_models")
-                        os.makedirs(destination_directory, exist_ok=True)
-
-                        with zipfile.ZipFile(compressed_wac_path, "r") as wac_file:
-                            for subpath in wac_file.namelist():
-                                if not os.path.basename(subpath):
-                                    continue
-
-                                file_source = wac_file.open(subpath)
-                                subpath = subpath.split("/")[-1]
-                                file_target = open(os.path.join(destination_directory, subpath), "wb")
-                                with file_source, file_target:
-                                    shutil.copyfileobj(file_source, file_target)
-                        
-                        os.remove(compressed_wac_path)
-
-                    self.wac_models.load_models()
-
-                self.current_training_epoch = 0
-
-            two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
-
-            self.encoder = TwoTowerEncoder(
-                two_tower_config,
-                self.fine_tune,
-                self.test_only
-            )
-            self.hidden_size = self.encoder.get_hidden_size()
-            
-        else:
-            raise TypeError('Model Type not supported.')
+                raise TypeError('Model Type not supported.')
         
         # ===================== Pretraining ===================== #
         
