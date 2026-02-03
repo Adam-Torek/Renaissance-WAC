@@ -59,7 +59,7 @@ def write_metrics(pl_module, phase, loss_name, metric_names, include_summary_val
             eval_write_dict = {'phase': phase,
                                'metric_name': metric_name,
                                'epoch': epoch,
-                               'metric_value': metric_value,}
+                               'metric_value': metric_value.item(),}
             
             dict_writer.writerow(eval_write_dict)
         
