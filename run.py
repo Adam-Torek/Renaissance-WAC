@@ -44,6 +44,11 @@ def run_experiment(_config):
     dm = MTDataModule(_config, dist=True)
 
     model = RenaissanceTransformer(_config)
+
+    complete_encoder_path = _config["complete_encoder_path"]
+
+    if complete_encoder_path:
+        model.from_pretrained(complete_encoder_path)
     
     # Create name for directory to log results
     load_path = _config['load_path']
@@ -102,7 +107,15 @@ def run_experiment(_config):
         per_gpu_batchsize = _config['per_gpu_batchsize']
         train_steps = _config['max_steps']
         train_epoch = _config['max_epoch']
-        result_dir = f"{exp_name}_seed{seed}_is{image_size}_ps{patch_size}_bs{batch_size}_pgbs{per_gpu_batchsize}_ts{train_steps}"
+        result_dir = f"{exp_name}"
+        for loss_name, loss_value in _config["loss_names"].items():
+            if loss_value > 0:
+                result_dir += f"_{loss_name}"
+
+        result_dir += f"_seed{seed}_is{image_size}_ps{patch_size}_bs{batch_size}_pgbs{per_gpu_batchsize}_ts{train_steps}"
+        if complete_encoder_path is not None:
+            complete_encoder_path = complete_encoder_path.replace("/","_")
+            result_dir += f"_{complete_encoder_path}"
     else:
         loaded_model = parse_load_path(load_path)
         result_dir = f"{exp_name}_seed{seed}_from_{loaded_model}"
@@ -159,7 +172,7 @@ def run_experiment(_config):
     )
 
     
-    if not _config["test_only"]:
+    if _config["run_training"]:
         if model.wac_models is not None:
             print("WAC models enabled. Starting construction of WAC features.")
             dm.setup(stage="fit")
@@ -196,7 +209,7 @@ def run_experiment(_config):
         print(model.logger.log_dir)
         print()
         
-    else:
+    if _config["run_test"]:
         if model.wac_models is not None:
             print("WAC models enabled. Starting construction of WAC features.")
             dm.setup(stage="test")
