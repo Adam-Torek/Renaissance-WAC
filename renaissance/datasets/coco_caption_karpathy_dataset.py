@@ -121,5 +121,6 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         text_index, _ = self.index_mapper[index]
         return_dict["label"] = torch.tensor(self.table["labels"][text_index].as_py())
         return_dict["ann_id"] = torch.tensor(self.table["ann_ids"][text_index].as_py())
+        return_dict["num_objects"] = self.table["num_objects"][text_index].as_py()
 
         return return_dict

@@ -219,14 +219,19 @@ def get_output_features(pl_module, infer_dict):
 def compute_ref(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
     targets = batch.pop("label")
+    num_objects = batch.pop("num_objects")
    
     infer_dict = pl_module.infer(batch)
     class_feats = get_output_features(pl_module, infer_dict)
     
     logit_tensor = pl_module.ref_classifier(class_feats)
     
-    if targets.dim() == 1 and logit_tensor.dim() == 2 and logit_tensor.shape[1] == 1:
-        logit_tensor = logit_tensor.squeeze()
+    for i, value in enumerate(num_objects):
+        labels_to_void = pl_module.ref_classifier.num_labels - value
+        if labels_to_void == 0:
+            continue
+        logit_tensor[i, value:] = torch.full((labels_to_void,), 1e-6).to(logit_tensor.device)
+        
     loss = F.cross_entropy(logit_tensor, targets)
     
     # losses.append(loss.item())                                                       

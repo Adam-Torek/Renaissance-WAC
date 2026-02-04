@@ -24,8 +24,6 @@ class F1(Metric):
             
             assert preds.shape == target.shape
             
-            
-            
             self.correct += torch.sum(preds == target)
             self.total += target.numel()
 
@@ -41,7 +39,7 @@ class Accuracy(Metric):
             logits.detach().to(self.correct.device),
             target.detach().to(self.correct.device),
         )
-        preds = logits.argmax(dim=-1)
+        preds = logits.softmax(dim=-1).argmax(dim=-1)
         preds = preds[target != -100]
         target = target[target != -100]
         if target.numel() == 0:
