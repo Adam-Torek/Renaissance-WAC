@@ -225,19 +225,24 @@ def compute_ref(pl_module, batch):
     class_feats = get_output_features(pl_module, infer_dict)
     
     logit_tensor = pl_module.ref_classifier(class_feats)
+    accuracy_logits = logit_tensor.detach().clone()
+    loss_list = []
+
+    for i, logits, values in zip(range(0, logit_tensor.shape[0]), logit_tensor, targets):
+        num_resolution_objects = num_objects[i]
+        resolution_logits = logit_tensor[i, :num_resolution_objects]
+        resolution_targets = targets[i]
+        resolution_loss = F.cross_entropy(resolution_logits, resolution_targets)
+        loss_list.append(resolution_loss)
+        if num_resolution_objects < pl_module.ref_classifier.num_labels:
+            num_zeros = pl_module.ref_classifier.num_labels - num_resolution_objects
+            accuracy_logits[i, num_resolution_objects:] = torch.full((num_zeros,), 0.0, device=logit_tensor.device)
     
-    for i, value in enumerate(num_objects):
-        labels_to_void = pl_module.ref_classifier.num_labels - value
-        if labels_to_void == 0:
-            continue
-        logit_tensor[i, value:] = torch.full((labels_to_void,), 1e-6).to(logit_tensor.device)
-        
-    loss = F.cross_entropy(logit_tensor, targets)
-    
-    # losses.append(loss.item())                                                       
+    loss = torch.stack(loss_list).mean()
+                                                         
     ret = {
         "ref_loss" : loss,
-        "ref_logits" : logit_tensor,
+        "ref_logits" : accuracy_logits,
         "ref_targets" : targets
     }
         

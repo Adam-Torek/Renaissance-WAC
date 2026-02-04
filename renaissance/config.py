@@ -477,10 +477,7 @@ def pretrain_wac_ref_bbox_twotower_electrasmall_deit_small():
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-deit-ref-bbox-renaissance-wac"
     push_to_hub = True
-
-    # Two-tower model settings
-    learning_rate = 1e-4
-
+    
 @ex.named_config
 def eval_ref_twotower_electrasmall_deit_small():
     exp_name = "eval_ref_twotower_electrasmall_deit_small"

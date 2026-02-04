@@ -62,7 +62,6 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         
         text_data = self.get_text(index)
 
-       
         subimage, bbox, bbox_normalized = self.get_subimage(index)
         if not self.is_ref_bbox:
             return_dict["image"] = subimage
