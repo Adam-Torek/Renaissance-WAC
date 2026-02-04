@@ -250,7 +250,8 @@ def compute_ref(pl_module, batch):
 def compute_ref_bbox(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
     targets = batch.pop("label")
-    target_bboxes = torch.stack(batch.pop("bounding_box")).to(targets.device)
+    target_bboxes = batch.pop("bbox_label")
+    target_bboxes = torch.stack(target_bboxes).to(targets.device)
 
     giou_weight = pl_module.hparams.config['giou_weight']
     cardinality_weight = pl_module.hparams.config['cardinality_weight']

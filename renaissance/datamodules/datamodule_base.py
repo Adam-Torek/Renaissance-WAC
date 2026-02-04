@@ -55,6 +55,13 @@ class BaseDataModule(LightningDataModule):
         self.hf_dataset_key = ''
         self.task = ''
 
+        if _config["use_wac_embeddings"] or _config["wac_distribution_matrix"] is not None:
+            include_wac_data = True
+        else:
+            include_wac_data = False
+        self.dataset_kwargs = {"loss_names": _config["loss_names"],
+                               "include_wac_data": include_wac_data}
+
     @property
     def dataset_cls(self):
         raise NotImplementedError("return tuple of dataset class")
@@ -78,7 +85,8 @@ class BaseDataModule(LightningDataModule):
             tokenizer=self.tokenizer,
             processor=self.processor,
             hf_dataset_key = self.hf_dataset_key,
-            task = self.task
+            task = self.task,
+            **self.dataset_kwargs,
         )
 
     def set_val_dataset(self):
@@ -96,7 +104,8 @@ class BaseDataModule(LightningDataModule):
             tokenizer=self.tokenizer,
             processor=self.processor,
             hf_dataset_key = self.hf_dataset_key,
-            task = self.task
+            task = self.task,
+            **self.dataset_kwargs,
         )
 
         if hasattr(self, "dataset_cls_no_false"):
@@ -114,7 +123,8 @@ class BaseDataModule(LightningDataModule):
                 tokenizer=self.tokenizer,
                 processor=self.processor,
                 hf_dataset_key = self.hf_dataset_key,
-                task = self.task
+                task = self.task,
+                **self.dataset_kwargs,
             )
 
     def make_no_false_val_dset(self, image_only=False):
@@ -132,7 +142,8 @@ class BaseDataModule(LightningDataModule):
             tokenizer=self.tokenizer,
             processor=self.processor,
             hf_dataset_key = self.hf_dataset_key,
-            task = self.task
+            task = self.task,
+            **self.dataset_kwargs,
         )
 
     def set_test_dataset(self):
@@ -150,7 +161,8 @@ class BaseDataModule(LightningDataModule):
             tokenizer=self.tokenizer,
             processor=self.processor,
             hf_dataset_key = self.hf_dataset_key,
-            task = self.task
+            task = self.task,
+            **self.dataset_kwargs,
         )
 
     def setup(self, stage):

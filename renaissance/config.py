@@ -486,7 +486,7 @@ def eval_ref_twotower_electrasmall_deit_small():
     exp_name = "eval_ref_twotower_electrasmall_deit_small"
     model_type = "two-tower"
     datasets = ["coco"]
-    loss_names = _loss_names({"ref": 1})
+    loss_names = _loss_names({"itm": 1})
     batch_size = 128
     per_gpu_batchsize = 128
     
