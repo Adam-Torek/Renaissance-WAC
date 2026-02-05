@@ -383,8 +383,13 @@ class OneTowerEncoder(PreTrainedModel):
         batch
     ):
     
-        input_ids = batch['input_ids']
-        hidden_states = self.text_embeddings(input_ids)
+        input_ids = batch['text_ids']
+        if "text_masks" in batch:
+            attention_mask = batch["text_masks"]
+        else:
+            attention_mask = None
+        
+        hidden_states = self.text_embeddings(input_ids, attention_mask=attention_mask)
         if hasattr(self, "text_embedding_projection"):
             hidden_states = self.text_embedding_projection(hidden_states)
         hidden_states = self.encoder(hidden_states)[0]

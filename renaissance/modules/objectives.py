@@ -8,6 +8,7 @@ from torchvision.ops import giou_loss
 import tqdm
 import functools
 import copy
+import math
 
 from torch.utils.data.distributed import DistributedSampler
 from transformers.loss.loss_for_object_detection import generalized_box_iou
@@ -220,29 +221,45 @@ def compute_ref(pl_module, batch):
     batch_size = pl_module.hparams.config['per_gpu_batchsize']
     targets = batch.pop("label")
     num_objects = batch.pop("num_objects")
-   
-    infer_dict = pl_module.infer(batch)
-    class_feats = get_output_features(pl_module, infer_dict)
-    
-    logit_tensor = pl_module.ref_classifier(class_feats)
-    accuracy_logits = logit_tensor.detach().clone()
-    loss_list = []
+    subimage_list = batch.pop("subimages")
+    text_ids = batch.pop("text_ids")
+    if "text_masks" in batch:
+        text_masks = batch.pop("text_masks")
+    else:
+        text_masks = None
 
-    for i, logits, resolution_targets in zip(range(0, logit_tensor.shape[0]), logit_tensor, targets):
-        num_resolution_objects = num_objects[i]
-        resolution_logits = logits[:num_resolution_objects]
-        resolution_loss = F.cross_entropy(resolution_logits, resolution_targets, reduction="none")
-        loss_list.append(resolution_loss)
-        if num_resolution_objects < pl_module.ref_classifier.num_labels:
-            num_zeros = pl_module.ref_classifier.num_labels - num_resolution_objects
-            accuracy_logits[i, num_resolution_objects:] = torch.full((num_zeros,), 0.0, device=logit_tensor.device)
-    
-    loss = torch.stack(loss_list).mean()
+    total_losses = []
+    object_guesses = []
+    for single_text_ids, subimage_tensor, single_num_objects in zip(text_ids, subimage_list, num_objects):
+        i = 0
+        logit_list = []
+        for subimage in subimage_tensor:
+            batch_dict = {}
+            batch_dict["image"] = [subimage_tensor.unsqueeze(0)]
+            batch_dict["text_ids"] = single_text_ids.unsqueeze(0)
+            if text_masks is not None:
+                single_text_masks = text_masks[i]
+                batch_dict["text_masks"] = single_text_masks.unsqueeze(0)
+            
+            infer_results = pl_module.infer(batch_dict, mask_text=False, mask_image=False)
+            class_feats = get_output_features(pl_module, infer_results)
+            object_logit = pl_module.ref_classifier(class_feats)
+            logit_list.append(object_logit)
+        
+        logit_tensor = torch.stack(logit_list).to(targets.device)
+        object_loss = F.cross_entropy(logit_tensor, targets[i])
+
+        total_losses.append(object_loss)
+        object_guesses.append(logit_tensor.argmax())
+        i += 1
+
+    loss = torch.stack(total_losses).to(targets.device).mean()
+    ref_logits = torch.stack(object_guesses).to(targets.device)
                                                          
     ret = {
         "ref_loss" : loss,
-        "ref_logits" : accuracy_logits,
-        "ref_targets" : targets
+        "ref_logits" : ref_logits,
+        "ref_targets" : targets,
     }
         
     phase = "train" if pl_module.training else "val"

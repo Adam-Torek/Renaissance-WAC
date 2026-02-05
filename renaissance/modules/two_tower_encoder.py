@@ -654,7 +654,10 @@ class TwoTowerEncoder(PreTrainedModel):
         if self.text_transformer is not None:
             do_mlm = "_mlm" if mask_text else ""
             text_ids = batch[f"text_ids{do_mlm}"]
-            text_labels = batch[f"text_labels{do_mlm}"]
+            if f"text_labels{do_mlm}" in batch:
+                text_labels = batch[f"text_labels{do_mlm}"]
+            else:
+                text_labels = None
             text_masks = batch["text_masks"]
             
             if "wac_embeddings" in batch.keys():

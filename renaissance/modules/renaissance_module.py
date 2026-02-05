@@ -295,10 +295,9 @@ class RenaissanceTransformer(pl.LightningModule):
         
         # Initialize Reference Resolution Classifier
         if self.hparams.config["loss_names"]['ref'] > 0:
-            vs = config["refcoco_label_size"]
             self.ref_classifier = heads.MultiModalClassificationHead(
                 hidden_size=hs, 
-                num_labels=vs,
+                num_labels=1,
             )
             self.ref_classifier.apply(objectives.init_weights)
 

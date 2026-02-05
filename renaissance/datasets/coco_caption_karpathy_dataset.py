@@ -64,7 +64,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
             resized_subimage = cropped_image.resize((self.image_size, self.image_size), resample=Image.Resampling.LANCZOS)
             
-            resized_subimage =  [tr(resized_subimage) for tr in self.transforms]
+            resized_subimage = [tr(resized_subimage) for tr in self.transforms][0]
 
             subimages_list.append(resized_subimage)
         
@@ -75,15 +75,16 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         return_dict = {}
         
         text_data = self.get_text(index)
+        return_dict.update(text_data)
 
         if self.subimages_format == "bboxes":
             bboxes_normalized = self.get_bounding_boxes(index, only_one=False, return_normalized=True)
             return_dict["bboxes"] = bboxes_normalized
-            pass
-        elif self.subimages_format == "images" or self.include_wac_data:
+
+        elif self.subimages_format == "all" or self.include_wac_data:
             subimages = self.get_subimages(index, only_one=False)
-            return_dict["subimages"] = subimages
-            pass
+            return_dict["subimages"] = torch.stack(subimages)
+            
         elif self.draw_false_image > 0:
             for i in range(0, self.draw_false_image):
                 random_index = random.randint(0, len(self.index_mapper))
@@ -120,7 +121,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
                 distance_from_center = np.sqrt((bbox_center_x-center_x)**2 + (bbox_center_y - center_y)**2) / np.sqrt(center_x**2 + center_y**2)
 
-                bbox_position_data = torch.tensor([x_1_rel, y_1_rel, x_2_rel, y_2_rel, rel_area, side_ratio, distance_from_center])
+                bbox_position_data = np.array([x_1_rel, y_1_rel, x_2_rel, y_2_rel, rel_area, side_ratio, distance_from_center])
                 bbox_position_list.append(bbox_position_data)
 
             text = text_data["text"][0]
@@ -131,6 +132,48 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         text_index, _ = self.index_mapper[index]
         return_dict["label"] = torch.tensor(self.table["labels"][text_index].as_py())
         return_dict["ann_id"] = torch.tensor(self.table["ann_ids"][text_index].as_py())
-        return_dict["num_objects"] = self.table["num_objects"][text_index].as_py()
+        return_dict["num_objects"] = torch.tensor(self.table["num_objects"][text_index].as_py())
 
         return return_dict
+
+    def torch_collate(self, dict_batch, batch_items, key):
+        dict_batch[key] = torch.stack([batch_item[key] for batch_item in batch_items])
+        return dict_batch
+
+    def list_collate_if_exists(self, dict_batch, batch_items, key):
+        if key in batch_items[0]:
+            dict_batch[key] = [batch_item[key] for batch_item in batch_items]
+        return dict_batch
+
+    def collate(self, batch, mlm_collator=None):
+        dict_batch = {}
+        dict_batch["text_ids"] = []
+        dict_batch["text"] = []
+
+        dict_batch = self.torch_collate(dict_batch, batch, "ann_id")
+        dict_batch = self.torch_collate(dict_batch, batch, "label")
+        dict_batch = self.torch_collate(dict_batch, batch, "num_objects")
+
+        dict_batch = self.list_collate_if_exists(dict_batch, batch, "subimages")
+        dict_batch = self.list_collate_if_exists(dict_batch, batch, "position_data")
+        dict_batch = self.list_collate_if_exists(dict_batch, batch, "tokenized_words")
+
+        for batch_item in batch:
+            batch_text_pair = batch_item["text"]
+            batch_text_data = batch_text_pair[1]
+            batch_text = batch_text_pair[0]
+            
+            dict_batch["text"].append(batch_text)
+            dict_batch["text_ids"].append(torch.tensor(batch_text_data["input_ids"]))
+            if "attention_mask" in batch_text_data:
+                if "text_masks" not in dict_batch:
+                    dict_batch["text_masks"] = []
+                dict_batch["text_masks"].append(torch.tensor(batch_text_data["attention_mask"]))
+
+        dict_batch["text_ids"] = torch.stack(dict_batch["text_ids"])
+
+        if "text_masks" in dict_batch:
+            dict_batch["text_masks"] = torch.stack(dict_batch["text_masks"])
+
+        return dict_batch
+                    
