@@ -228,11 +228,10 @@ def compute_ref(pl_module, batch):
     accuracy_logits = logit_tensor.detach().clone()
     loss_list = []
 
-    for i, logits, values in zip(range(0, logit_tensor.shape[0]), logit_tensor, targets):
+    for i, logits, resolution_targets in zip(range(0, logit_tensor.shape[0]), logit_tensor, targets):
         num_resolution_objects = num_objects[i]
-        resolution_logits = logit_tensor[i, :num_resolution_objects]
-        resolution_targets = targets[i]
-        resolution_loss = F.cross_entropy(resolution_logits, resolution_targets)
+        resolution_logits = logits[:num_resolution_objects]
+        resolution_loss = F.cross_entropy(resolution_logits, resolution_targets, reduction="none")
         loss_list.append(resolution_loss)
         if num_resolution_objects < pl_module.ref_classifier.num_labels:
             num_zeros = pl_module.ref_classifier.num_labels - num_resolution_objects
