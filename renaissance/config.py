@@ -489,7 +489,7 @@ def eval_ref_twotower_electrasmall_deit_small():
     batch_size = 8
     per_gpu_batchsize = 8
     
-    max_epoch = 10
+    max_epoch = 5
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders
