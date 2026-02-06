@@ -298,6 +298,7 @@ class RenaissanceTransformer(pl.LightningModule):
             self.ref_classifier = heads.MultiModalClassificationHead(
                 hidden_size=hs, 
                 num_labels=1,
+                possible_labels=self.hparams.config["refcoco_label_size"],
             )
             self.ref_classifier.apply(objectives.init_weights)
 

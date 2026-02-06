@@ -228,33 +228,27 @@ def compute_ref(pl_module, batch):
     else:
         text_masks = None
 
-    total_losses = []
-    object_guesses = []
-    for single_text_ids, subimage_tensor, single_num_objects in zip(text_ids, subimage_list, num_objects):
-        i = 0
-        logit_list = []
-        for subimage in subimage_tensor:
-            batch_dict = {}
-            batch_dict["image"] = [subimage_tensor.unsqueeze(0)]
-            batch_dict["text_ids"] = single_text_ids.unsqueeze(0)
-            if text_masks is not None:
-                single_text_masks = text_masks[i]
-                batch_dict["text_masks"] = single_text_masks.unsqueeze(0)
-            
-            infer_results = pl_module.infer(batch_dict, mask_text=False, mask_image=False)
-            class_feats = get_output_features(pl_module, infer_results)
-            object_logit = pl_module.ref_classifier(class_feats)
-            logit_list.append(object_logit)
-        
-        logit_tensor = torch.stack(logit_list).to(targets.device)
-        object_loss = F.cross_entropy(logit_tensor, targets[i])
+    ref_logits = torch.full(size=(batch_size, pl_module.ref_classifier.possible_labels,), fill_value=1e-8, device=targets.device)
+    i = 0
 
-        total_losses.append(object_loss)
-        object_guesses.append(logit_tensor.argmax())
+    for single_text_ids, subimage_tensor in zip(text_ids, subimage_list):    
+        batch_dict = {}
+        num_objects = subimage_tensor.shape[0]
+        batch_dict["text_ids"] = single_text_ids.unsqueeze(0).expand(num_objects, -1)
+        if text_masks is not None:
+            batch_dict["text_masks"] = text_masks[i].unsqueeze(0).expand(num_objects, -1)
+        
+        batch_dict["image"] = [subimage_tensor]
+        infer_results = pl_module.infer(batch_dict, mask_text=False, mask_image=False)
+        class_feats = get_output_features(pl_module, infer_results)
+        object_logits = pl_module.ref_classifier(class_feats)
+
+        max_value = torch.max(object_logits)
+        position = torch.argmax(object_logits)
+        ref_logits[i, position] = max_value
         i += 1
 
-    loss = torch.stack(total_losses).to(targets.device).mean()
-    ref_logits = torch.stack(object_guesses).to(targets.device)
+    loss = F.cross_entropy(ref_logits, targets)
                                                          
     ret = {
         "ref_loss" : loss,

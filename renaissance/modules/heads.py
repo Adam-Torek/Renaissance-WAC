@@ -119,7 +119,7 @@ class UniModalClassificationHead(nn.Module):
 class MultiModalClassificationHead(nn.Module):
     """Head for multimodal classification tasks."""
 
-    def __init__(self, hidden_size = None, num_labels = None):
+    def __init__(self, hidden_size = None, num_labels = None, possible_labels=None):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_labels = num_labels
@@ -127,6 +127,7 @@ class MultiModalClassificationHead(nn.Module):
         self.layer_norm = nn.LayerNorm(self.hidden_size)
         self.activation = nn.GELU()
         self.out_proj = nn.Linear(self.hidden_size, self.num_labels)
+        self.possible_labels = possible_labels
 
     def forward(self, features, **kwargs):
         # x = features[:, 0]  # take <s> token (equiv. to [CLS])

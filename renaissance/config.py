@@ -484,10 +484,12 @@ def eval_ref_twotower_electrasmall_deit_small():
     model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
+    num_gpus = 2
+    precision = 'bf16'
     batch_size = 8
     per_gpu_batchsize = 8
     
-    max_epoch = 20
+    max_epoch = 10
     warmup_steps = 0.1
     whole_word_masking = False
     # DO NOT Freeze Encoders

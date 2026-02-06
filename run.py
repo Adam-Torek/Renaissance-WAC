@@ -219,7 +219,7 @@ def run_experiment(_config):
             print("WAC datasets constructed. Starting model evaluation.")
 
         trainer.test(model, datamodule=dm)
-    pass
+
 
 @ex.automain
 def main(_config):
