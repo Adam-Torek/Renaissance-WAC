@@ -5,6 +5,8 @@ import torchvision.transforms.functional as F
 import torch
 import random
 import numpy as np
+import pyarrow as pa
+import pandas as pd
 
 class CocoCaptionKarpathyDataset(BaseDataset):
     def __init__(self, *args, split="", include_wac_data=True, **kwargs):

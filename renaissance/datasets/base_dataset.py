@@ -104,6 +104,7 @@ class BaseDataset(torch.utils.data.Dataset):
                     self.table_names += [name] * len(tables[i])
     
                 self.table = pa.concat_tables(tables)
+                
                 if text_column_name != "":
                     self.text_column_name = text_column_name
                     self.all_texts = self.table[text_column_name].to_pandas().tolist()

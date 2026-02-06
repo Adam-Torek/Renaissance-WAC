@@ -213,7 +213,6 @@ def get_output_features(pl_module, infer_dict):
         class_feats = infer_dict["cls_feats"]
     return class_feats
 
-
 ## Complete this method for batching
 #  Must also decide on how to organize batch in dataset and dataloader
 #  
@@ -228,7 +227,7 @@ def compute_ref(pl_module, batch):
     else:
         text_masks = None
 
-    ref_logits = torch.full(size=(batch_size, pl_module.ref_classifier.possible_labels,), fill_value=1e-8, device=targets.device)
+    ref_logits = torch.full(size=(targets.shape[0], pl_module.ref_classifier.possible_labels,), fill_value=1e-8, device=targets.device)
     i = 0
 
     for single_text_ids, subimage_tensor in zip(text_ids, subimage_list):    

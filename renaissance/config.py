@@ -484,7 +484,7 @@ def eval_ref_twotower_electrasmall_deit_small():
     model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    num_gpus = 2
+    num_gpus = 1
     precision = 'bf16'
     batch_size = 8
     per_gpu_batchsize = 8
@@ -503,7 +503,7 @@ def eval_ref_twotower_electrasmall_deit_small():
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0
-    draw_false_image = 1
+    draw_false_image = 0
     num_gpus = 1
     data_root = "data/arrow/coco"
     
