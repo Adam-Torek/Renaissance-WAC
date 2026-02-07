@@ -5,9 +5,9 @@
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=48      # Number of CPU nodes per task to run
-#SBATCH --gres=gpu:L40:1
+#SBATCH --gres=gpu:L40:2
 #SBATCH -p gpu-l40                     # queue (partition)
-#SBATCH -t 24:00:00                    # run time (hh:mm:ss)
+#SBATCH -t 48:00:00                    # run time (hh:mm:ss)
 
 source activate renaissance
 complete_weights=("" "ajtorek/electra-deit-itm-renaissance-wac" "ajtorek/electra-deit-ref-bbox-renaissance-wac")
