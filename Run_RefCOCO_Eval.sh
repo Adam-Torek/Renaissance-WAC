@@ -10,7 +10,7 @@
 #SBATCH -t 48:00:00                    # run time (hh:mm:ss)
 
 source activate renaissance
-complete_weights=("" "ajtorek/electra-deit-itm-renaissance-wac" "ajtorek/electra-deit-ref-bbox-renaissance-wac")
+complete_weights=("ajtorek/electra-deit-itm-renaissance-wac")
 
 for weights in "${complete_weights[@]}"
 do
