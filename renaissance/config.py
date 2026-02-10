@@ -520,11 +520,11 @@ def eval_ref_twotower_electrasmall_deit_small():
 
     # WAC model settings
     use_wac_embeddings = True
-    wac_distribution_matrix = None
+    wac_distribution_matrix = "value"
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
     #wac_train_steps = 5
-    num_cores = 8
+    num_cores = 4
 
     # HuggingFace settings
     huggingface_save_directory = None

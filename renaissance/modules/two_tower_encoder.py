@@ -106,7 +106,6 @@ class BertSelfAttention(nn.Module):
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
         if wac_distributions is not None and self.wac_distribution_matrix is not None:
-            wac_distributions = self.wac_distribution_projection(wac_distributions)
             wac_distributions = wac_distributions[:, None, :]
             wac_distributions = wac_distributions.expand(-1, query_layer.shape[2], -1)
             wac_distributions = self.transpose_for_scores(wac_distributions)
@@ -385,11 +384,17 @@ class BertWACTransformer(BertWACPreTrainedModel):
 
         self.encoder = BertWACEncoder(config)
         self.gradient_checkpointing = False
+        self.printed_distributions_warning = False
 
         if config.embedding_size != config.hidden_size:
             self.embeddings_projection = nn.Linear(config.embedding_size, config.hidden_size)
         else:
             self.embeddings_projection = None
+
+        if config.wac_distribution_matrix is not None:
+            self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
+        else: 
+            self.wac_distribution_projection = None
 
         self.post_init()
 
@@ -446,6 +451,14 @@ class BertWACTransformer(BertWACPreTrainedModel):
         
         if self.embeddings_projection is not None:
             hidden_states = self.embeddings_projection(hidden_states)
+
+        if wac_distributions is not None:
+            if self.wac_distribution_projection is None:
+                if not self.printed_distributions_warning:
+                    print("Warning: WAC distribution projection must be enabled if WAC distributions are used. Ignoring WAC distributions.")
+                    self.printed_distributions_warning = True
+            else:
+                wac_distributions = self.wac_distribution_projection(wac_distributions)
         
         hidden_states = self.encoder(hidden_states=hidden_states,
                                      attention_mask=extended_attention_mask,
@@ -580,8 +593,8 @@ class TwoTowerEncoder(PreTrainedModel):
         # Initialize text_encoder
         # Randomly Initialize Encoder Weights
         if config.text_encoder_path is not None:
+            text_encoder_config = config.text_config
             if self.random_init_text_encoder:
-                    text_encoder_config = config.text_config
                     if 'wac' in config.text_encoder_path:
                         self.text_transformer = BertWACTransformer(text_encoder_config)
                     else:
@@ -589,7 +602,7 @@ class TwoTowerEncoder(PreTrainedModel):
             else:
                 # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
                 if 'wac' in config.text_encoder_path:
-                    self.text_transformer = BertWACTransformer.from_pretrained(config.text_encoder_path)
+                    self.text_transformer = BertWACTransformer.from_pretrained(config.text_encoder_path, config=text_encoder_config)
                 else:
                     self.text_transformer = AutoModel.from_pretrained(config.text_encoder_path)
                 self.text_transformer.train()
