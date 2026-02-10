@@ -9,7 +9,7 @@ import pyarrow as pa
 import pandas as pd
 
 class CocoCaptionKarpathyDataset(BaseDataset):
-    def __init__(self, *args, split="", include_wac_data=True, **kwargs):
+    def __init__(self, *args, split="", **kwargs):
         assert split in ["train", "val", "test"]
         self.split = split
 
@@ -126,6 +126,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
                 bbox_position_data = np.array([x_1_rel, y_1_rel, x_2_rel, y_2_rel, rel_area, side_ratio, distance_from_center])
                 bbox_position_list.append(bbox_position_data)
 
+            bbox_position_list = np.stack(bbox_position_list)
             text = text_data["text"][0]
             tokenized_text = self.tokenizer.tokenize(text)
             return_dict["tokenized_words"] = tokenized_text
@@ -133,7 +134,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
        
         text_index, _ = self.index_mapper[index]
         return_dict["label"] = torch.tensor(self.table["labels"][text_index].as_py())
-        return_dict["ann_id"] = torch.tensor(self.table["ann_ids"][text_index].as_py())
+        return_dict["ann_id"] = self.table["ann_ids"][text_index].as_py()
         return_dict["num_objects"] = torch.tensor(self.table["num_objects"][text_index].as_py())
 
         return return_dict
@@ -152,13 +153,15 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         dict_batch["text_ids"] = []
         dict_batch["text"] = []
 
-        dict_batch = self.torch_collate(dict_batch, batch, "ann_id")
+        
         dict_batch = self.torch_collate(dict_batch, batch, "label")
         dict_batch = self.torch_collate(dict_batch, batch, "num_objects")
 
         dict_batch = self.list_collate_if_exists(dict_batch, batch, "subimages")
         dict_batch = self.list_collate_if_exists(dict_batch, batch, "position_data")
         dict_batch = self.list_collate_if_exists(dict_batch, batch, "tokenized_words")
+        dict_batch = self.list_collate_if_exists(dict_batch, batch, "position_data")
+        dict_batch = self.list_collate_if_exists(dict_batch, batch, "ann_id")
 
         for batch_item in batch:
             batch_text_pair = batch_item["text"]

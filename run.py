@@ -98,6 +98,10 @@ def run_experiment(_config):
     print('\n\n')
 
     print()
+    print("WAC embeddings settings: ", _config["use_wac_embeddings"])
+    print("Attention head part to inject WAC distributions: ", _config["wac_distribution_matrix"])
+    print("Image encoder for WAC image features: ", _config["wac_image_encoder"])
+    print("Save directory for WAC models", _config["save_directory"])
     print("Num WAC Cores: ", _config["num_cores"])
                
     if not load_path:

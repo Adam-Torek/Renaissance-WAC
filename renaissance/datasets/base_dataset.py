@@ -102,7 +102,7 @@ class BaseDataset(torch.utils.data.Dataset):
                 self.table_names = list()
                 for i, name in enumerate(names):
                     self.table_names += [name] * len(tables[i])
-    
+
                 self.table = pa.concat_tables(tables)
                 
                 if text_column_name != "":

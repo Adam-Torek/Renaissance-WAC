@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import os
 import glob
 import json
+from torch.onnx.utils import model_signature
 from torchvision.ops import giou_loss
 import tqdm
 import functools
@@ -227,6 +228,16 @@ def compute_ref(pl_module, batch):
     else:
         text_masks = None
 
+    if pl_module.wac_models is not None:
+        wac_models_batch = {}
+        wac_models_batch["text_ids"] = text_ids
+        wac_models_batch["tokenized_words"] = batch["tokenized_words"]
+        wac_models_batch["ann_id"] = batch["ann_id"]
+
+        wac_feature_dict = pl_module.forward_wac_features(wac_models_batch)
+    else:
+        wac_feature_dict = None
+
     ref_logits = torch.full(size=(targets.shape[0], pl_module.ref_classifier.possible_labels,), fill_value=1e-8, device=targets.device)
     i = 0
 
@@ -238,6 +249,16 @@ def compute_ref(pl_module, batch):
             batch_dict["text_masks"] = text_masks[i].unsqueeze(0).expand(num_objects, -1)
         
         batch_dict["image"] = [subimage_tensor]
+        if wac_feature_dict is not None:
+            if "wac_embeddings" in wac_feature_dict:
+                wac_embeddings = wac_feature_dict["wac_embeddings"][i, :]
+                wac_embeddings = wac_embeddings.unsqueeze(0).expand(num_objects, -1, -1)
+                batch_dict["wac_embeddings"] = wac_embeddings
+            if "wac_distributions" in wac_feature_dict:
+                wac_distributions = wac_feature_dict["wac_distributions"][i, :]
+                wac_distributions = wac_distributions.unsqueeze(0).expand(num_objects, -1)
+                batch_dict["wac_distributions"] = wac_distributions
+
         infer_results = pl_module.infer(batch_dict, mask_text=False, mask_image=False)
         class_feats = get_output_features(pl_module, infer_results)
         object_logits = pl_module.ref_classifier(class_feats)

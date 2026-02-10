@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+import numpy as np
 
 import os
 import zipfile
@@ -443,30 +444,10 @@ class RenaissanceTransformer(pl.LightningModule):
             # ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
             # state_dict = ckpt["state_dict"]
             self.load_state_dict(state_dict, strict=False)
-            
-    def infer(self,
-        batch,
-        mask_text=False,
-        mask_image=False,
-        image_token_type_idx=1,
-        img=None,
-        image_embeds=None,
-        image_masks=None,
-    ):
-        if self.model_type == 'one-tower':
-            ret = self.encoder(
-                batch,
-                mask_text=mask_text,
-                mask_image=mask_image,
-                image_token_type_idx=image_token_type_idx,
-                image_embeds=image_embeds,
-                image_masks=image_masks,
-            )
-            return ret
-        
-        elif self.model_type == 'two-tower':
 
-            if self.wac_models is not None:
+    def forward_wac_features(self, batch):
+        wac_features_dict = {}
+        if self.wac_models is not None:
                 input_ids = batch["text_ids"]
                 tokenized_words = batch["tokenized_words"]
 
@@ -497,7 +478,7 @@ class RenaissanceTransformer(pl.LightningModule):
                         j += 1
                     
                     wac_embedding_tensor = wac_embedding_tensor.to(input_ids.device)
-                    batch["wac_embeddings"] = wac_embedding_tensor
+                    wac_features_dict["wac_embeddings"] = wac_embedding_tensor
 
                 if self.wac_distribution_matrix is not None:
                     vocab_size = self.encoder.config.text_config.vocab_size
@@ -511,7 +492,31 @@ class RenaissanceTransformer(pl.LightningModule):
                         wac_distributions_tensor[:, i] = distribution_values
 
                     wac_distributions_tensor = wac_distributions_tensor.to(input_ids.device)
-                    batch["wac_distributions"] = wac_distributions_tensor
+                    wac_features_dict["wac_distributions"] = wac_distributions_tensor
+        
+        return wac_features_dict
+            
+    def infer(self,
+        batch,
+        mask_text=False,
+        mask_image=False,
+        image_token_type_idx=1,
+        img=None,
+        image_embeds=None,
+        image_masks=None,
+    ):
+        if self.model_type == 'one-tower':
+            ret = self.encoder(
+                batch,
+                mask_text=mask_text,
+                mask_image=mask_image,
+                image_token_type_idx=image_token_type_idx,
+                image_embeds=image_embeds,
+                image_masks=image_masks,
+            )
+            return ret
+        
+        elif self.model_type == 'two-tower':
             
             ret = self.encoder(
                 batch,
@@ -677,6 +682,7 @@ class RenaissanceTransformer(pl.LightningModule):
         
         safetensors_weights = load_file(download_path)
         self.encoder.load_state_dict(safetensors_weights)
+        self.encoder.train()
 
     def delete_wac_image_encoder(self):
         self.wac_image_encoder = None
@@ -687,17 +693,29 @@ class RenaissanceTransformer(pl.LightningModule):
             self.wac_image_encoder = self.wac_image_encoder.to(device)
 
             for batch in tqdm.tqdm(dm):
-                subimages = batch["subimage"][0].to(device)
+                labels = batch["label"]
+                aligned_subimages = []
+                subimage_lists = batch["subimages"]
+                aligned_position_data_list = []
+                position_data_list = batch["position_data"]
+                for label, subimage_tensor, position_data in zip(labels, subimage_lists, position_data_list):
+                    aligned_subimage = subimage_tensor[label]
+                    aligned_position_data = position_data[label]
+                    aligned_subimages.append(aligned_subimage)
+                    aligned_position_data_list.append(aligned_position_data)
+                    
+                subimages = torch.stack(aligned_subimages).to(device)
+
                 input_ids = batch["text_ids"].to(device)
                 attention_mask = batch["text_masks"].to(device)
-                position_data = torch.stack(batch["position_data"]).to(device)
                 feature_ids = batch["ann_id"]
               
                 image_features = self.wac_image_encoder(pixel_values=subimages, 
                                                         input_ids=input_ids, 
                                                         attention_mask=attention_mask).image_embeds
                 
-                wac_features = torch.cat([image_features, position_data], dim=1)
-                wac_features = wac_features.cpu().numpy()
+                aligned_positions_numpy = np.stack(aligned_position_data_list)
+                wac_features = image_features.cpu().numpy()
+                wac_features = np.concat([wac_features, aligned_positions_numpy], axis=1)
                 
                 self.wac_models.add_features(feature_ids, wac_features, split)

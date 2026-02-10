@@ -484,8 +484,8 @@ def eval_ref_twotower_electrasmall_deit_small():
     model_type = "two-tower"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    num_gpus = 2
-    precision = 'bf16'
+    num_gpus = 1
+    precision = 'bf16-mixed'
     batch_size = 8
     per_gpu_batchsize = 8
     
@@ -519,12 +519,12 @@ def eval_ref_twotower_electrasmall_deit_small():
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
-    use_wac_embeddings = False
+    use_wac_embeddings = True
     wac_distribution_matrix = None
-    wac_image_encoder = None
-    save_directory = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    save_directory = "wac_models"
     #wac_train_steps = 5
-    num_cores = 0
+    num_cores = 8
 
     # HuggingFace settings
     huggingface_save_directory = None
