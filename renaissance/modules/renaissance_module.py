@@ -681,7 +681,7 @@ class RenaissanceTransformer(pl.LightningModule):
                                         filename="model.safetensors",)
         
         safetensors_weights = load_file(download_path)
-        self.encoder.load_state_dict(safetensors_weights)
+        self.encoder.load_state_dict(safetensors_weights, strict=False)
         self.encoder.train()
 
     def delete_wac_image_encoder(self):
@@ -716,6 +716,6 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 aligned_positions_numpy = np.stack(aligned_position_data_list)
                 wac_features = image_features.cpu().numpy()
-                wac_features = np.concat([wac_features, aligned_positions_numpy], axis=1)
+                wac_features = np.concatenate([wac_features, aligned_positions_numpy], axis=1)
                 
                 self.wac_models.add_features(feature_ids, wac_features, split)
