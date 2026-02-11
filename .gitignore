@@ -4,3 +4,4 @@ result/*
 results/*
 slurm_logs/*
 glue_results/*
+models/*

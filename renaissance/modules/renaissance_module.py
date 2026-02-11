@@ -173,35 +173,19 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_models = WACModels(**wac_args)
 
-                if config['huggingface_wac_repo'] is not None:
-                    wac_repo = config['huggingface_wac_repo']
-                    wac_model_save_directory = config['huggingface_save_directory']
-                    wac_model_save_directory = os.path.join(wac_model_save_directory, wac_repo.split("/")[-1])
-
-                    if not os.path.exists(os.path.join(wac_model_save_directory, "wac_models")):
-                        hf_hub_download(repo_id=wac_repo, 
-                                        filename="wac_models.zip", 
-                                        local_dir=wac_model_save_directory)
-                        
-                        compressed_wac_path = os.path.join(wac_model_save_directory, "wac_models.zip")
-                        destination_directory = os.path.join(wac_model_save_directory, "wac_models")
-                        os.makedirs(destination_directory, exist_ok=True)
-
-                        with zipfile.ZipFile(compressed_wac_path, "r") as wac_file:
-                            for subpath in wac_file.namelist():
-                                if not os.path.basename(subpath):
-                                    continue
-
-                                file_source = wac_file.open(subpath)
-                                subpath = subpath.split("/")[-1]
-                                file_target = open(os.path.join(destination_directory, subpath), "wb")
-                                with file_source, file_target:
-                                    shutil.copyfileobj(file_source, file_target)
-                        
-                        os.remove(compressed_wac_path)
-
-                    self.wac_models.load_models()
-
+                if config['huggingface_wac_repo'] is not None or config['local_wac_repo'] is not None:
+                    
+                    if config['local_wac_repo'] is not None:
+                        local_wac_repo = config['local_wac_repo']
+                        try:
+                            self.wac_models.load_models(local_wac_repo)
+                        except Exception as e:
+                            self.load_wac_huggingface(config)
+                            
+                    else:
+                        self.load_wac_huggingface(config)
+                    
+                    
                 self.current_training_epoch = 0
 
             two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
@@ -495,6 +479,33 @@ class RenaissanceTransformer(pl.LightningModule):
                     wac_features_dict["wac_distributions"] = wac_distributions_tensor
         
         return wac_features_dict
+
+    def load_wac_huggingface(self, config):
+        wac_repo = config['huggingface_wac_repo']
+        wac_model_save_directory = config['huggingface_save_directory']
+        wac_model_save_directory = os.path.join(wac_model_save_directory, wac_repo.split("/")[-1])
+
+        hf_hub_download(repo_id=wac_repo, 
+                        filename="wac_models.zip", 
+                        local_dir=wac_model_save_directory)
+        
+        compressed_wac_path = os.path.join(wac_model_save_directory, "wac_models.zip")
+        destination_directory = os.path.join(wac_model_save_directory, "wac_models")
+        os.makedirs(destination_directory, exist_ok=True)
+
+        with zipfile.ZipFile(compressed_wac_path, "r") as wac_file:
+            for subpath in wac_file.namelist():
+                if not os.path.basename(subpath):
+                    continue
+
+                file_source = wac_file.open(subpath)
+                subpath = subpath.split("/")[-1]
+                file_target = open(os.path.join(destination_directory, subpath), "wb")
+                with file_source, file_target:
+                    shutil.copyfileobj(file_source, file_target)
+        
+        os.remove(compressed_wac_path)
+        self.wac_models.load_models()
             
     def infer(self,
         batch,

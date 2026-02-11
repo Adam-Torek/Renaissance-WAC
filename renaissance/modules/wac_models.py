@@ -181,7 +181,7 @@ class WACModels():
                 trained_model_results.append(word_model)
         else:
             try:
-                with MPIPoolExecutor(max_workers=num_cores) as process_pool:
+                with get_context("spawn").Pool(processes=num_cores) as process_pool:
                     training_model_arguments = list(word_feature_ids.items())
                     trained_model_results = process_pool.starmap(self._update_wac_model_word, training_model_arguments)
             except Exception as e:
@@ -347,13 +347,18 @@ class WACModels():
             with open(os.path.join(self.save_directory, f"{word}.pkl"), "wb") as model_file:
                 pickle.dump(model, model_file)
 
-    def load_models(self) -> None:
+    def load_models(self, load_directory=None) -> None:
         
-        if not os.path.exists(self.save_directory):
-            raise ValueError(f"Directory {self.save_directory} cannot be found or does not exist.")
+        if load_directory is None or not os.path.exists(load_directory):
+            directory_to_use = self.save_directory
+        else:
+            directory_to_use = load_directory
+
+        if not os.path.exists(directory_to_use):
+            raise ValueError(f"Directory {directory_to_use} cannot be found or does not exist.")
 
         # Load WAC model metadata from disk
-        with open(os.path.join(self.save_directory, "wac_metadata.json"), "r") as json_file:
+        with open(os.path.join(directory_to_use, "wac_metadata.json"), "r") as json_file:
             wac_metadata = json.load(json_file)
             self.embedding_size = wac_metadata["embedding_size"]
             self.position_size = wac_metadata["position_size"]
@@ -362,7 +367,7 @@ class WACModels():
 
         # Load each WAC model from disk
         for word in self.vocab:
-            with open(os.path.join(self.save_directory, f"{word}.pkl"), "rb") as model_file:
+            with open(os.path.join(directory_to_use, f"{word}.pkl"), "rb") as model_file:
                 self.wac_models[word] = pickle.load(model_file)
  
     
