@@ -579,7 +579,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
     #wac_train_steps = 5
-    num_cores = 16
+    num_cores = 32
 
     # HuggingFace settings
     huggingface_save_directory = None
