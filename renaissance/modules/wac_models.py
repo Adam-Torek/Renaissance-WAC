@@ -272,7 +272,6 @@ class WACModels():
                 num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
                 with get_context("spawn").Pool(processes=num_cores) as process_pool:
                     trained_model_list = process_pool.starmap(self._train_single_model, datasets_to_train)
-
             # Train models in single-threaded mode if an error occurs in multiprocess mode
             except Exception as e:
                 print(f"Unable to use multiprocessing due to the following error: {str(e)}. Running in single process mode.")
@@ -330,7 +329,7 @@ class WACModels():
 
     def save_models(self) -> None:
         if not os.path.exists(self.save_directory):
-            os.mkdir(self.save_directory)
+            os.makedirs(self.save_directory, exist_ok=True)
         
         # Save WAC model metadata to disk
         wac_metadata = {}

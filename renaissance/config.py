@@ -544,6 +544,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     per_gpu_batchsize = 8
     complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
     
+    max_steps = 10
     max_epoch = 5
     warmup_steps = 0.1
     whole_word_masking = False
@@ -580,7 +581,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
     #wac_train_steps = 5
-    num_cores = 8
+    num_cores = 0
 
     # HuggingFace settings
     huggingface_save_directory = "models"
