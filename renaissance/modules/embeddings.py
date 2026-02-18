@@ -144,15 +144,18 @@ class ElectraEmbeddings(nn.Module):
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
 
-        token_type_embeddings = self.token_type_embeddings(token_type_ids)
-        embeddings = inputs_embeds + token_type_embeddings
-
         if wac_embeddings is not None:
-            if wac_embeddings.shape[2] != embeddings.shape[2]:
+            if wac_embeddings.shape[2] != inputs_embeds.shape[2]:
                 if self.wac_embeddings_projection is None:
                     raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
                 
                 wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
+
+        token_type_embeddings = self.token_type_embeddings(token_type_ids)
+        embeddings = inputs_embeds + token_type_embeddings
+
+        if wac_embeddings is not None:
+            wac_embeddings = wac_embeddings + token_type_embeddings
 
         if self.position_embedding_type == "absolute":
             position_embeddings = self.position_embeddings(position_ids)

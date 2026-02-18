@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=48      # Number of CPU nodes per task to run
 #SBATCH --gres=gpu:L40:1
 #SBATCH -p gpu-l40                     # queue (partition)
-#SBATCH -t 96:00:00                    # run time (hh:mm:ss)
+#SBATCH -t 144:00:00                    # run time (hh:mm:ss)
 
 source activate renaissance
 
