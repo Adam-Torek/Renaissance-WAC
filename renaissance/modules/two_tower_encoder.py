@@ -391,12 +391,18 @@ class BertWACTransformer(BertWACPreTrainedModel):
         else:
             self.embeddings_projection = None
 
-        if config.wac_distribution_matrix is not None:
-            self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
-        else: 
-            self.wac_distribution_projection = None
-
         self.post_init()
+
+    def create_embeddings_projection(self):
+        if not hasattr(self.embeddings, "wac_embeddings_projection") or self.embeddings.wac_embeddings_projection is None:
+            self.embeddings.wac_embeddings_projection = nn.Linear(self.config.wac_embedding_size, 
+                                                                  self.config.embedding_size)
+            self.embeddings.wac_embeddings_projection.apply(init_weights)
+            
+    def create_distributions_projection(self):
+        if not hasattr(self, "wac_distribution_projection") or self.wac_distribution_projection is None:
+                self.wac_distribution_projection = nn.Linear(self.config.vocab_size, self.config.hidden_size)
+                self.wac_distribution_projection.apply(init_weights)
 
     def forward(self, 
                 input_ids=None, 
@@ -672,21 +678,30 @@ class TwoTowerEncoder(PreTrainedModel):
             else:
                 text_labels = None
             text_masks = batch["text_masks"]
-            
-            if "wac_embeddings" in batch.keys():
-                wac_embeddings = batch["wac_embeddings"]
-                text_embeds = self.text_transformer.embeddings(input_ids=text_ids, wac_embeddings=wac_embeddings)
-            else:
-                text_embeds = self.text_transformer.embeddings(input_ids=text_ids)
-
-            device = text_embeds.device
+           
             input_shape = text_masks.size()
             extend_text_masks = self.text_transformer.get_extended_attention_mask(text_masks, input_shape)
             
-            if "wac_distributions" in batch.keys():
-                wac_distributions = batch["wac_distributions"]
-                text_embeds = self.text_transformer(inputs_embeds=text_embeds, wac_distributions=wac_distributions).last_hidden_state
+            if "wac_distributions" in batch.keys() or "wac_embeddings" in batch.keys():
+                if "wac_distributions" in batch.keys():
+                    wac_distributions = batch["wac_distributions"]
+                    self.text_transformer.create_distributions_projection()
+                    
+                else:
+                    wac_distributions = None
+                
+                if "wac_embeddings" in batch.keys():
+                    wac_embeddings = batch["wac_embeddings"]
+                    self.text_transformer.create_embeddings_projection()
+                else:
+                    wac_embeddings = None
+
+                text_embeds = self.text_transformer(input_ids=text_ids,
+                                                    attention_mask=text_masks,
+                                                    wac_embeddings=wac_embeddings, 
+                                                    wac_distributions=wac_distributions).last_hidden_state
             else: 
+                text_embeds = self.text_transformer.embeddings(input_ids=text_ids)
                 text_embeds = self.text_transformer(inputs_embeds=text_embeds).last_hidden_state
                 
             if self.image_encoder is not None:
@@ -707,6 +722,7 @@ class TwoTowerEncoder(PreTrainedModel):
             # if self.is_huggingface:
             image_embeds = image_embeds.last_hidden_state
             if self.text_transformer is not None:
+                device = image_embeds.device
                 image_embeds = self.cross_modal_image_transform(image_embeds)
                 image_masks = torch.ones((image_embeds.size(0), image_embeds.size(1)), dtype=torch.long, device=device)
                 extend_image_masks = self.text_transformer.get_extended_attention_mask(image_masks, image_masks.size())#, device)

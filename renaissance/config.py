@@ -87,6 +87,7 @@ def config():
     image_encoder_mlp_ratio = 4
     image_encoder_drop_rate = 0.1
     image_encoder_embedding_size = 128
+    image_encoder_norm_eps = 1e-8
     image_size = 224
     original_image_size = 224 # Image size model is pretrained with, used in fine-tuning and testing
     patch_size = 16
@@ -113,6 +114,7 @@ def config():
     text_encoder_mlp_ratio = 4
     text_encoder_drop_rate = 0.1
     text_encoder_embedding_size = 64
+    text_encoder_norm_eps = 1e-8
     max_text_len = 40
     vocab_size = 30522
 
@@ -122,6 +124,7 @@ def config():
     num_cross_layer_heads = 4
     cross_layer_mlp_ratio = 4
     cross_layer_drop_rate = 0.1
+    cross_encoder_norm_eps = 1e-8
     
     # Freeze Module Parameter Settings
     freeze_image_encoder = False
@@ -539,7 +542,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
     num_gpus = 1
-    precision = 'bf16-mixed'
+    precision = 32
     batch_size = 8
     per_gpu_batchsize = 8
     complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
@@ -576,8 +579,8 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
+    use_wac_embeddings = False
+    wac_distribution_matrix = "value"
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
     #wac_train_steps = 5

@@ -24,7 +24,7 @@ class WACConfig(ElectraConfig):
                  max_position_embeddings=512,
                  type_vocab_size=2,
                  initializer_range=0.02,
-                 layer_norm_eps=1e-12,
+                 layer_norm_eps=1e-8,
                  summary_type="first",
                  summary_use_proj=True,
                  summary_activation="gelu",
@@ -89,6 +89,7 @@ class TwoTowerConfig(PretrainedConfig):
                         'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
                         'wac_embedding_size': wac_embedding_size,
                         'wac_distribution_matrix': config['wac_distribution_matrix'],
+                        'layer_norm_eps': config['text_encoder_norm_eps'],
                     }
                     if 'wac' in config['text_encoder']:
                         text_encoder_kwargs['wac_embedding_size'] = wac_embedding_size
@@ -122,6 +123,7 @@ class TwoTowerConfig(PretrainedConfig):
                         'intermediate_size' : config["image_encoder_hidden_size"] * config["image_encoder_mlp_ratio"],
                         'hidden_dropout_prob' : config["image_encoder_drop_rate"],
                         'attention_probs_dropout_prob' : config["image_encoder_drop_rate"],
+                        'layer_norm_eps': config['layer_norm_eps'],
                     }
                     self.image_config = AutoConfig.from_pretrained(config["image_encoder"], **image_encoder_kwargs)
                 else:
@@ -142,6 +144,7 @@ class TwoTowerConfig(PretrainedConfig):
                     max_position_embeddings=config["max_text_len"],
                     hidden_dropout_prob=config["cross_layer_drop_rate"],
                     attention_probs_dropout_prob=config["cross_layer_drop_rate"],
+                    layer_norm_eps=config['cross_encoder_norm_eps'],
                 )  
             else:
                 self.fusion_config = None      

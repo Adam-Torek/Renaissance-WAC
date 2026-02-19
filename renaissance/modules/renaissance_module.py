@@ -453,7 +453,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 if self.wac_embedding_size is not None:
                     batch_size, seq_length = input_ids.shape
                     wac_embedding_size = self.wac_embedding_size
-                    wac_embedding_tensor = torch.zeros((batch_size, seq_length, wac_embedding_size))
+                    wac_embedding_tensor = torch.full((batch_size, seq_length, wac_embedding_size), 1e-10)
                     j = 0
                     for words in tokenized_words:
                         word_embeddings = self.wac_models.get_embeddings(words=words)
@@ -467,7 +467,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 if self.wac_distribution_matrix is not None:
                     vocab_size = self.encoder.config.text_config.vocab_size
                     batch_size = input_ids.shape[0]
-                    wac_distributions_tensor = torch.zeros((batch_size, vocab_size))
+                    wac_distributions_tensor = torch.full((batch_size, vocab_size), 1e-10)
                     wac_distributions = self.wac_models.get_distributions(indices)
 
                     for word, distribution_values in wac_distributions.items():
@@ -692,7 +692,7 @@ class RenaissanceTransformer(pl.LightningModule):
                                         filename="model.safetensors",)
         
         safetensors_weights = load_file(download_path)
-        self.encoder.load_state_dict(safetensors_weights, strict=False)
+        self.encoder.load_state_dict(safetensors_weights)
         self.encoder.train()
 
     def delete_wac_image_encoder(self):

@@ -316,15 +316,16 @@ class WACModels():
         for word in words:
             word = re.sub(r"/", "{slash}", word)
             try:
-                random_features = np.random((self.embedding_size + self.position_size + 1,))
+                generator = np.random.default_rng()
+                random_features = generator.random((1, self.embedding_size + self.position_size,))
                 _ = self.wac_models[word].predict(random_features)
-                word_embedding = np.concat([self.wac_datasets[word].coef_, self.wac_datasets[word].intercept_]) 
+                word_embedding = np.concat([np.squeeze(self.wac_models[word].coef_), self.wac_models[word].intercept_]) 
             except Exception as e:
-                word_embedding = np.zeros((self.embedding_size+self.position_size+1,))
+                word_embedding = np.full((self.embedding_size+self.position_size+1,), 1e-10)
 
             embeddings_list.append(word_embedding)
         
-        embeddings_list = np.array(embeddings_list)
+        embeddings_list = np.stack(embeddings_list)
         return embeddings_list
 
     def save_models(self) -> None:
