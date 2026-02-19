@@ -39,8 +39,6 @@ class BertSelfAttention(nn.Module):
         self.value = nn.Linear(config.hidden_size, self.all_head_size)
 
         self.wac_distribution_matrix = config.wac_distribution_matrix
-        if self.wac_distribution_matrix is not None:
-            self.wac_distribution_projection = nn.Linear(config.vocab_size, self.all_head_size)
            
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
         self.position_embedding_type = getattr(config, "position_embedding_type", "absolute")
@@ -395,13 +393,15 @@ class BertWACTransformer(BertWACPreTrainedModel):
 
     def create_embeddings_projection(self):
         if not hasattr(self.embeddings, "wac_embeddings_projection") or self.embeddings.wac_embeddings_projection is None:
+            device = self.embeddings.word_embeddings.weight.device
             self.embeddings.wac_embeddings_projection = nn.Linear(self.config.wac_embedding_size, 
-                                                                  self.config.embedding_size)
+                                                                  self.config.embedding_size).to(device)
             self.embeddings.wac_embeddings_projection.apply(init_weights)
             
     def create_distributions_projection(self):
         if not hasattr(self, "wac_distribution_projection") or self.wac_distribution_projection is None:
-                self.wac_distribution_projection = nn.Linear(self.config.vocab_size, self.config.hidden_size)
+                device = self.embeddings.word_embeddings.weight.device
+                self.wac_distribution_projection = nn.Linear(self.config.vocab_size, self.config.hidden_size).to(device)
                 self.wac_distribution_projection.apply(init_weights)
 
     def forward(self, 

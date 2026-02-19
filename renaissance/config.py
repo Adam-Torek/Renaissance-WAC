@@ -195,6 +195,7 @@ def config():
     wac_train_steps = 5
     huggingface_wac_repo = None
     local_wac_repo = None
+    save_wac_features = False
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -579,12 +580,13 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
-    use_wac_embeddings = False
-    wac_distribution_matrix = "value"
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
     wac_image_encoder = "openai/clip-vit-base-patch16"
     save_directory = "wac_models"
     #wac_train_steps = 5
     num_cores = 0
+    save_wac_features = True
 
     # HuggingFace settings
     huggingface_save_directory = "models"

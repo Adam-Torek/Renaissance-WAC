@@ -20,6 +20,7 @@ class WACModels():
                  position_size: int, 
                  neg_to_pos: int=3,
                  num_cores: int=-1,
+                 save_wac_features=False,
                  wac_feature_splits: list[str] = ["train","val","test"],
                  **wac_kwargs: Unpack[dict],) -> None:
         
@@ -28,6 +29,7 @@ class WACModels():
         self.special_vocab = []
         self.splits_to_use = wac_feature_splits
         self.current_split = "train"
+        self.save_wac_features = save_wac_features
 
         for word in vocab:
             word = re.sub(r"/", "{slash}", word)
@@ -75,6 +77,13 @@ class WACModels():
             raise ValueError(f"Split {split} is not an available split. You must select from the following: {str(self.splits_to_use)}")
         self.current_split = split
 
+    def check_features_loaded(self):
+        for split in self.splits_to_use:
+            if len(self.wac_features[split]) == 0 or len(self.positive_feature_ids[split]) == 0:
+                return False 
+        
+        return True
+
     def add_word_sample(self, 
                         word: str, 
                         feature_id: tuple, 
@@ -99,7 +108,7 @@ class WACModels():
         # Add visual feature and feature ID to current WAC database
         if label == 1:
             self.current_wac_datasets[self.current_split][word]["pos"].append(feature_id)
-            self.positive_feature_ids[self.current_split][word].add(feature_id)
+
         elif label == 0:
             self.current_wac_datasets[self.current_split][word]["neg"].append(feature_id)
         else:
@@ -108,10 +117,19 @@ class WACModels():
     def add_features(self, 
                      feature_ids: list[int], 
                      wac_features: list[np.ndarray],
+                     tokenized_words: list[list[str]],
                      split: str) -> None:
         
         for feature_id, wac_feature in zip(feature_ids, wac_features):
             self.wac_features[split][feature_id] = wac_feature
+
+        for sentence in tokenized_words:
+            for word in sentence:
+                for feature_id in feature_ids:
+                    if word not in self.positive_feature_ids[split]:
+                        self.positive_feature_ids[split][word] = set()
+
+                    self.positive_feature_ids[split][word].add(feature_id)
         
     def add_positive(self, word: str, feature_id: int) -> None:
         self.add_word_sample(word, feature_id, 1)
@@ -137,11 +155,13 @@ class WACModels():
             positive_features.append(pos_feature_id)
         
         num_negative_features = len(positive_features) * self.neg_to_pos
-        negative_feature_space = list(self.wac_features[self.current_split].keys())
+        negative_feature_space = set(self.wac_features[self.current_split].keys())
 
         for pos_feature_id in self.positive_feature_ids[self.current_split][word]:
             if pos_feature_id in negative_feature_space:
                 negative_feature_space.remove(pos_feature_id)
+
+        negative_feature_space = list(negative_feature_space)
 
         negative_feature_ids = list(random.sample(negative_feature_space, k=num_negative_features))
 
@@ -369,5 +389,34 @@ class WACModels():
         for word in self.vocab:
             with open(os.path.join(directory_to_use, f"{word}.pkl"), "rb") as model_file:
                 self.wac_models[word] = pickle.load(model_file)
- 
+
+    def save_features(self):
+         if self.save_wac_features:
+            if not os.path.exists(self.save_directory):
+                os.makedirs(self.save_directory, exist_ok=True)
+            
+            with open(os.path.join(self.save_directory, "wac_features.pkl"), "wb") as features_file:
+                pickle.dump(self.wac_features, features_file)
+
+            with open(os.path.join(self.save_directory, "positive_feature_ids.pkl"), "wb") as feature_ids_file:
+                pickle.dump(self.positive_feature_ids, feature_ids_file)
+
+    def load_features(self):
+        if self.save_wac_features:
+            try:
+                with open(os.path.join(self.save_directory, "wac_features.pkl"), "rb") as features_file:
+                    self.wac_features = pickle.load(features_file)
+
+                with open(os.path.join(self.save_directory, "positive_feature_ids.pkl"), "rb") as feature_ids_file:
+                    self.positive_feature_ids = pickle.load(feature_ids_file)
+
+                return True
+
+            except Exception as e:
+                return False
+        
+        else:
+            return False
+        
+
     

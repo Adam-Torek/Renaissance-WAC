@@ -37,13 +37,15 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             loss_names = kwargs.pop("loss_names")
             if loss_names["ref_bbox"] > 0:
                 self.subimages_format = "bboxes"
+            if loss_names["itm"] > 0:
+                self.subimages_format = "none"
 
     def get_bounding_boxes(self, index, only_one=False, return_normalized=False):
         text_index, _ = self.index_mapper[index]
         bboxes = self.table["bboxes"][text_index].as_py()
         if only_one:
             label = self.table["labels"][text_index].as_py()
-            bboxes = bboxes[label]
+            bboxes = [bboxes[label]]
         
         if return_normalized:
             width, height = self.get_raw_image(index).size
@@ -87,10 +89,11 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             subimages = self.get_subimages(index, only_one=False)
             return_dict["subimages"] = torch.stack(subimages)
             
-        elif self.draw_false_image > 0:
+        elif self.subimages_format == "none":
+            return_dict["image"] = self.get_subimages(index, only_one=True)[0]
             for i in range(0, self.draw_false_image):
                 random_index = random.randint(0, len(self.index_mapper))
-                random_subimage = self.get_subimages(random_index, only_one=True)
+                random_subimage = self.get_subimages(random_index, only_one=True)[0]
                 return_dict[f"false_image_{i}"] = random_subimage
 
             for i in range(0, self.draw_false_text):
@@ -179,6 +182,15 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
         if "text_masks" in dict_batch:
             dict_batch["text_masks"] = torch.stack(dict_batch["text_masks"])
+
+        if "image" in batch[0]:
+            images_tensor = torch.stack([batch_item["image"] for batch_item in batch])
+            dict_batch["image"] = [images_tensor]
+
+        if self.draw_false_image > 0:
+            for i in range(0, self.draw_false_image):
+                false_images_tensor = torch.stack([batch_item[f"false_image_{i}"] for batch_item in batch])
+                dict_batch[f"false_image_{i}"] = [false_images_tensor]
 
         return dict_batch
                     

@@ -154,6 +154,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 wac_args['vocab'] = vocab
                 wac_args['special_vocab'] = special_vocab
+                wac_args['save_wac_features'] = config['save_wac_features']
             
                 wac_args['embedding_size'] = wac_embedding_size
                 wac_args['save_directory'] = save_directory
@@ -173,18 +174,10 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_models = WACModels(**wac_args)
 
-                if config['huggingface_wac_repo'] is not None or config['local_wac_repo'] is not None:
+                if config['huggingface_wac_repo'] is not None:
                     
-                    if config['local_wac_repo'] is not None:
-                        local_wac_repo = config['local_wac_repo']
-                        try:
-                            self.wac_models.load_models(local_wac_repo)
-                        except Exception as e:
-                            self.load_wac_huggingface(config)
-                            
-                    else:
-                        self.load_wac_huggingface(config)
-                    
+                    local_wac_repo = config['local_wac_repo']
+                    self.wac_models.load_models(local_wac_repo)
                     
                 self.current_training_epoch = 0
 
@@ -479,33 +472,6 @@ class RenaissanceTransformer(pl.LightningModule):
                     wac_features_dict["wac_distributions"] = wac_distributions_tensor
         
         return wac_features_dict
-
-    def load_wac_huggingface(self, config):
-        wac_repo = config['huggingface_wac_repo']
-        wac_model_save_directory = config['huggingface_save_directory']
-        wac_model_save_directory = os.path.join(wac_model_save_directory, wac_repo.split("/")[-1])
-
-        hf_hub_download(repo_id=wac_repo, 
-                        filename="wac_models.zip", 
-                        local_dir=wac_model_save_directory)
-        
-        compressed_wac_path = os.path.join(wac_model_save_directory, "wac_models.zip")
-        destination_directory = os.path.join(wac_model_save_directory, "wac_models")
-        os.makedirs(destination_directory, exist_ok=True)
-
-        with zipfile.ZipFile(compressed_wac_path, "r") as wac_file:
-            for subpath in wac_file.namelist():
-                if not os.path.basename(subpath):
-                    continue
-
-                file_source = wac_file.open(subpath)
-                subpath = subpath.split("/")[-1]
-                file_target = open(os.path.join(destination_directory, subpath), "wb")
-                with file_source, file_target:
-                    shutil.copyfileobj(file_source, file_target)
-        
-        os.remove(compressed_wac_path)
-        self.wac_models.load_models()
             
     def infer(self,
         batch,
@@ -687,18 +653,35 @@ class RenaissanceTransformer(pl.LightningModule):
         
         del self.save_directory
 
-    def from_pretrained(self, model_repository, **kwargs):
+    def from_pretrained(self, model_repository, local_download_folder, **kwargs):
+
         download_path = hf_hub_download(repo_id=model_repository, 
+                                        local_dir=local_download_folder,
                                         filename="model.safetensors",)
         
         safetensors_weights = load_file(download_path)
         self.encoder.load_state_dict(safetensors_weights)
         self.encoder.train()
 
+        if self.encoder.wac_models is not None: 
+            wac_zip_file_path = hf_hub_download(repo_id=model_repository,
+                                                local_dir=local_download_folder,
+                                                filename="wac_models.zip",)
+            
+            with zipfile.ZipFile(wac_zip_file_path, "r") as wac_zip_file:
+                wac_zip_file.extractall()
+            
+            os.path.remove(os.path.join(wac_zip_file_path, "wac_models.zip"))
+            self.wac_models.load_models()
+
     def delete_wac_image_encoder(self):
         self.wac_image_encoder = None
 
     def build_wac_features(self, dm, split):
+        if self.wac_models.save_wac_features is True:
+            if self.wac_models.load_features():
+                return
+            
         with torch.no_grad():
             device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
             self.wac_image_encoder = self.wac_image_encoder.to(device)
@@ -707,6 +690,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 labels = batch["label"]
                 aligned_subimages = []
                 subimage_lists = batch["subimages"]
+                tokenized_words = batch["tokenized_words"]
                 aligned_position_data_list = []
                 position_data_list = batch["position_data"]
                 for label, subimage_tensor, position_data in zip(labels, subimage_lists, position_data_list):
@@ -729,4 +713,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 wac_features = image_features.cpu().numpy()
                 wac_features = np.concatenate([wac_features, aligned_positions_numpy], axis=1)
                 
-                self.wac_models.add_features(feature_ids, wac_features, split)
+                self.wac_models.add_features(feature_ids, wac_features, tokenized_words, split)
+
+            if self.wac_models.save_wac_features:
+                self.wac_models.save_features()

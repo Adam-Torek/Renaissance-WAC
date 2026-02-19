@@ -48,7 +48,8 @@ def run_experiment(_config):
     complete_encoder_path = _config["complete_encoder_path"]
 
     if complete_encoder_path:
-        model.from_pretrained(complete_encoder_path)
+        local_directory = _config["huggingface_save_directory"]
+        model.from_pretrained(complete_encoder_path, local_directory)
     
     # Create name for directory to log results
     load_path = _config['load_path']
