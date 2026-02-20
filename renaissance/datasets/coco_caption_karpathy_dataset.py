@@ -92,12 +92,12 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         elif self.subimages_format == "none":
             return_dict["image"] = self.get_subimages(index, only_one=True)[0]
             for i in range(0, self.draw_false_image):
-                random_index = random.randint(0, len(self.index_mapper))
+                random_index = random.randint(0, len(self.index_mapper) - 1)
                 random_subimage = self.get_subimages(random_index, only_one=True)[0]
                 return_dict[f"false_image_{i}"] = random_subimage
 
             for i in range(0, self.draw_false_text):
-                random_index = random.randint(0, len(self.index_mapper))
+                random_index = random.randint(0, len(self.index_mapper) - 1)
                 random_text = self.get_text(random_index)
                 return_dict[f"false_text_{i}"] = random_text
         
