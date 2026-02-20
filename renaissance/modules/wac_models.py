@@ -139,10 +139,16 @@ class WACModels():
         negative_samples = []
 
         # Get a possible list of negative features to sample
-        sample_space = list(self.wac_features[self.current_split].keys())
+        sample_space = set(self.wac_features[self.current_split].keys())
         for feature_id in self.positive_feature_ids[self.current_split][word]:
             if feature_id in sample_space:
                 sample_space.remove(feature_id)
+
+        # Use this in the edge case where the number of negatives to sample is greater 
+        # than the possible sample space, then sample the number of possible negatives instead 
+        sample_space = list(sample_space)
+        if num_negatives >= len(sample_space):
+            num_negatives = len(sample_space)-1
 
         # Get the actual sample of negative features for this word
         negative_samples = random.sample(sample_space, k=num_negatives)
@@ -163,6 +169,11 @@ class WACModels():
 
         negative_feature_space = list(negative_feature_space)
 
+        # Use this in the edge case where the number of negatives to sample is greater 
+        # than the possible sample space, then sample the number of possible negatives instead 
+        if num_negative_features >= len(negative_feature_space):
+            num_negative_features = len(negative_feature_space)-1
+        
         negative_feature_ids = list(random.sample(negative_feature_space, k=num_negative_features))
 
         feature_dataset = []
