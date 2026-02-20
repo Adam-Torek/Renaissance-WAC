@@ -663,16 +663,19 @@ class RenaissanceTransformer(pl.LightningModule):
         self.encoder.load_state_dict(safetensors_weights)
         self.encoder.train()
 
-        if self.encoder.wac_models is not None: 
-            wac_zip_file_path = hf_hub_download(repo_id=model_repository,
-                                                local_dir=local_download_folder,
-                                                filename="wac_models.zip",)
-            
-            with zipfile.ZipFile(wac_zip_file_path, "r") as wac_zip_file:
-                wac_zip_file.extractall()
-            
-            os.path.remove(os.path.join(wac_zip_file_path, "wac_models.zip"))
-            self.wac_models.load_models()
+        if self.wac_models is not None: 
+            try:
+                wac_zip_file_path = hf_hub_download(repo_id=model_repository,
+                                                    local_dir=local_download_folder,
+                                                    filename="wac_models.zip",)
+                
+                with zipfile.ZipFile(wac_zip_file_path, "r") as wac_zip_file:
+                    wac_zip_file.extractall()
+                
+                os.path.remove(os.path.join(wac_zip_file_path, "wac_models.zip"))
+                self.wac_models.load_models()
+            except Exception as e:
+                pass
 
     def delete_wac_image_encoder(self):
         self.wac_image_encoder = None
