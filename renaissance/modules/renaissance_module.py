@@ -428,7 +428,7 @@ class RenaissanceTransformer(pl.LightningModule):
                 input_ids = batch["text_ids"]
                 tokenized_words = batch["tokenized_words"]
 
-                if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0:
+                if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0 and self.training:
                     indices = batch["ann_id"]
                     
                     word_feature_ids = {}
