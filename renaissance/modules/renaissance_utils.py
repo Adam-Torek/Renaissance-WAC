@@ -177,7 +177,9 @@ def epoch_wrapup(pl_module):
 
     if phase == "train" and hasattr(pl_module, "current_training_epoch") and pl_module.current_training_epoch is not None:
         if hasattr(pl_module, "wac_models") and pl_module.wac_models is not None and pl_module.current_training_epoch == 0:
-            pl_module.wac_models.save_models()
+            if not os.path.exists(pl_module.wac_models.save_directory) and pl_module.wac_models.training_completed: 
+                pl_module.wac_models.save_models()
+        
         pl_module.current_training_epoch += 1
        
     

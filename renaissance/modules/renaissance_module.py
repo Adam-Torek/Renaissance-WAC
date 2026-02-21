@@ -62,8 +62,6 @@ class RenaissanceTransformer(pl.LightningModule):
             and self.hparams.config["test_only"])
         
         self.exp_name = config["exp_name"]
-
-
             
         if self.fine_tune or self.test_only:
             ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")
@@ -82,6 +80,7 @@ class RenaissanceTransformer(pl.LightningModule):
         self.current_training_epoch = None
         self.current_training_step = 0
         self.wac_train_steps = None
+        self.use_wac_embeddings = False
         self.vocab = []
         
         self.csv_log_file = config['csv_log_file']
@@ -174,13 +173,16 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_models = WACModels(**wac_args)
 
-                if config['huggingface_wac_repo'] is not None:
+                if config['local_wac_repo'] is not None:
                     
                     local_wac_repo = config['local_wac_repo']
                     self.wac_models.load_models(local_wac_repo)
                     
                 self.current_training_epoch = 0
 
+            if config['use_wac_embeddings']:
+                self.use_wac_embeddings = True
+            
             two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
             self.encoder = TwoTowerEncoder(
@@ -427,9 +429,12 @@ class RenaissanceTransformer(pl.LightningModule):
         if self.wac_models is not None:
                 input_ids = batch["text_ids"]
                 tokenized_words = batch["tokenized_words"]
+                indices = batch["ann_id"]
 
-                if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None and self.current_training_epoch == 0 and self.training:
-                    indices = batch["ann_id"]
+                if hasattr(self, "current_training_epoch") and self.current_training_epoch is not None \
+                                                           and self.current_training_epoch == 0 \
+                                                           and self.training \
+                                                           and not self.wac_models.training_completed:
                     
                     word_feature_ids = {}
                     for feat_index, tokenized_sentence in zip(indices, tokenized_words):
@@ -443,7 +448,7 @@ class RenaissanceTransformer(pl.LightningModule):
                     
                     self.wac_models.update_wac_models(word_feature_ids)
                                 
-                if self.wac_embedding_size is not None:
+                if self.wac_embedding_size is not None and self.use_wac_embeddings:
                     batch_size, seq_length = input_ids.shape
                     wac_embedding_size = self.wac_embedding_size
                     wac_embedding_tensor = torch.full((batch_size, seq_length, wac_embedding_size), 1e-10)
@@ -682,7 +687,9 @@ class RenaissanceTransformer(pl.LightningModule):
 
     def build_wac_features(self, dm, split):
         if self.wac_models.save_wac_features is True:
-            if self.wac_models.load_features():
+            if self.wac_models.load_features() \
+                and split in self.wac_models.wac_features \
+                and len(self.wac_models.wac_features[split]) > 0:
                 return
             
         with torch.no_grad():

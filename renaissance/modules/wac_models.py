@@ -30,6 +30,7 @@ class WACModels():
         self.splits_to_use = wac_feature_splits
         self.current_split = "train"
         self.save_wac_features = save_wac_features
+        self.training_completed = False
 
         for word in vocab:
             word = re.sub(r"/", "{slash}", word)
@@ -72,6 +73,10 @@ class WACModels():
         for word in self.vocab:
             self.wac_models[word] = SGDClassifier(loss="log_loss", **wac_kwargs)
 
+    def set_training_completed(self):
+        if not self.training_completed:
+            self.training_completed = True
+
     def set_current_split(self, split: str) -> None:
         if split not in self.splits_to_use:
             raise ValueError(f"Split {split} is not an available split. You must select from the following: {str(self.splits_to_use)}")
@@ -88,6 +93,9 @@ class WACModels():
                         word: str, 
                         feature_id: tuple, 
                         label: int) -> None:
+        
+        if self.training_completed:
+            return
 
         # Raise error if word is not defined in vocab
         if word not in self.vocab:
@@ -132,6 +140,10 @@ class WACModels():
                     self.positive_feature_ids[split][word].add(feature_id)
         
     def add_positive(self, word: str, feature_id: int) -> None:
+
+        if self.training_completed:
+            return
+
         self.add_word_sample(word, feature_id, 1)
 
     def _sample_word_negatives(self, word: str) -> tuple:
@@ -204,6 +216,10 @@ class WACModels():
         return (word, model_to_train, positive_feature_ids)
 
     def update_wac_models(self, word_feature_ids: dict) -> None:
+
+        if self.training_completed:
+            return
+
         num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
         trained_model_results = []
         if num_cores == 0:
@@ -227,6 +243,10 @@ class WACModels():
             self.positive_feature_ids[self.current_split][word].update(pos_feature_ids)
 
     def sample_negatives(self) -> None:
+
+        if self.training_completed:
+            return
+
         feature_sample_space = []
 
         # Get the possible sample feature space for each word that
@@ -277,6 +297,9 @@ class WACModels():
         return trained_model_list
         
     def train_models(self) -> None:
+
+        if self.training_completed:
+            return
 
         # Get the WAC models to train
         datasets_to_train = []
@@ -400,6 +423,8 @@ class WACModels():
         for word in self.vocab:
             with open(os.path.join(directory_to_use, f"{word}.pkl"), "rb") as model_file:
                 self.wac_models[word] = pickle.load(model_file)
+
+        self.training_completed = True
 
     def save_features(self):
          if self.save_wac_features:
