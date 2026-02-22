@@ -111,17 +111,13 @@ class RenaissanceTransformer(pl.LightningModule):
                 if wac_image_encoder_path is None:
                     raise ValueError("WAC image encoder must be defined if WAC models are enabled")
                 
-                save_directory = config['save_directory']
-                if save_directory is None:
-                    raise ValueError("WAC models save directory must be defined if they are enabled")
+                local_directory = config['local_wac_directory']
+                if local_directory is None:
+                    raise ValueError("WAC model folder must be defined if they are enabled")
 
                 tokenizer_path = config['tokenizer']
                 if tokenizer_path is None:
                     raise ValueError("Tokenizer must be defined for WAC models so the vocabulary can be defined")
-                
-                if config["huggingface_save_directory"] is not None:
-                    huggingface_save_name = config["huggingface_save_name"].split("/")[-1]
-                    save_directory = os.path.join(config["huggingface_save_directory"], huggingface_save_name, save_directory)
 
                 self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
                 self.wac_image_encoder = self.wac_image_encoder.eval()
@@ -156,7 +152,8 @@ class RenaissanceTransformer(pl.LightningModule):
                 wac_args['save_wac_features'] = config['save_wac_features']
             
                 wac_args['embedding_size'] = wac_embedding_size
-                wac_args['save_directory'] = save_directory
+                wac_args['wac_repo_id'] = config['wac_repo_id']
+                wac_args['local_wac_directory'] = config['local_wac_directory']
                 wac_args['position_size'] = config['position_size']
                 
                 neg_to_pos = config['neg_to_pos']
@@ -173,11 +170,21 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_models = WACModels(**wac_args)
 
-                if config['local_wac_repo'] is not None:
-                    
-                    local_wac_repo = config['local_wac_repo']
-                    self.wac_models.load_models(local_wac_repo)
-                    
+                if not os.path.exists(self.wac_models.save_directory):
+                    if self.wac_models.wac_repo_id is not None:
+                        try:
+                            self.wac_models.download_from_hub()
+                            self.wac_models.load_models()
+                        except Exception as e:
+                            print("Unable to download WAC models from HugginFace repo. Performing training from scratch.")
+                    else:
+                        print("HuggingFace WAC Repo is not defined. Performing training from scratch.")
+                else:
+                    try:
+                        self.wac_models.load_models()
+                    except Exception as e:
+                        print("Unable to load WAC models from disk. Performing training from scratch.")
+                                            
                 self.current_training_epoch = 0
 
             if config['use_wac_embeddings']:
@@ -465,15 +472,15 @@ class RenaissanceTransformer(pl.LightningModule):
                 if self.wac_distribution_matrix is not None:
                     vocab_size = self.encoder.config.text_config.vocab_size
                     batch_size = input_ids.shape[0]
-                    wac_distributions_tensor = torch.full((batch_size, vocab_size), 1e-10)
+                    wac_distributions_tensor = np.full((batch_size, vocab_size), 1e-10)
                     wac_distributions = self.wac_models.get_distributions(indices)
 
                     for word, distribution_values in wac_distributions.items():
                         i = self.vocab.index(word)
-                        distribution_values = torch.tensor(distribution_values)
                         wac_distributions_tensor[:, i] = distribution_values
+                    
 
-                    wac_distributions_tensor = wac_distributions_tensor.to(input_ids.device)
+                    wac_distributions_tensor = torch.tensor(wac_distributions_tensor, dtype=torch.float).to(input_ids.device)
                     wac_features_dict["wac_distributions"] = wac_distributions_tensor
         
         return wac_features_dict
@@ -581,6 +588,12 @@ class RenaissanceTransformer(pl.LightningModule):
     
     def on_train_epoch_end(self):
         renaissance_utils.epoch_wrapup(self)
+        if self.current_training_epoch == 0 and self.wac_models is not None and not self.wac_models.training_completed:
+            self.wac_models.save_models()
+            self.wac_models.push_to_hub()
+
+        self.current_training_epoch += 1
+        
 
     def on_validation_epoch_start(self):
         if self.wac_models is not None:
@@ -631,20 +644,6 @@ class RenaissanceTransformer(pl.LightningModule):
         save_file(model_to_save.state_dict(), 
                   model_save_name)
 
-        if self.wac_models is not None:
-            self.wac_models.save_models()
-
-            wac_zip_file = zipfile.ZipFile(os.path.join(self.save_directory, "wac_models.zip"), "w")
-            for file in os.listdir(self.wac_models.save_directory):
-                wac_zip_file.write(os.path.join(self.wac_models.save_directory, file))
-            
-            wac_zip_file.close()
-
-            for file in os.listdir(self.wac_models.save_directory):
-                os.remove(os.path.join(self.wac_models.save_directory, file))
-
-            os.rmdir(self.wac_models.save_directory)
-
     def push_to_hub(self, model_hub_name, **kwargs):
         
         create_repo(repo_id=model_hub_name, 
@@ -668,20 +667,6 @@ class RenaissanceTransformer(pl.LightningModule):
         self.encoder.load_state_dict(safetensors_weights)
         self.encoder.train()
 
-        if self.wac_models is not None: 
-            try:
-                wac_zip_file_path = hf_hub_download(repo_id=model_repository,
-                                                    local_dir=local_download_folder,
-                                                    filename="wac_models.zip",)
-                
-                with zipfile.ZipFile(wac_zip_file_path, "r") as wac_zip_file:
-                    wac_zip_file.extractall()
-                
-                os.path.remove(os.path.join(wac_zip_file_path, "wac_models.zip"))
-                self.wac_models.load_models()
-            except Exception as e:
-                pass
-
     def delete_wac_image_encoder(self):
         self.wac_image_encoder = None
 
@@ -690,6 +675,7 @@ class RenaissanceTransformer(pl.LightningModule):
             if self.wac_models.load_features() \
                 and split in self.wac_models.wac_features \
                 and len(self.wac_models.wac_features[split]) > 0:
+                print(f"WAC features loaded from cache for split {split}. Skipping feature construction.")
                 return
             
         with torch.no_grad():

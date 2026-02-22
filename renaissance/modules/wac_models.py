@@ -1,4 +1,4 @@
-from typing import Unpack
+from typing import Unpack, Optional
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
@@ -7,13 +7,16 @@ from multiprocessing import get_context
 import os
 import json
 import pickle
+import zipfile
 import re
+import shutil
 from mpi4py.futures import MPIPoolExecutor
+from huggingface_hub import upload_file, hf_hub_download, create_repo
 
 class WACModels():
 
     def __init__(self, 
-                 save_directory: str,
+                 local_wac_directory: str,
                  vocab: list[str], 
                  special_vocab: list[str],
                  embedding_size: int, 
@@ -22,9 +25,16 @@ class WACModels():
                  num_cores: int=-1,
                  save_wac_features=False,
                  wac_feature_splits: list[str] = ["train","val","test"],
+                 wac_repo_id: Optional[str] = None,
                  **wac_kwargs: Unpack[dict],) -> None:
         
-        self.save_directory = save_directory
+        self.wac_repo_id = wac_repo_id
+        if wac_repo_id is not None:
+            if "/" in wac_repo_id:
+                local_wac_repo_path = wac_repo_id.split("/")[-1]
+                local_wac_directory = os.path.join(local_wac_directory, local_wac_repo_path)
+            
+        self.save_directory = local_wac_directory
         self.vocab = []
         self.special_vocab = []
         self.splits_to_use = wac_feature_splits
@@ -41,7 +51,6 @@ class WACModels():
 
         self.embedding_size = embedding_size
         self.position_size = position_size
-        self.save_directory = save_directory
         self.neg_to_pos = neg_to_pos
         self.num_cores = num_cores
 
@@ -382,7 +391,18 @@ class WACModels():
         embeddings_list = np.stack(embeddings_list)
         return embeddings_list
 
+    def get_save_parent_directory(self) -> str:
+        save_directory = None
+        if self.wac_repo_id is not None and "/" in self.wac_repo_id:
+            save_directory = os.path.split(self.save_directory)[:-1]
+            save_directory = os.path.join(*save_directory)
+        else:
+            save_directory = self.save_directory
+
+        return save_directory
+
     def save_models(self) -> None:
+        
         if not os.path.exists(self.save_directory):
             os.makedirs(self.save_directory, exist_ok=True)
         
@@ -401,18 +421,13 @@ class WACModels():
             with open(os.path.join(self.save_directory, f"{word}.pkl"), "wb") as model_file:
                 pickle.dump(model, model_file)
 
-    def load_models(self, load_directory=None) -> None:
-        
-        if load_directory is None or not os.path.exists(load_directory):
-            directory_to_use = self.save_directory
-        else:
-            directory_to_use = load_directory
+    def load_models(self) -> None:
 
-        if not os.path.exists(directory_to_use):
-            raise ValueError(f"Directory {directory_to_use} cannot be found or does not exist.")
+        if not os.path.exists(self.save_directory):
+            raise ValueError(f"Directory {self.save_directory} cannot be found or does not exist.")
 
         # Load WAC model metadata from disk
-        with open(os.path.join(directory_to_use, "wac_metadata.json"), "r") as json_file:
+        with open(os.path.join(self.save_directory, "wac_metadata.json"), "r") as json_file:
             wac_metadata = json.load(json_file)
             self.embedding_size = wac_metadata["embedding_size"]
             self.position_size = wac_metadata["position_size"]
@@ -421,13 +436,15 @@ class WACModels():
 
         # Load each WAC model from disk
         for word in self.vocab:
-            with open(os.path.join(directory_to_use, f"{word}.pkl"), "rb") as model_file:
+            with open(os.path.join(self.save_directory, f"{word}.pkl"), "rb") as model_file:
                 self.wac_models[word] = pickle.load(model_file)
 
         self.training_completed = True
 
-    def save_features(self):
-         if self.save_wac_features:
+    def save_features(self): 
+
+        if self.save_wac_features:
+
             if not os.path.exists(self.save_directory):
                 os.makedirs(self.save_directory, exist_ok=True)
             
@@ -439,6 +456,7 @@ class WACModels():
 
     def load_features(self):
         if self.save_wac_features:
+
             try:
                 with open(os.path.join(self.save_directory, "wac_features.pkl"), "rb") as features_file:
                     self.wac_features = pickle.load(features_file)
@@ -454,5 +472,38 @@ class WACModels():
         else:
             return False
         
+    def push_to_hub(self):
+        parent_save_directory = self.get_save_parent_directory()
+        wac_zip_file_path = os.path.join(*(os.path.split(parent_save_directory)[1:]), "wac_models.zip")
+        with zipfile.ZipFile(wac_zip_file_path, "w") as wac_zip_file:
+            for file in os.listdir(self.save_directory):
+                wac_zip_file.write(os.path.join(self.save_directory, file))
+        
+        shutil.rmtree(self.save_directory)
 
+        create_repo(repo_id=self.wac_repo_id,
+                    exist_ok=True,
+                    repo_type="model")
+
+        upload_file(path_or_fileobj=wac_zip_file_path, 
+                    path_in_repo="wac_models.zip", 
+                    repo_id=self.wac_repo_id, 
+                    repo_type="model")
+        
+    def download_from_hub(self):
+        parent_save_directory = self.get_save_parent_directory()
+        local_file_path = os.path.join(parent_save_directory, "wac_models.zip")
+
+        hf_hub_download(repo_id=self.wac_repo_id, 
+                        filename="wac_models.zip", 
+                        local_dir=parent_save_directory, 
+                        repo_type="model")
+        
+        with zipfile.ZipFile(local_file_path, "r") as wac_zip_file:
+            for file in wac_zip_file.namelist():
+                wac_zip_file.extract(file, self.save_directory)
+                os.rename(os.path.join(self.save_directory, file), 
+                          os.path.join(self.save_directory, os.path.basename(file)))
+                
+        os.remove(local_file_path)
     

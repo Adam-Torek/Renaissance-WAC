@@ -188,13 +188,12 @@ def config():
 
     # WAC model settings
     position_size = 7
-    save_directory = None
     neg_to_pos = None
     wac_kwargs = None
     num_cores = None
     wac_train_steps = 5
-    huggingface_wac_repo = None
-    local_wac_repo = None
+    wac_repo_id = None
+    local_wac_directory = None
     save_wac_features = False
 
     # HuggingFace settings to save and upload model
@@ -358,7 +357,6 @@ def pretrain_wac_itm_twotower_electrasmall_deit_small():
     use_wac_embeddings = False
     wac_distribution_matrix = None
     wac_image_encoder = None
-    save_directory = None
     #wac_train_steps = 5
     num_cores = 0
 
@@ -414,7 +412,6 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     use_wac_embeddings = False
     wac_distribution_matrix = None
     wac_image_encoder = None
-    save_directory = None
     #wac_train_steps = 5
     num_cores = 0
 
@@ -471,7 +468,6 @@ def pretrain_wac_ref_bbox_twotower_electrasmall_deit_small():
     use_wac_embeddings = False
     wac_distribution_matrix = None
     wac_image_encoder = None
-    save_directory = None
     #wac_train_steps = 5
     num_cores = 0
 
@@ -527,7 +523,6 @@ def eval_ref_twotower_electrasmall_deit_small():
     use_wac_embeddings = False
     wac_distribution_matrix = None
     wac_image_encoder = None
-    save_directory = None
     #wac_train_steps = 5
     num_cores = 0
 
@@ -582,15 +577,16 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     use_wac_embeddings = True
     wac_distribution_matrix = None
     wac_image_encoder = "openai/clip-vit-base-patch16"
-    save_directory = "wac_models"
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
     #wac_train_steps = 5
     num_cores = 0
     save_wac_features = True
 
     # HuggingFace settings
     huggingface_save_directory = "models"
-    huggingface_save_name = "electra_deit_small_wac_embeddings"
-    push_to_hub = False
+    huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings"
+    push_to_hub = True
 
 @ex.named_config
 def eval_ref_twotower_electrasmall_deit_wac_distributions():
@@ -638,16 +634,16 @@ def eval_ref_twotower_electrasmall_deit_wac_distributions():
     use_wac_embeddings = False
     wac_distribution_matrix = "value"
     wac_image_encoder = "openai/clip-vit-base-patch16"
-    save_directory = "wac_models"
     #wac_train_steps = 5
-    local_wac_repo = "models/electra_deit_small_wac/wac_models/"
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
     num_cores = 0
     save_wac_features = True
 
     # HuggingFace settings
     huggingface_save_directory = "models"
-    huggingface_save_name = "electra_deit_small_wac_distributions"
-    push_to_hub = False
+    huggingface_save_name = "ajtorek/electra_deit_small_wac_distributions"
+    push_to_hub = True
 
 @ex.named_config
 def finetune_cola_onetower_electrasmall():
