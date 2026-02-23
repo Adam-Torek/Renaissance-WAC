@@ -91,11 +91,15 @@ class ElectraEmbeddings(nn.Module):
         self.word_embeddings = nn.Embedding(config.vocab_size, config.embedding_size, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.embedding_size)
         self.token_type_embeddings = nn.Embedding(config.type_vocab_size, config.embedding_size)
+        self.embedding_size = config.embedding_size
 
         # self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load
         # any TensorFlow checkpoint file
         self.LayerNorm = nn.LayerNorm(config.embedding_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+        self.ignore_text_embeddings_epochs = config.ignore_text_embeddings_epochs
+        self.current_training_epoch = 0
 
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.register_buffer(
@@ -117,51 +121,60 @@ class ElectraEmbeddings(nn.Module):
         wac_embeddings: Optional[torch.FloatTensor] = None,
         past_key_values_length: int = 0,
     ) -> torch.Tensor:
-        if input_ids is not None:
-            input_shape = input_ids.size()
+        if wac_embeddings is not None and (self.current_training_epoch < self.ignore_text_embeddings_epochs):
+            embeddings = wac_embeddings
+            if self.embedding_size != wac_embeddings.shape[2] and self.wac_embeddings_projection is not None:
+                if self.wac_embeddings_projection is not None:
+                    embeddings = self.wac_embeddings_projection(visual_embeddings)
+                else:
+                    raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
+            
         else:
-            input_shape = inputs_embeds.size()[:-1]
-
-        batch_size = input_shape[0]
-        seq_length = input_shape[1]  
-
-        if position_ids is None:
-            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
-
-        if token_type_ids is None:
-            if hasattr(self, "token_type_ids"):
-                buffered_token_type_ids = self.token_type_ids.expand(position_ids.shape[0], -1)
-                buffered_token_type_ids = torch.gather(buffered_token_type_ids, dim=1, index=position_ids)
-                token_type_ids = buffered_token_type_ids.expand(batch_size, seq_length)
+            if input_ids is not None:
+                input_shape = input_ids.size()
             else:
-                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.token_type_ids.device)
+                input_shape = inputs_embeds.size()[:-1]
 
-        visual_embeddings = wac_embeddings
-        if visual_embeddings is not None:
-            if self.wac_embeddings_projection is not None:
-                visual_embeddings = self.wac_embeddings_projection(visual_embeddings)
-            else:
-                
-                raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
+            batch_size = input_shape[0]
+            seq_length = input_shape[1]  
 
-        if inputs_embeds is None:
-            inputs_embeds = self.word_embeddings(input_ids)
+            if position_ids is None:
+                position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
 
-        token_type_embeddings = self.token_type_embeddings(token_type_ids)
-        embeddings = inputs_embeds + token_type_embeddings
+            if token_type_ids is None:
+                if hasattr(self, "token_type_ids"):
+                    buffered_token_type_ids = self.token_type_ids.expand(position_ids.shape[0], -1)
+                    buffered_token_type_ids = torch.gather(buffered_token_type_ids, dim=1, index=position_ids)
+                    token_type_ids = buffered_token_type_ids.expand(batch_size, seq_length)
+                else:
+                    token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.token_type_ids.device)
+            
+            if inputs_embeds is None:
+                inputs_embeds = self.word_embeddings(input_ids)
 
-        if visual_embeddings is not None:
-            visual_embeddings += token_type_embeddings
+            visual_embeddings = wac_embeddings
+            if visual_embeddings is not None:
+                if visual_embeddings.shape[2] != inputs_embeds.shape[2]:
+                    if self.wac_embeddings_projection is not None:
+                        visual_embeddings = self.wac_embeddings_projection(visual_embeddings)
+                    else:
+                        raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
 
-        if self.position_embedding_type == "absolute":
-            position_embeddings = self.position_embeddings(position_ids)
-            embeddings += position_embeddings
+            token_type_embeddings = self.token_type_embeddings(token_type_ids)
+            embeddings = inputs_embeds + token_type_embeddings
 
             if visual_embeddings is not None:
-                visual_embeddings += position_embeddings
-        
-        if visual_embeddings is not None:
-            embeddings *= visual_embeddings
+                visual_embeddings += token_type_embeddings
+
+            if self.position_embedding_type == "absolute":
+                position_embeddings = self.position_embeddings(position_ids)
+                embeddings += position_embeddings
+
+                if visual_embeddings is not None:
+                    visual_embeddings += position_embeddings
+            
+            if visual_embeddings is not None:
+                embeddings *= visual_embeddings
        
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
@@ -175,6 +188,9 @@ class ElectraEmbeddings(nn.Module):
         self.register_buffer(
             "position_ids", torch.arange(new_num_tokens).expand((1, -1)), persistent=False
         )
+
+    def training_epoch_end(self):
+        self.current_training_epoch += 1
         
 # These ViT classes still need to be adapted to renaissance program!!!
 class ViTEmbeddings(nn.Module):

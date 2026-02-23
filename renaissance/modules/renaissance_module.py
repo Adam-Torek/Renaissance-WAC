@@ -585,6 +585,8 @@ class RenaissanceTransformer(pl.LightningModule):
             self.wac_models.push_to_hub()
 
         self.current_training_epoch += 1
+        if isinstance(self.encoder, TwoTowerEncoder):
+            self.encoder.training_epoch_end()
         
 
     def on_validation_epoch_start(self):
@@ -656,7 +658,7 @@ class RenaissanceTransformer(pl.LightningModule):
                                         filename="model.safetensors",)
         
         safetensors_weights = load_file(download_path)
-        self.encoder.load_state_dict(safetensors_weights)
+        self.encoder.load_state_dict(safetensors_weights, strict=False)
         self.encoder.train()
 
     def delete_wac_image_encoder(self):

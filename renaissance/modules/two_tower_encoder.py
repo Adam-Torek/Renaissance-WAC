@@ -475,6 +475,9 @@ class BertWACTransformer(BertWACPreTrainedModel):
                                      wac_distributions=wac_distributions,)
         
         return hidden_states
+
+    def training_epoch_end(self):
+        self.embeddings.training_epoch_end()
     
 class BertCrossModalEncoder(nn.Module):
     def __init__(self, config):
@@ -767,3 +770,7 @@ class TwoTowerEncoder(PreTrainedModel):
         self.token_type_embeddings.weight.data[0, :] = emb_data[0, :]
         self.token_type_embeddings.weight.data[1, :] = emb_data[1, :]
         self.token_type_embeddings.weight.data[2, :] = emb_data[1, :]
+
+    def training_epoch_end(self):
+        if self.text_transformer is not None and isinstance(self.text_transformer, BertWACTransformer):
+            self.text_transformer.training_epoch_end()

@@ -195,6 +195,7 @@ def config():
     wac_repo_id = None
     local_wac_directory = None
     save_wac_features = False
+    ignore_text_embeddings_epochs = 2
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -541,7 +542,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     precision = 32
     batch_size = 8
     per_gpu_batchsize = 8
-    complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
+    #complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
     
     max_epoch = 5
     warmup_steps = 0.1
@@ -552,9 +553,11 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     freeze_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    random_init_text_encoder = False
+    random_init_text_encoder = True
+    text_encoder_manual_configuration = True
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
+    text_encoder_embedding_size = 520
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0

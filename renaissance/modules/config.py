@@ -33,6 +33,7 @@ class WACConfig(ElectraConfig):
                  position_embedding_type="absolute",
                  use_cache=True,
                  classifier_dropout=None,
+                 ignore_text_embeddings_epochs=2,
                  **kwargs) -> None:
         
         super().__init__(vocab_size=vocab_size,
@@ -60,6 +61,7 @@ class WACConfig(ElectraConfig):
         
         self.wac_embedding_size = wac_embedding_size
         self.wac_distribution_matrix = wac_distribution_matrix
+        self.ignore_text_embeddings_epochs = ignore_text_embeddings_epochs
     
 class TwoTowerConfig(PretrainedConfig):
 
@@ -91,9 +93,12 @@ class TwoTowerConfig(PretrainedConfig):
                         'wac_distribution_matrix': config['wac_distribution_matrix'],
                         'layer_norm_eps': config['text_encoder_norm_eps'],
                     }
+                    if 'electra' in config['text_encoder']:
+                        text_encoder_kwargs['embedding_size'] = config['text_encoder_embedding_size']
                     if 'wac' in config['text_encoder']:
                         text_encoder_kwargs['wac_embedding_size'] = wac_embedding_size
                         text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
+                        text_encoder_kwargs['ignore_text_embeddings_epochs'] = config['ignore_text_embeddings_epochs']
                         self.text_config = WACConfig(**text_encoder_kwargs)
                     else:
                         self.text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
