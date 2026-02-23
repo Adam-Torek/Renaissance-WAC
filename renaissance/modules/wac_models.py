@@ -63,15 +63,19 @@ class WACModels():
         # in the next training round
         self.current_wac_datasets = {}
 
+        self.word_distribution_feature_ids = {}
+
         # Dictionary used to store WAC features
         self.wac_features = {}
         for split in self.splits_to_use:
             self.wac_features[split] = {}
             self.positive_feature_ids[split] = {} 
             self.current_wac_datasets[split] = {}
+            self.word_distribution_feature_ids[split] = {}
             for word in self.vocab:
                 self.positive_feature_ids[split][word] = set()
                 self.current_wac_datasets[split][word] = None
+                self.word_distribution_feature_ids[split][word] = dict()
 
         self.scaler = MinMaxScaler()
         
@@ -250,6 +254,7 @@ class WACModels():
         for word, model, pos_feature_ids in trained_model_results:
             self.wac_models[word] = model
             self.positive_feature_ids[self.current_split][word].update(pos_feature_ids)
+            self.word_distribution_feature_ids[self.current_split][word] = dict()
 
     def sample_negatives(self) -> None:
 
@@ -347,30 +352,49 @@ class WACModels():
         for word, trained_model in trained_model_list:
             self.current_wac_datasets[self.current_split][word] = None
             self.wac_models[word] = trained_model
+            self.word_distribution_feature_ids[self.current_split][word] = dict()
 
-    def get_distributions(self, indices: list[int]) -> dict:
+    def get_distributions(self, indices: list[int]) -> np.array:
 
         # Get a list of distributions for all words in the provided 
         # words dict
-        word_features = []
-        for index in indices:
-            word_features.append(self.wac_features[self.current_split][index])
-        word_features = np.stack(word_features)
+        probabilities_array = np.zeros(shape=(len(indices), len(self.vocab)))
 
-        probability_dict = {}
+        feature_ids_set = set(indices)
+
         for word, model in self.wac_models.items():
-            word = re.sub("{slash}", "/", word)
-            try:
-                word_prob = model.predict_proba(word_features)[:,1]
-            except Exception as e:
-                word_prob = np.zeros((word_features.shape[0],))
-            
-            probability_dict[word] = word_prob
+            if word in self.special_vocab:
+                continue
 
-        for word in self.special_vocab:
-            probability_dict[word] = np.zeros((word_features.shape[0],))
-        
-        return probability_dict
+            word = re.sub(r"/", "{slash}", word)
+            feature_ids_with_probs = self.word_distribution_feature_ids[self.current_split][word]
+            feature_ids_with_probs_set = set(feature_ids_with_probs.keys())
+            feature_ids_without_probs = feature_ids_set.difference(feature_ids_with_probs_set)
+            word_index = self.vocab.index(word)
+            if len(feature_ids_without_probs) > 0:
+                feature_list = []
+                feature_id_list = []
+                for feature_id in feature_ids_without_probs:
+                    feature_list.append(self.wac_features[self.current_split][feature_id])
+                    feature_id_list.append(feature_id)
+
+                feature_array = np.stack(feature_list)
+                try:
+                    word_probs = model.predict_proba(feature_array)[:,1]
+                except Exception as e:
+                    continue
+            
+                for feature_id, word_prob in zip(feature_id_list, word_probs):
+                    feature_ids_with_probs[feature_id] = word_prob
+
+                self.word_distribution_feature_ids[self.current_split][word] = feature_ids_with_probs
+
+            word_probabilities_feature_ids = self.word_distribution_feature_ids[self.current_split][word]
+            for i, feature_id in enumerate(indices):
+                word_prob = word_probabilities_feature_ids[feature_id]
+                probabilities_array[i, word_index] = word_prob
+            
+        return probabilities_array
 
     def get_embeddings(self, words: list) -> np.array:
 

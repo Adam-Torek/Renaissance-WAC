@@ -470,17 +470,9 @@ class RenaissanceTransformer(pl.LightningModule):
                     wac_features_dict["wac_embeddings"] = wac_embedding_tensor
 
                 if self.wac_distribution_matrix is not None:
-                    vocab_size = self.encoder.config.text_config.vocab_size
-                    batch_size = input_ids.shape[0]
-                    wac_distributions_tensor = np.full((batch_size, vocab_size), 1e-10)
+                   
                     wac_distributions = self.wac_models.get_distributions(indices)
-
-                    for word, distribution_values in wac_distributions.items():
-                        i = self.vocab.index(word)
-                        wac_distributions_tensor[:, i] = distribution_values
-                    
-
-                    wac_distributions_tensor = torch.tensor(wac_distributions_tensor, dtype=torch.float).to(input_ids.device)
+                    wac_distributions_tensor = torch.tensor(wac_distributions, dtype=torch.float).to(input_ids.device)
                     wac_features_dict["wac_distributions"] = wac_distributions_tensor
         
         return wac_features_dict
