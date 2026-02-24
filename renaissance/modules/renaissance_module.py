@@ -143,7 +143,6 @@ class RenaissanceTransformer(pl.LightningModule):
                 self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
                 self.wac_train_steps = config['wac_train_steps']
-                self.current_training_step = 0
                 self.vocab = vocab
                 
                 wac_args['vocab'] = vocab
@@ -568,8 +567,6 @@ class RenaissanceTransformer(pl.LightningModule):
             total_loss = output["ref_bbox_loss"]
         else:
             total_loss = sum([v for k, v in output.items() if "loss" in k])
-
-        self.current_training_step += 1
 
         return total_loss
     

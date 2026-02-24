@@ -101,7 +101,7 @@ class ElectraEmbeddings(nn.Module):
         self.ignore_text_embeddings_epochs = config.ignore_text_embeddings_epochs
         self.current_training_epoch = 0
 
-        if self.embedding_size != config.wac_embedding_size:
+        if config.wac_embedding_size is not None and self.embedding_size != config.wac_embedding_size:
             self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
         else:
             self.wac_embeddings_projection = None
