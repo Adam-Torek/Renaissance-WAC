@@ -101,6 +101,11 @@ class ElectraEmbeddings(nn.Module):
         self.ignore_text_embeddings_epochs = config.ignore_text_embeddings_epochs
         self.current_training_epoch = 0
 
+        if self.embedding_size != config.wac_embedding_size:
+            self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
+        else:
+            self.wac_embeddings_projection = None
+
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.register_buffer(
             "position_ids", torch.arange(config.max_position_embeddings).expand((1, -1)), persistent=False

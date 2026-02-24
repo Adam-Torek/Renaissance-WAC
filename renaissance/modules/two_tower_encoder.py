@@ -389,20 +389,12 @@ class BertWACTransformer(BertWACPreTrainedModel):
         else:
             self.embeddings_projection = None
 
-        self.post_init()
+        if config.wac_distribution_matrix is not None:
+            self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
+        else:
+            self.wac_distribution_projection = None
 
-    def create_embeddings_projection(self):
-        if not hasattr(self.embeddings, "wac_embeddings_projection") or self.embeddings.wac_embeddings_projection is None:
-            device = self.embeddings.word_embeddings.weight.device
-            self.embeddings.wac_embeddings_projection = nn.Linear(self.config.wac_embedding_size, 
-                                                                  self.config.embedding_size).to(device)
-            self.embeddings.wac_embeddings_projection.apply(init_weights)
-            
-    def create_distributions_projection(self):
-        if not hasattr(self, "wac_distribution_projection") or self.wac_distribution_projection is None:
-                device = self.embeddings.word_embeddings.weight.device
-                self.wac_distribution_projection = nn.Linear(self.config.vocab_size, self.config.hidden_size).to(device)
-                self.wac_distribution_projection.apply(init_weights)
+        self.post_init()
 
     def forward(self, 
                 input_ids=None, 
@@ -687,15 +679,12 @@ class TwoTowerEncoder(PreTrainedModel):
             
             if "wac_distributions" in batch.keys() or "wac_embeddings" in batch.keys():
                 if "wac_distributions" in batch.keys():
-                    wac_distributions = batch["wac_distributions"]
-                    self.text_transformer.create_distributions_projection()
-                    
+                    wac_distributions = batch["wac_distributions"]   
                 else:
                     wac_distributions = None
                 
                 if "wac_embeddings" in batch.keys():
                     wac_embeddings = batch["wac_embeddings"]
-                    self.text_transformer.create_embeddings_projection()
                 else:
                     wac_embeddings = None
 
