@@ -117,6 +117,7 @@ def config():
     text_encoder_norm_eps = 1e-8
     max_text_len = 40
     vocab_size = 30522
+    ignore_text_embeddings_epochs = 2
 
     # Cross Layer Settings
     cross_layer_hidden_size = 256
@@ -195,7 +196,6 @@ def config():
     wac_repo_id = None
     local_wac_directory = None
     save_wac_features = False
-    ignore_text_embeddings_epochs = 2
 
     # HuggingFace settings to save and upload model
     huggingface_save_directory = None
@@ -264,6 +264,7 @@ def pretrain_mlm_onetower_electrasmall():
     text_encoder = "bert_wac"
     random_init_text_encoder = True
     tokenizer = "google/electra-small-discriminator"
+    text_encoder = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
@@ -286,6 +287,45 @@ def pretrain_mlm_onetower_electrasmall():
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-babylm"
+    subsection_to_save = "text_transformer"
+    push_to_hub = True
+
+@ex.named_config
+def pretrain_mlm_onetower_electrasmall_embedding520():
+    exp_name = "mlm_onetower_electrasmall_embedding520"
+    model_type = "two-tower"
+    datasets = ["babylm"]
+    loss_names = _loss_names({"mlm": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    max_steps = 1000000
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "bert_wac"
+    random_init_text_encoder = True
+    text_encoder_manual_configuration = True
+    tokenizer = "google/electra-small-discriminator"
+    text_encoder = "google/electra-small-wac-discriminator"
+    max_text_len = 50
+    text_encoder_embedding_size = 520
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/babylm"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-renaissance-babylm-embedding520"
     subsection_to_save = "text_transformer"
     push_to_hub = True
 
@@ -542,7 +582,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     precision = 32
     batch_size = 8
     per_gpu_batchsize = 8
-    #complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
+    complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
     
     max_epoch = 5
     warmup_steps = 0.1
@@ -553,11 +593,9 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     freeze_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    random_init_text_encoder = True
-    text_encoder_manual_configuration = True
+    random_init_text_encoder = False
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
-    text_encoder_embedding_size = 520
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0

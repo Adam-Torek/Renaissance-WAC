@@ -11,4 +11,4 @@
 
 source activate renaissance
 
-srun python3 run.py with pretrain_mlm_onetower_electrasmall
+srun python3 run.py with pretrain_mlm_onetower_electrasmall_embedding520
