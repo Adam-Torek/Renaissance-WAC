@@ -122,10 +122,10 @@ class ElectraEmbeddings(nn.Module):
         past_key_values_length: int = 0,
     ) -> torch.Tensor:
         if wac_embeddings is not None and (self.current_training_epoch < self.ignore_text_embeddings_epochs):
-            embeddings = wac_embeddings
+            embeddings = wac_embeddings.clone()
             if self.embedding_size != wac_embeddings.shape[2] and self.wac_embeddings_projection is not None:
                 if self.wac_embeddings_projection is not None:
-                    embeddings = self.wac_embeddings_projection(visual_embeddings)
+                    embeddings = self.wac_embeddings_projection(embeddings)
                 else:
                     raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
             
@@ -152,29 +152,28 @@ class ElectraEmbeddings(nn.Module):
             if inputs_embeds is None:
                 inputs_embeds = self.word_embeddings(input_ids)
 
-            visual_embeddings = wac_embeddings
-            if visual_embeddings is not None:
-                if visual_embeddings.shape[2] != inputs_embeds.shape[2]:
+            if wac_embeddings is not None:
+                if wac_embeddings.shape[2] != inputs_embeds.shape[2]:
                     if self.wac_embeddings_projection is not None:
-                        visual_embeddings = self.wac_embeddings_projection(visual_embeddings)
+                        wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
                     else:
                         raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
 
             token_type_embeddings = self.token_type_embeddings(token_type_ids)
             embeddings = inputs_embeds + token_type_embeddings
 
-            if visual_embeddings is not None:
-                visual_embeddings += token_type_embeddings
+            if wac_embeddings is not None:
+                wac_embeddings += token_type_embeddings
 
             if self.position_embedding_type == "absolute":
                 position_embeddings = self.position_embeddings(position_ids)
                 embeddings += position_embeddings
 
-                if visual_embeddings is not None:
-                    visual_embeddings += position_embeddings
+                if wac_embeddings is not None:
+                    wac_embeddings += position_embeddings
             
-            if visual_embeddings is not None:
-                embeddings *= visual_embeddings
+            if wac_embeddings is not None:
+                embeddings *= wac_embeddings
        
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)

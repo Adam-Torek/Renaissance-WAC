@@ -77,8 +77,7 @@ class RenaissanceTransformer(pl.LightningModule):
         self.wac_image_encoder = None
         self.wac_embedding_size = None
         self.wac_distribution_matrix = None
-        self.current_training_epoch = None
-        self.current_training_step = 0
+        self.current_training_epoch = 0
         self.wac_train_steps = None
         self.use_wac_embeddings = False
         self.vocab = []
