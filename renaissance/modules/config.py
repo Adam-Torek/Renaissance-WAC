@@ -89,8 +89,6 @@ class TwoTowerConfig(PretrainedConfig):
                         'intermediate_size' : config["text_encoder_hidden_size"] * config["text_encoder_mlp_ratio"],
                         'hidden_dropout_prob' : config["text_encoder_drop_rate"],
                         'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
-                        'wac_embedding_size': wac_embedding_size,
-                        'wac_distribution_matrix': config['wac_distribution_matrix'],
                         'layer_norm_eps': config['text_encoder_norm_eps'],
                     }
                     if 'electra' in config['text_encoder']:

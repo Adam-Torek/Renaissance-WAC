@@ -81,6 +81,10 @@ class RenaissanceTransformer(pl.LightningModule):
         self.wac_train_steps = None
         self.use_wac_embeddings = False
         self.vocab = []
+        self.use_wac_models_only = config['use_wac_models_only']
+
+        if self.use_wac_models_only:
+            self.use_wac_embeddings = True
         
         self.csv_log_file = config['csv_log_file']
         
@@ -188,14 +192,17 @@ class RenaissanceTransformer(pl.LightningModule):
             if config['use_wac_embeddings']:
                 self.use_wac_embeddings = True
             
-            two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
+            if not self.use_wac_models_only:
+                two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
-            self.encoder = TwoTowerEncoder(
-                two_tower_config,
-                self.fine_tune,
-                self.test_only
-            )
-            self.hidden_size = self.encoder.get_hidden_size()
+                self.encoder = TwoTowerEncoder(
+                    two_tower_config,
+                    self.fine_tune,
+                    self.test_only
+                )
+                self.hidden_size = self.encoder.get_hidden_size()
+            else:
+                hidden_size = self.wac_embedding_size
             
         else:
             raise TypeError('Model Type not supported.')
@@ -207,6 +214,8 @@ class RenaissanceTransformer(pl.LightningModule):
                 hs = self.hs
             elif self.pooler_type == 'double':
                 hs = 2*self.hidden_size
+        elif self.use_wac_models_only:
+            hs = self.wac_embedding_size
         else:
             if config["use_text_encoder"] is False or config["use_image_encoder"] is False:
                 hs_multiplier = 1
@@ -299,7 +308,7 @@ class RenaissanceTransformer(pl.LightningModule):
         if self.model_type == 'one-tower':
             self.text_hs = self.hidden_size
         else:
-            if self.encoder.text_transformer is not None:
+            if not self.use_wac_models_only and self.encoder.text_transformer is not None:
                 self.text_hs = self.encoder.text_transformer.config.hidden_size
             else:
                 self.text_hs = None
@@ -401,7 +410,7 @@ class RenaissanceTransformer(pl.LightningModule):
         if self.model_type == 'one-tower':
             self.image_hs = self.hidden_size
         else:
-            if self.encoder.image_encoder is not None:
+            if not self.use_wac_models_only and self.encoder.image_encoder is not None:
                 self.image_hs = self.encoder.image_encoder.config.hidden_size
             else:
                 self.image_hs = None
@@ -456,16 +465,14 @@ class RenaissanceTransformer(pl.LightningModule):
                 if self.wac_embedding_size is not None and self.use_wac_embeddings:
                     batch_size, seq_length = input_ids.shape
                     wac_embedding_size = self.wac_embedding_size
-                    wac_embedding_tensor = torch.full((batch_size, seq_length, wac_embedding_size), 1e-10)
+                    wac_embeddings_list = []
                     j = 0
                     for words in tokenized_words:
                         word_embeddings = self.wac_models.get_embeddings(words=words)
-                        word_embeddings = torch.tensor(word_embeddings)
-                        wac_embedding_tensor[j,1:len(words)+1,:] = word_embeddings
-                        j += 1
-                    
-                    wac_embedding_tensor = wac_embedding_tensor.to(input_ids.device)
-                    wac_features_dict["wac_embeddings"] = wac_embedding_tensor
+                        word_embeddings = torch.tensor(word_embeddings).to(input_ids.device)
+                        wac_embeddings_list.append(word_embeddings)
+
+                    wac_features_dict["wac_embeddings"] = wac_embeddings_list
 
                 if self.wac_distribution_matrix is not None:
                    

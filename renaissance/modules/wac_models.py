@@ -406,9 +406,9 @@ class WACModels():
                 generator = np.random.default_rng()
                 random_features = generator.random((1, self.embedding_size + self.position_size,))
                 _ = self.wac_models[word].predict(random_features)
-                word_embedding = np.concat([np.squeeze(self.wac_models[word].coef_), self.wac_models[word].intercept_]) 
+                word_embedding = np.concatenate([np.squeeze(self.wac_models[word].coef_), self.wac_models[word].intercept_]) 
             except Exception as e:
-                word_embedding = np.full((self.embedding_size+self.position_size+1,), 1e-10)
+                word_embedding = np.full((self.embedding_size+self.position_size+1,), 0.0)
 
             embeddings_list.append(word_embedding)
         

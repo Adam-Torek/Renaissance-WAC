@@ -258,9 +258,13 @@ def compute_ref(pl_module, batch):
                 wac_distributions = wac_feature_dict["wac_distributions"][i, :]
                 wac_distributions = wac_distributions.unsqueeze(0).expand(num_objects, -1)
                 batch_dict["wac_distributions"] = wac_distributions
+        if not pl_module.use_wac_models_only:
+            infer_results = pl_module.infer(batch_dict, mask_text=False, mask_image=False)
+            class_feats = get_output_features(pl_module, infer_results)
+        else:
+            wac_embeddings = wac_feature_dict["wac_embeddings"]
+            class_feats = torch.prod(wac_embeddings, dim=1)
 
-        infer_results = pl_module.infer(batch_dict, mask_text=False, mask_image=False)
-        class_feats = get_output_features(pl_module, infer_results)
         object_logits = pl_module.ref_classifier(class_feats)
 
         max_value = torch.max(object_logits)
