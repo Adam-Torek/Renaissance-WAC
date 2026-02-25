@@ -168,17 +168,19 @@ class ElectraEmbeddings(nn.Module):
             embeddings = inputs_embeds + token_type_embeddings
 
             if wac_embeddings is not None:
-                wac_embeddings += token_type_embeddings
+                visual_embeddings = wac_embeddings + token_type_embeddings
+            else:
+                visual_embeddings = None
 
             if self.position_embedding_type == "absolute":
                 position_embeddings = self.position_embeddings(position_ids)
                 embeddings += position_embeddings
 
-                if wac_embeddings is not None:
-                    wac_embeddings += position_embeddings
+                if visual_embeddings is not None:
+                    visual_embeddings += position_embeddings
             
-            if wac_embeddings is not None:
-                embeddings *= wac_embeddings
+            if visual_embeddings is not None:
+                embeddings *= visual_embeddings
        
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
