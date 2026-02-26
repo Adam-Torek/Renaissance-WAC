@@ -163,7 +163,7 @@ class ElectraEmbeddings(nn.Module):
         embeddings = inputs_embeds + token_type_embeddings
 
         if wac_embeddings is not None:
-            token_type_embeddings_wac = token_type_embeddings[:, 1:wac_embeddings.shape[1]+1, :]
+            token_type_embeddings_wac = token_type_embeddings[:, 1:wac_embeddings.shape[1]+1, :].clone()
             visual_embeddings = wac_embeddings + token_type_embeddings_wac
         else:
             visual_embeddings = None
@@ -173,12 +173,12 @@ class ElectraEmbeddings(nn.Module):
             embeddings += position_embeddings
 
             if visual_embeddings is not None:
-                position_embeddings_wac = position_embeddings[:, 1:wac_embeddings.shape[1]+1, :]
-                visual_embeddings += position_embeddings
+                position_embeddings_wac = position_embeddings[:, 1:wac_embeddings.shape[1]+1, :].clone()
+                visual_embeddings += position_embeddings_wac
         
         if visual_embeddings is not None:
-            for i in range(1, wac_embeddings.shape[1]+1):
-                embeddings[:, i, :] = embeddings[:, i, :] * visual_embeddings[:, i, :]
+            for i in range(0, wac_embeddings.shape[1]):
+                embeddings[:, i+1, :] = embeddings[:, i+1, :].clone() * visual_embeddings[:, i, :]
        
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)

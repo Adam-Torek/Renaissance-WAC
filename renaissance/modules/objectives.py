@@ -251,7 +251,7 @@ def compute_ref(pl_module, batch):
         batch_dict["image"] = [subimage_tensor]
         if wac_feature_dict is not None:
             if "wac_embeddings" in wac_feature_dict:
-                wac_embeddings = wac_feature_dict["wac_embeddings"][i, :]
+                wac_embeddings = wac_feature_dict["wac_embeddings"][i]
                 wac_embeddings = wac_embeddings.unsqueeze(0).expand(num_objects, -1, -1)
                 batch_dict["wac_embeddings"] = wac_embeddings
             if "wac_distributions" in wac_feature_dict:

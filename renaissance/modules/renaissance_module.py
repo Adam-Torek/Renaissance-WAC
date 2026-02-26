@@ -463,10 +463,8 @@ class RenaissanceTransformer(pl.LightningModule):
                     self.wac_models.update_wac_models(word_feature_ids)
                                 
                 if self.wac_embedding_size is not None and self.use_wac_embeddings:
-                    batch_size, seq_length = input_ids.shape
-                    wac_embedding_size = self.wac_embedding_size
+                    
                     wac_embeddings_list = []
-                    j = 0
                     for words in tokenized_words:
                         word_embeddings = self.wac_models.get_embeddings(words=words)
                         word_embeddings = torch.tensor(word_embeddings).to(input_ids.device)
