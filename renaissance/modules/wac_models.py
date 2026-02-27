@@ -41,6 +41,7 @@ class WACModels():
         self.current_split = "train"
         self.save_wac_features = save_wac_features
         self.training_completed = False
+        self.pretrained_wac_embeddings = None
 
         for word in vocab:
             word = re.sub(r"/", "{slash}", word)
@@ -402,6 +403,10 @@ class WACModels():
         embeddings_list = []
         for word in words:
             word = re.sub(r"/", "{slash}", word)
+            if self.pretrained_wac_embeddings is not None and word in self.pretrained_wac_embeddings:
+                embeddings_list.append(self.pretrained_wac_embeddings[word])
+                continue
+
             try:
                 generator = np.random.default_rng()
                 random_features = generator.random((1, self.embedding_size + self.position_size,))
@@ -463,6 +468,23 @@ class WACModels():
             with open(os.path.join(self.save_directory, f"{word}.pkl"), "rb") as model_file:
                 self.wac_models[word] = pickle.load(model_file)
 
+        self.training_completed = True
+
+    def load_pretrained_wac_embeddings(self, wac_embeddings_file):
+        self.vocab = []
+        self.pretrained_wac_embeddings = {}
+        with open(wac_embeddings_file, "r") as wac_text_path:
+            for line in wac_text_path:
+                line_values = line.split(" ")
+                word = line_values.pop(0)
+                word = re.sub(r"/","{slash}", word)
+                self.pretrained_wac_embeddings[word] = []
+                self.vocab.append(word)
+                for value in line_values:
+                    self.pretrained_wac_embeddings[word].append(float(value))
+                self.pretrained_wac_embeddings[word] = np.array(self.pretrained_wac_embeddings[word], dtype=np.float32)
+        
+        self.embedding_size = len(self.pretrained_wac_embeddings[next(iter(self.pretrained_wac_embeddings.keys()))])
         self.training_completed = True
 
     def save_features(self): 

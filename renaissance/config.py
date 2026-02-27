@@ -187,6 +187,7 @@ def config():
     wac_distribution_matrix = None
     wac_image_encoder = None
     use_wac_models_only = False
+    pretrained_wac_embedding_file = None
 
     # WAC model settings
     position_size = 7
@@ -669,6 +670,7 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
     use_wac_models_only = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
     # Cross Layer Settings
     cross_layer_hidden_size = 320

@@ -172,21 +172,27 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 self.wac_models = WACModels(**wac_args)
 
-                if not os.path.exists(self.wac_models.save_directory):
-                    if self.wac_models.wac_repo_id is not None:
+                if config['pretrained_wac_embedding_file'] is None:
+                    if not os.path.exists(self.wac_models.save_directory):
+                        if self.wac_models.wac_repo_id is not None:
+                            try:
+                                self.wac_models.download_from_hub()
+                                self.wac_models.load_models()
+                            except Exception as e:
+                                print("Unable to download WAC models from HugginFace repo. Performing training from scratch.")
+                        else:
+                            print("HuggingFace WAC Repo is not defined. Performing training from scratch.")
+                    else:
                         try:
-                            self.wac_models.download_from_hub()
                             self.wac_models.load_models()
                         except Exception as e:
-                            print("Unable to download WAC models from HugginFace repo. Performing training from scratch.")
-                    else:
-                        print("HuggingFace WAC Repo is not defined. Performing training from scratch.")
+                            print("Unable to load WAC models from disk. Performing training from scratch.")
                 else:
-                    try:
-                        self.wac_models.load_models()
-                    except Exception as e:
-                        print("Unable to load WAC models from disk. Performing training from scratch.")
-                                            
+                    pretrained_wac_embedding_file = config['pretrained_wac_embedding_file']
+                    self.wac_models.load_pretrained_wac_embeddings(pretrained_wac_embedding_file)
+                    self.wac_embedding_size = self.wac_models.embedding_size
+                    self.use_wac_embeddings = True
+
                 self.current_training_epoch = 0
 
             if config['use_wac_embeddings']:
