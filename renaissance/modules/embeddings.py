@@ -127,58 +127,60 @@ class ElectraEmbeddings(nn.Module):
         past_key_values_length: int = 0,
     ) -> torch.Tensor:
         if wac_embeddings is not None and (self.current_training_epoch < self.ignore_text_embeddings_epochs):
-            wac_embeddings = None
-            self.current_training_epoch += 1
-      
-        if input_ids is not None:
-            input_shape = input_ids.size()
-        else:
-            input_shape = inputs_embeds.size()[:-1]
-
-        batch_size = input_shape[0]
-        seq_length = input_shape[1]  
-
-        if position_ids is None:
-            position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
-
-        if token_type_ids is None:
-            if hasattr(self, "token_type_ids"):
-                buffered_token_type_ids = self.token_type_ids.expand(position_ids.shape[0], -1)
-                buffered_token_type_ids = torch.gather(buffered_token_type_ids, dim=1, index=position_ids)
-                token_type_ids = buffered_token_type_ids.expand(batch_size, seq_length)
-            else:
-                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.token_type_ids.device)
-        
-        if inputs_embeds is None:
-            inputs_embeds = self.word_embeddings(input_ids)
-
-        if wac_embeddings is not None:
-            if wac_embeddings.shape[2] != inputs_embeds.shape[2]:
+            if wac_embeddings.shape[2] != self.embedding_size:
                 if self.wac_embeddings_projection is not None:
                     wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
                 else:
-                    raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
-
-        token_type_embeddings = self.token_type_embeddings(token_type_ids)
-        embeddings = inputs_embeds + token_type_embeddings
-
-        if wac_embeddings is not None:
-            token_type_embeddings_wac = token_type_embeddings[:, 1:wac_embeddings.shape[1]+1, :].clone()
-            visual_embeddings = wac_embeddings + token_type_embeddings_wac
+                    raise ValueError("WAC embedding size does not match configured embedding size and no projection layer is defined.")
+            embeddings = wac_embeddings
         else:
-            visual_embeddings = None
-
-        if self.position_embedding_type == "absolute":
-            position_embeddings = self.position_embeddings(position_ids)
-            embeddings += position_embeddings
-
-            if visual_embeddings is not None:
-                position_embeddings_wac = position_embeddings[:, 1:wac_embeddings.shape[1]+1, :].clone()
-                visual_embeddings += position_embeddings_wac
         
-        if visual_embeddings is not None:
-            for i in range(0, wac_embeddings.shape[1]):
-                embeddings[:, i+1, :] = embeddings[:, i+1, :].clone() * visual_embeddings[:, i, :]
+            if input_ids is not None:
+                input_shape = input_ids.size()
+            else:
+                input_shape = inputs_embeds.size()[:-1]
+
+            batch_size = input_shape[0]
+            seq_length = input_shape[1]  
+
+            if position_ids is None:
+                position_ids = self.position_ids[:, past_key_values_length : seq_length + past_key_values_length]
+
+            if token_type_ids is None:
+                if hasattr(self, "token_type_ids"):
+                    buffered_token_type_ids = self.token_type_ids.expand(position_ids.shape[0], -1)
+                    buffered_token_type_ids = torch.gather(buffered_token_type_ids, dim=1, index=position_ids)
+                    token_type_ids = buffered_token_type_ids.expand(batch_size, seq_length)
+                else:
+                    token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.token_type_ids.device)
+            
+            if inputs_embeds is None:
+                inputs_embeds = self.word_embeddings(input_ids)
+
+            if wac_embeddings is not None:
+                if wac_embeddings.shape[2] != inputs_embeds.shape[2]:
+                    if self.wac_embeddings_projection is not None:
+                        wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
+                    else:
+                        raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
+
+            token_type_embeddings = self.token_type_embeddings(token_type_ids)
+            embeddings = inputs_embeds + token_type_embeddings
+
+            if wac_embeddings is not None:
+                visual_embeddings = wac_embeddings + token_type_embeddings
+            else:
+                visual_embeddings = None
+
+            if self.position_embedding_type == "absolute":
+                position_embeddings = self.position_embeddings(position_ids)
+                embeddings += position_embeddings
+
+                if visual_embeddings is not None:
+                    visual_embeddings += position_embeddings
+            
+            if visual_embeddings is not None:
+                embeddings = visual_embeddings * embeddings
        
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)

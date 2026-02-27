@@ -469,15 +469,19 @@ class RenaissanceTransformer(pl.LightningModule):
                     self.wac_models.update_wac_models(word_feature_ids)
                                 
                 if self.wac_embedding_size is not None and self.use_wac_embeddings:
+
+                    wac_embeddings_tensor = torch.zeros((input_ids.shape[0], input_ids.shape[1], self.wac_embedding_size), device=input_ids.device)
                     
-                    wac_embeddings_list = []
+                    i = 0
                     for words in tokenized_words:
                         word_embeddings = self.wac_models.get_embeddings(words=words)
-                        word_embeddings = torch.tensor(word_embeddings).to(input_ids.device)
-                        wac_embeddings_list.append(word_embeddings)
 
-                    wac_features_dict["wac_embeddings"] = wac_embeddings_list
-
+                        wac_embeddings_row_tensor = torch.tensor(word_embeddings).to(input_ids.device)
+                        wac_embeddings_tensor[i, 1:len(words)+1, :] = wac_embeddings_row_tensor
+                        i += 1
+                    
+                    wac_features_dict["wac_embeddings"] = wac_embeddings_tensor
+                   
                 if self.wac_distribution_matrix is not None:
                    
                     wac_distributions = self.wac_models.get_distributions(indices)

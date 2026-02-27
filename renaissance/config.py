@@ -650,15 +650,14 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     whole_word_masking = False
     learning_rate = 1e-4
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
-    freeze_text_encoder = False
+    freeze_image_encoder = True
+    freeze_text_encoder = True
     # Text Setting
-    text_encoder = "ajtorek/electra-renaissance-wac-text-embedding520"
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
     random_init_text_encoder = False
-    text_encoder_manual_configuration = True
+    text_encoder_manual_configuration = False
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
-    text_encoder_embedding_size = 520
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0
@@ -670,8 +669,7 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
     use_wac_models_only = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
-
+   
     # Cross Layer Settings
     cross_layer_hidden_size = 320
     num_cross_layers = 6
@@ -685,6 +683,8 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     wac_image_encoder = "openai/clip-vit-base-patch16"
     wac_repo_id = "ajtorek/wac_weights"
     local_wac_directory = "wac_models"
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
+
     #wac_train_steps = 5
     num_cores = 0
     save_wac_features = True
