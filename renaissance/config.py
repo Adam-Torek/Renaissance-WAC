@@ -651,11 +651,12 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     learning_rate = 1e-4
     # DO NOT Freeze Encoders
     freeze_image_encoder = True
-    freeze_text_encoder = True
+    freeze_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
     random_init_text_encoder = False
     text_encoder_manual_configuration = False
+    text_encoder_hidden_size = 256
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
@@ -666,7 +667,7 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     data_root = "data/arrow/coco"
     
     # Image settings to not use image encoders
-    use_image_encoder = True
+    use_image_encoder = False
     image_encoder = "facebook/deit-small-patch16-224"
     use_wac_models_only = False
    

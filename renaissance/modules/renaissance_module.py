@@ -224,11 +224,13 @@ class RenaissanceTransformer(pl.LightningModule):
             hs = self.wac_embedding_size
         else:
             if config["use_text_encoder"] is False or config["use_image_encoder"] is False:
-                hs_multiplier = 1
+                if config["use_text_encoder"] is True:
+                    hs = self.hparams.config["text_encoder_hidden_size"]
+                elif config["use_image_encoder"] is True:
+                    hs = self.hparams.config["image_encoder_hidden_size"]
             else:
                 hs_multiplier = 2
-
-            hs = hs_multiplier*self.hparams.config["cross_layer_hidden_size"]
+                hs = hs_multiplier*self.hparams.config["cross_layer_hidden_size"]
         
         # Masked Language Modeling
         if self.hparams.config["loss_names"]["mlm"] > 0:
