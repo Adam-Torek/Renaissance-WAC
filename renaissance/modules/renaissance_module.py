@@ -539,9 +539,18 @@ class RenaissanceTransformer(pl.LightningModule):
             token_type_ids = None
         
         if self.model_type == 'two-tower':
-            hidden_state = self.encoder.text_transformer(input_ids=input_ids, 
-                                                         attention_mask=attention_mask, 
-                                                         token_type_ids=token_type_ids).last_hidden_state
+            if self.wac_models is not None and "wac_embeddings" in batch.keys():
+                wac_embeddings = batch["wac_embeddings"]
+
+                hidden_state = self.encoder.text_transformer(input_ids=input_ids, 
+                                                            attention_mask=attention_mask, 
+                                                            token_type_ids=token_type_ids,
+                                                            wac_embeddings=wac_embeddings).last_hidden_state
+            else:
+                hidden_state = self.encoder.text_transformer(input_ids=input_ids, 
+                                                            attention_mask=attention_mask, 
+                                                            token_type_ids=token_type_ids).last_hidden_state
+                
         elif self.model_type == 'one-tower':
             hidden_state = self.encoder.forward_text(batch)
         
@@ -676,7 +685,7 @@ class RenaissanceTransformer(pl.LightningModule):
 
     def delete_wac_image_encoder(self):
         self.wac_image_encoder = None
-
+        
     def build_wac_features(self, dm, split):
         if self.wac_models.save_wac_features is True:
             if self.wac_models.load_features() \

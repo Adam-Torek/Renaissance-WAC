@@ -74,6 +74,11 @@ def compute_stsb(pl_module, batch):
 
     batch_without_text = copy.deepcopy(batch)
     batch_without_text.pop("text_labels")
+
+    if pl_module.wac_models is not None:
+        wac_features_data = pl_module.forward_wac_features(batch_without_text)
+        batch_without_text["wac_embeddings"] = wac_features_data["wac_embeddings"]
+
     hidden_states = pl_module.infer_text_only(batch_without_text)
     accuracy_logits = pl_module.stsb_regressor(hidden_states).squeeze()
 
@@ -104,6 +109,11 @@ def compute_text_accuracy(pl_module, batch, task):
 
     batch_without_text = copy.deepcopy(batch)
     batch_without_text.pop("text_labels")
+
+    if pl_module.wac_models is not None:
+        wac_features_data = pl_module.forward_wac_features(batch_without_text)
+        batch_without_text["wac_embeddings"] = wac_features_data["wac_embeddings"]
+
     hidden_states = pl_module.infer_text_only(batch_without_text)
 
     accuracy_module = getattr(pl_module, f"{task}_classifier")

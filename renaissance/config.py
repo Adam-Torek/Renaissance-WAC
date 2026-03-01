@@ -759,6 +759,7 @@ def finetune_cola_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"cola":1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
     
     batch_size = 128
     per_gpu_batchsize = 128
@@ -767,7 +768,7 @@ def finetune_cola_onetower_electrasmall():
     learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -782,7 +783,27 @@ def finetune_cola_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
+
 
 @ex.named_config
 def finetune_mnli_onetower_electrasmall():
@@ -791,6 +812,7 @@ def finetune_mnli_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"mnli": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -799,7 +821,7 @@ def finetune_mnli_onetower_electrasmall():
     learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -814,7 +836,26 @@ def finetune_mnli_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
     
 
 @ex.named_config
@@ -824,6 +865,7 @@ def finetune_mrpc_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"mrpc": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -833,7 +875,7 @@ def finetune_mrpc_onetower_electrasmall():
     whole_word_masking = False
    
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -848,7 +890,26 @@ def finetune_mrpc_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_qqp_onetower_electrasmall():
@@ -857,6 +918,7 @@ def finetune_qqp_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"qqp": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -865,7 +927,7 @@ def finetune_qqp_onetower_electrasmall():
     learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -880,7 +942,26 @@ def finetune_qqp_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_qnli_onetower_electrasmall():
@@ -889,6 +970,7 @@ def finetune_qnli_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"qnli": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -898,7 +980,7 @@ def finetune_qnli_onetower_electrasmall():
     whole_word_masking = False
 
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -913,7 +995,26 @@ def finetune_qnli_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_rte_onetower_electrasmall():
@@ -922,6 +1023,7 @@ def finetune_rte_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"rte": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -931,7 +1033,7 @@ def finetune_rte_onetower_electrasmall():
     whole_word_masking = False
 
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -946,7 +1048,26 @@ def finetune_rte_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_sst2_onetower_electrasmall():
@@ -955,6 +1076,7 @@ def finetune_sst2_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"sst2": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -964,7 +1086,7 @@ def finetune_sst2_onetower_electrasmall():
     whole_word_masking = False
 
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -979,7 +1101,26 @@ def finetune_sst2_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_stsb_onetower_electrasmall():
@@ -988,6 +1129,7 @@ def finetune_stsb_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"stsb": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -996,7 +1138,7 @@ def finetune_stsb_onetower_electrasmall():
     learning_rate = 5e-5
     whole_word_masking = False
     # DO NOT Freeze Encoders
-    freeze_image_encoder = False
+    freeze_image_encoder = True
     freeze_text_encoder = False
     random_init_text_encoder = False
     # Text Setting
@@ -1011,7 +1153,26 @@ def finetune_stsb_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_wnli_onetower_electrasmall():
@@ -1020,6 +1181,7 @@ def finetune_wnli_onetower_electrasmall():
     datasets = ["glue"]
     loss_names = _loss_names({"wnli": 1})
     csv_log_file = "glue_results/glue.csv"
+    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -1044,4 +1206,23 @@ def finetune_wnli_onetower_electrasmall():
     data_root = "data/arrow/glue/mnli"
 
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"

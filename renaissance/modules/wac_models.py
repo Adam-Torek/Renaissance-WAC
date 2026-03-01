@@ -488,7 +488,7 @@ class WACModels():
         self.training_completed = True
 
     def save_features(self): 
-
+            
         if self.save_wac_features:
 
             if not os.path.exists(self.save_directory):
@@ -501,6 +501,7 @@ class WACModels():
                 pickle.dump(self.positive_feature_ids, feature_ids_file)
 
     def load_features(self):
+        
         if self.save_wac_features:
 
             try:

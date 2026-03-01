@@ -6,6 +6,9 @@ Created on Mon Feb 26 11:37:04 2024
 @author: claytonfields
 """
 
+import torch
+
+from xml.etree.ElementInclude import include
 from .base_dataset import BaseDataset
 
 
@@ -23,6 +26,12 @@ class GlueDataset(BaseDataset):
             if self.task not in self.tasks:
                 raise ValueError("The selected GLUE task is not supported.")
             super().__init__(*args,hugging_face=True, **kwargs)
+
+            if 'include_wac_data' in kwargs:
+                include_wac_data = kwargs.pop('include_wac_data')
+                self.include_wac_data = include_wac_data
+            else:
+                self.include_wac_data = False
                 
             self.max_text_length = max_text_length
             
@@ -68,6 +77,51 @@ class GlueDataset(BaseDataset):
             return_tensors='pt'
         )
         ret = {k: v.squeeze() for k,v in ret.items()}
-        ret['label'] = label
+        ret['label'] = torch.tensor(label)
+        if self.include_wac_data:
+            if sent2 is not None:  
+                text_to_tokenize = sent1 + sent2
+            else:
+                text_to_tokenize = sent1
+
+            ret['tokenized_words'] = self.tokenizer.tokenize(text_to_tokenize)
+            ret['ann_id'] = 0
+        
         return ret
     
+    def collate(self, batch, mlm_collator=None):
+
+        batch_dict = {}
+        for batch_item in batch:
+            for key, value in batch_item.items():
+
+                if key == 'label':
+                    if 'text_labels' not in batch_dict:
+                        batch_dict['text_labels'] = []
+                    batch_dict['text_labels'].append(value)
+
+                elif key == 'input_ids':
+                    if 'text_ids' not in batch_dict:
+                        batch_dict['text_ids'] = []
+                    batch_dict['text_ids'].append(value)
+
+                elif key == 'attention_mask':
+                    if 'text_masks' not in batch_dict:
+                        batch_dict['text_masks'] = []
+                    batch_dict['text_masks'].append(value)
+
+                elif key == 'token_type_ids':
+                    if 'text_type_ids' not in batch_dict:
+                        batch_dict['text_type_ids'] = []
+                    batch_dict['text_type_ids'].append(value)
+
+                else:
+                    if key not in batch_dict:
+                        batch_dict[key] = []
+                    batch_dict[key].append(value)
+        
+        for key, values in batch_dict.items():
+            if isinstance(values[0], torch.Tensor):
+                batch_dict[key] = torch.stack(values)
+            
+        return batch_dict
