@@ -14,5 +14,5 @@ source activate renaissance
 glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
 for task in "${glue_tasks[@]}"
 do 
-    srun python3 run.py with finetune_$task\_onetower_electrasmall complete_encoder_path=ajtorek/electra_deit_small_wac_embeddings use_image_encoder=True
+    srun python3 run.py with finetune_$task\_onetower_electrasmall
 done 
