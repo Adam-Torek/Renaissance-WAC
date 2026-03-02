@@ -776,7 +776,7 @@ def glue_wac_embeddings_config():
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
     tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
+    max_text_len = 128
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0
