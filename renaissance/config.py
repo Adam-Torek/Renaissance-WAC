@@ -1,4 +1,5 @@
-from sacred import Experiment
+from sacred import Experiment, Ingredient
+
 
 ex = Experiment("renaissance")
 
@@ -752,16 +753,16 @@ def eval_ref_twotower_electrasmall_deit_wac_distributions():
     huggingface_save_name = "ajtorek/electra_deit_small_wac_distributions"
     push_to_hub = True
 
-@ex.named_config
-def finetune_cola_twotower_electrasmall():
-    exp_name = "finetune_cola_twotower_electrasmall"
+# Config for GLUE experiments with WAC embeddings 
+@ex.config
+def glue_wac_embeddings_config():
+
     model_type = "two-tower"
     datasets = ["glue"]
-    loss_names = _loss_names({"cola":1})
-    csv_log_file = "glue_results/glue.csv"
+    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
     run_test = False
-    
+
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 10
@@ -781,7 +782,6 @@ def finetune_cola_twotower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/cola"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -805,742 +805,159 @@ def finetune_cola_twotower_electrasmall():
     save_wac_features = False
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
+
+@ex.named_config
+def finetune_cola_twotower_electrasmall():
+    exp_name = "finetune_cola_twotower_electrasmall"
+    loss_names = _loss_names({"cola":1})
+    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
+    
+    data_root = "data/arrow/glue/cola"
 
 @ex.named_config
 def finetune_mnli_twotower_electrasmall():
     exp_name = "finetune_mnli_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"mnli": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
+    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
 
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
-
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
-    
 
 @ex.named_config
 def finetune_mrpc_twotower_electrasmall():
     exp_name = "finetune_mnli_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"mrpc": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-   
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/mrpc"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_qqp_twotower_electrasmall():
     exp_name = "finetune_qqp_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"qqp": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/qqp"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_qnli_twotower_electrasmall():
     exp_name = "finetune_qnli_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"qnli": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/qnli"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_rte_twotower_electrasmall():
     exp_name = "finetune_rte_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"rte": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/rte"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_sst2_twotower_electrasmall():
     exp_name = "finetune_sst2_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"sst2": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/sst2"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_stsb_twotower_electrasmall():
     exp_name = "finetune_stsb_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"stsb": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
+    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
     data_root = "data/arrow/glue/stsb"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
 def finetune_wnli_twotower_electrasmall():
     exp_name = "finetune_wnli_twotower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"wnli": 1})
-    csv_log_file = "glue_results/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = False
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/wnli"
 
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
+# Config for GLUE experiments *without* WAC embeddings 
+@ex.config
+def glue_no_wac_embeddings_config():
 
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    #wac_train_steps = 5
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    num_cores = 0
-    save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
-
-@ex.named_config
-def finetune_cola_onetower_electrasmall():
-    exp_name = "finetune_cola_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
-    loss_names = _loss_names({"cola":1})
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    complete_encoder_path = None
     run_test = False
-    
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
+
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
-    data_root = "data/arrow/glue/cola"
 
     # Image settings to not use image encoders
     use_image_encoder = False
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
+
+
+@ex.named_config
+def finetune_cola_onetower_electrasmall():
+    exp_name = "finetune_cola_onetower_electrasmall"
+    loss_names = _loss_names({"cola":1})
+    data_root = "data/arrow/glue/cola"
 
 
 @ex.named_config
 def finetune_mnli_onetower_electrasmall():
     exp_name = "finetune_mnli_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"mnli": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-    
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/mnli"
-
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
     
 
 @ex.named_config
 def finetune_mrpc_onetower_electrasmall():
     exp_name = "finetune_mrpc_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"mrpc": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/mrpc"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
 
 @ex.named_config
 def finetune_qqp_onetower_electrasmall():
     exp_name = "finetune_qqp_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"qqp": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/qqp"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
 
 @ex.named_config
 def finetune_qnli_onetower_electrasmall():
     exp_name = "finetune_qnli_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"qnli": 1})
-    csv_log_file = "glue_results/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/qnli"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
 
 @ex.named_config
 def finetune_rte_onetower_electrasmall():
     exp_name = "finetune_rte_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"rte": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/rte"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
 
 @ex.named_config
 def finetune_sst2_onetower_electrasmall():
     exp_name = "finetune_sst2_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"sst2": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/sst2"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
 
 @ex.named_config
 def finetune_stsb_onetower_electrasmall():
     exp_name = "finetune_stsb_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"stsb": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/stsb"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
 
 @ex.named_config
 def finetune_wnli_onetower_electrasmall():
     exp_name = "finetune_wnli_onetower_electrasmall"
-    model_type = "two-tower"
-    datasets = ["glue"]
     loss_names = _loss_names({"wnli": 1})
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
-    run_test = False
-
-    batch_size = 128
-    per_gpu_batchsize = 128
-    max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
-    whole_word_masking = False
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    random_init_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/glue/wnli"
 
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
     

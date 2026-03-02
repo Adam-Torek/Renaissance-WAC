@@ -104,6 +104,8 @@ def run_experiment(_config):
     print("Image encoder for WAC image features: ", _config["wac_image_encoder"])
     print("Save directory for WAC models", _config["wac_repo_id"])
     print("Num WAC Cores: ", _config["num_cores"])
+    print("Local WAC Directory: ", _config["local_wac_directory"])
+
                
     if not load_path:
         image_size = _config['image_size']
