@@ -821,7 +821,7 @@ def finetune_mnli_twotower_electrasmall():
 
 @ex.named_config
 def finetune_mrpc_twotower_electrasmall():
-    exp_name = "finetune_mnli_twotower_electrasmall"
+    exp_name = "finetune_mrpc_twotower_electrasmall"
     loss_names = _loss_names({"mrpc": 1})
     data_root = "data/arrow/glue/mrpc"
 
@@ -853,7 +853,6 @@ def finetune_sst2_twotower_electrasmall():
     loss_names = _loss_names({"sst2": 1})
     data_root = "data/arrow/glue/sst2"
 
-
 @ex.named_config
 def finetune_stsb_twotower_electrasmall():
     exp_name = "finetune_stsb_twotower_electrasmall"
@@ -867,17 +866,63 @@ def finetune_wnli_twotower_electrasmall():
     loss_names = _loss_names({"wnli": 1})
     data_root = "data/arrow/glue/wnli"
 
-# Config for GLUE experiments *without* WAC embeddings 
-@ex.config
-def glue_no_wac_embeddings_config():
+# Named configs for configurations *without* WAC Embeddings
 
-    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+@ex.named_config
+def finetune_cola_onetower_electrasmall():
+    exp_name = "finetune_cola_onetower_electrasmall"
+    loss_names = _loss_names({"cola":1})
+    data_root = "data/arrow/glue/cola"
     complete_encoder_path = None
-    run_test = False
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
+
+@ex.named_config
+def finetune_mnli_onetower_electrasmall():
+    exp_name = "finetune_mnli_onetower_electrasmall"
+    loss_names = _loss_names({"mnli": 1})
+    data_root = "data/arrow/glue/mnli"
+
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
+    
+
+@ex.named_config
+def finetune_mrpc_onetower_electrasmall():
+    exp_name = "finetune_mrpc_onetower_electrasmall"
+    loss_names = _loss_names({"mrpc": 1})
+    data_root = "data/arrow/glue/mrpc"
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
     # Image settings to not use image encoders
     use_image_encoder = False
@@ -896,32 +941,27 @@ def glue_no_wac_embeddings_config():
 
 
 @ex.named_config
-def finetune_cola_onetower_electrasmall():
-    exp_name = "finetune_cola_onetower_electrasmall"
-    loss_names = _loss_names({"cola":1})
-    data_root = "data/arrow/glue/cola"
-
-
-@ex.named_config
-def finetune_mnli_onetower_electrasmall():
-    exp_name = "finetune_mnli_onetower_electrasmall"
-    loss_names = _loss_names({"mnli": 1})
-    data_root = "data/arrow/glue/mnli"
-    
-
-@ex.named_config
-def finetune_mrpc_onetower_electrasmall():
-    exp_name = "finetune_mrpc_onetower_electrasmall"
-    loss_names = _loss_names({"mrpc": 1})
-    data_root = "data/arrow/glue/mrpc"
-
-
-@ex.named_config
 def finetune_qqp_onetower_electrasmall():
     exp_name = "finetune_qqp_onetower_electrasmall"
     loss_names = _loss_names({"qqp": 1})
     data_root = "data/arrow/glue/qqp"
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
 
 @ex.named_config
 def finetune_qnli_onetower_electrasmall():
@@ -929,12 +969,46 @@ def finetune_qnli_onetower_electrasmall():
     loss_names = _loss_names({"qnli": 1})
     data_root = "data/arrow/glue/qnli"
 
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
 
 @ex.named_config
 def finetune_rte_onetower_electrasmall():
     exp_name = "finetune_rte_onetower_electrasmall"
     loss_names = _loss_names({"rte": 1})
     data_root = "data/arrow/glue/rte"
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
 
 
 @ex.named_config
@@ -943,12 +1017,48 @@ def finetune_sst2_onetower_electrasmall():
     loss_names = _loss_names({"sst2": 1})
     data_root = "data/arrow/glue/sst2"
 
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
+
 
 @ex.named_config
 def finetune_stsb_onetower_electrasmall():
     exp_name = "finetune_stsb_onetower_electrasmall"
     loss_names = _loss_names({"stsb": 1})
     data_root = "data/arrow/glue/stsb"
+
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None
 
 
 @ex.named_config
@@ -957,4 +1067,20 @@ def finetune_wnli_onetower_electrasmall():
     loss_names = _loss_names({"wnli": 1})
     data_root = "data/arrow/glue/wnli"
 
-    
+    complete_encoder_path = None
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # WAC model settings
+    use_wac_embeddings = None
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    wac_repo_id = None
+    local_wac_directory = None
+    num_cores = 0
+    save_wac_features = False
+    pretrained_wac_embedding_file = None

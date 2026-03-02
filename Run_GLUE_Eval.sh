@@ -12,15 +12,18 @@
 source activate renaissance
 
 glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
+numtowers=""
+
+if [ "$1" = "one-tower" ]; then
+    numtowers="onetower"
+elif [ "$1" = "two-tower" ]; then
+    numtowers="twotower"
+else
+    echo "$1 must be one-tower or two-tower"
+    exit 1
+fi
+
 for task in "${glue_tasks[@]}"
 do
-    if [ "$1" = "one-tower" ]; then
-        numtowers="onetower"
-    elif [ "$1" = "two-tower" ]; then
-        numtowers="twotower"
-    else
-        echo "$1 must be one-tower or two-tower"
-        exit 1
-    fi
     python3 run.py with finetune_$task\_$numtowers\_electrasmall
 done 

@@ -476,8 +476,13 @@ class RenaissanceTransformer(pl.LightningModule):
                     
                     i = 0
                     for words in tokenized_words:
+                        if (len(words)+1) >= input_ids.shape[1]:
+                            shape_difference = (len(words)+1) - input_ids.shape[1]
+                            for j in range(0, shape_difference):
+                                words.pop()
+                            
                         word_embeddings = self.wac_models.get_embeddings(words=words)
-
+                        
                         wac_embeddings_row_tensor = torch.tensor(word_embeddings).to(input_ids.device)
                         wac_embeddings_tensor[i, 1:len(words)+1, :] = wac_embeddings_row_tensor
                         i += 1

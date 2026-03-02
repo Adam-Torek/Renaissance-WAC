@@ -71,11 +71,12 @@ class GlueDataset(BaseDataset):
         ret = self.tokenizer(
             sent1, 
             sent2,
-            max_length=self.max_text_length,
-            padding='max_length',
+            padding="max_length",
             truncation=True,
-            return_tensors='pt'
+            max_length=self.max_text_len,
+            return_tensors="pt",
         )
+        
         ret = {k: v.squeeze() for k,v in ret.items()}
         ret['label'] = torch.tensor(label)
         if self.include_wac_data:

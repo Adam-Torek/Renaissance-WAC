@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "finetune_mnli_onetower_electrasmall", 
+                "finetune_mnli_twotower_electrasmall", 
             ]
         },
 
