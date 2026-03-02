@@ -810,15 +810,13 @@ def glue_wac_embeddings_config():
 def finetune_cola_twotower_electrasmall():
     exp_name = "finetune_cola_twotower_electrasmall"
     loss_names = _loss_names({"cola":1})
-    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
-    
     data_root = "data/arrow/glue/cola"
 
 @ex.named_config
 def finetune_mnli_twotower_electrasmall():
     exp_name = "finetune_mnli_twotower_electrasmall"
     loss_names = _loss_names({"mnli": 1})
-    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
+    data_root = "data/arrow/glue/mnli"
 
 
 @ex.named_config
@@ -860,7 +858,6 @@ def finetune_sst2_twotower_electrasmall():
 def finetune_stsb_twotower_electrasmall():
     exp_name = "finetune_stsb_twotower_electrasmall"
     loss_names = _loss_names({"stsb": 1})
-    csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
     data_root = "data/arrow/glue/stsb"
 
 
