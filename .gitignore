@@ -3,7 +3,6 @@ data/
 result/*
 results/*
 slurm_logs/*
-glue_results/*
 models/*
 wac_models/*
 *.zip

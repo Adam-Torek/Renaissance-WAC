@@ -753,13 +753,14 @@ def eval_ref_twotower_electrasmall_deit_wac_distributions():
     push_to_hub = True
 
 @ex.named_config
-def finetune_cola_onetower_electrasmall():
-    exp_name = "finetune_cola_onetower_electrasmall"
+def finetune_cola_twotower_electrasmall():
+    exp_name = "finetune_cola_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"cola":1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
     
     batch_size = 128
     per_gpu_batchsize = 128
@@ -780,7 +781,7 @@ def finetune_cola_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/cola"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -806,13 +807,14 @@ def finetune_cola_onetower_electrasmall():
 
 
 @ex.named_config
-def finetune_mnli_onetower_electrasmall():
-    exp_name = "finetune_mnli_onetower_electrasmall"
+def finetune_mnli_twotower_electrasmall():
+    exp_name = "finetune_mnli_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"mnli": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -859,13 +861,14 @@ def finetune_mnli_onetower_electrasmall():
     
 
 @ex.named_config
-def finetune_mrpc_onetower_electrasmall():
-    exp_name = "finetune_mnli_onetower_electrasmall"
+def finetune_mrpc_twotower_electrasmall():
+    exp_name = "finetune_mnli_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"mrpc": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -887,7 +890,7 @@ def finetune_mrpc_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/mrpc"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -912,13 +915,14 @@ def finetune_mrpc_onetower_electrasmall():
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
-def finetune_qqp_onetower_electrasmall():
-    exp_name = "finetune_qqp_onetower_electrasmall"
+def finetune_qqp_twotower_electrasmall():
+    exp_name = "finetune_qqp_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"qqp": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -939,7 +943,7 @@ def finetune_qqp_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/qqp"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -964,13 +968,14 @@ def finetune_qqp_onetower_electrasmall():
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
-def finetune_qnli_onetower_electrasmall():
-    exp_name = "finetune_qnli_onetower_electrasmall"
+def finetune_qnli_twotower_electrasmall():
+    exp_name = "finetune_qnli_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"qnli": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -992,7 +997,7 @@ def finetune_qnli_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/qnli"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -1017,13 +1022,14 @@ def finetune_qnli_onetower_electrasmall():
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
-def finetune_rte_onetower_electrasmall():
-    exp_name = "finetune_rte_onetower_electrasmall"
+def finetune_rte_twotower_electrasmall():
+    exp_name = "finetune_rte_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"rte": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -1045,7 +1051,7 @@ def finetune_rte_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/rte"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -1070,13 +1076,14 @@ def finetune_rte_onetower_electrasmall():
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
-def finetune_sst2_onetower_electrasmall():
-    exp_name = "finetune_sst2_onetower_electrasmall"
+def finetune_sst2_twotower_electrasmall():
+    exp_name = "finetune_sst2_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"sst2": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -1098,7 +1105,7 @@ def finetune_sst2_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/sst2"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -1123,13 +1130,14 @@ def finetune_sst2_onetower_electrasmall():
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
-def finetune_stsb_onetower_electrasmall():
-    exp_name = "finetune_stsb_onetower_electrasmall"
+def finetune_stsb_twotower_electrasmall():
+    exp_name = "finetune_stsb_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"stsb": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -1150,7 +1158,7 @@ def finetune_stsb_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/stsb"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -1175,13 +1183,14 @@ def finetune_stsb_onetower_electrasmall():
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
 
 @ex.named_config
-def finetune_wnli_onetower_electrasmall():
-    exp_name = "finetune_wnli_onetower_electrasmall"
+def finetune_wnli_twotower_electrasmall():
+    exp_name = "finetune_wnli_twotower_electrasmall"
     model_type = "two-tower"
     datasets = ["glue"]
     loss_names = _loss_names({"wnli": 1})
     csv_log_file = "glue_results/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
@@ -1203,7 +1212,7 @@ def finetune_wnli_onetower_electrasmall():
     draw_false_text = 0
     draw_false_image = 0
     num_gpus = 1
-    data_root = "data/arrow/glue/mnli"
+    data_root = "data/arrow/glue/wnli"
 
     # Image settings to not use image encoders
     use_image_encoder = True
@@ -1226,3 +1235,312 @@ def finetune_wnli_onetower_electrasmall():
     num_cores = 0
     save_wac_features = False
     pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
+
+@ex.named_config
+def finetune_cola_onetower_electrasmall():
+    exp_name = "finetune_cola_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"cola":1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+    
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/cola"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+
+@ex.named_config
+def finetune_mnli_onetower_electrasmall():
+    exp_name = "finetune_mnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"mnli": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+    
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+    
+
+@ex.named_config
+def finetune_mrpc_onetower_electrasmall():
+    exp_name = "finetune_mrpc_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"mrpc": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/mrpc"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+@ex.named_config
+def finetune_qqp_onetower_electrasmall():
+    exp_name = "finetune_qqp_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"qqp": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/qqp"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+@ex.named_config
+def finetune_qnli_onetower_electrasmall():
+    exp_name = "finetune_qnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"qnli": 1})
+    csv_log_file = "glue_results/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/qnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+@ex.named_config
+def finetune_rte_onetower_electrasmall():
+    exp_name = "finetune_rte_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"rte": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/rte"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+@ex.named_config
+def finetune_sst2_onetower_electrasmall():
+    exp_name = "finetune_sst2_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"sst2": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/sst2"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+@ex.named_config
+def finetune_stsb_onetower_electrasmall():
+    exp_name = "finetune_stsb_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"stsb": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/stsb"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+
+@ex.named_config
+def finetune_wnli_onetower_electrasmall():
+    exp_name = "finetune_wnli_onetower_electrasmall"
+    model_type = "two-tower"
+    datasets = ["glue"]
+    loss_names = _loss_names({"wnli": 1})
+    csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
+    run_test = False
+
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    warmup_steps = 0.1
+    learning_rate = 5e-5
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = True
+    freeze_text_encoder = False
+    random_init_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/glue/wnli"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+    image_encoder = "facebook/deit-small-patch16-224"
+    
