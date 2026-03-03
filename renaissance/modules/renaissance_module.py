@@ -476,8 +476,8 @@ class RenaissanceTransformer(pl.LightningModule):
                     
                     i = 0
                     for words in tokenized_words:
-                        if (len(words)+1) >= input_ids.shape[1]:
-                            shape_difference = (len(words)+1) - input_ids.shape[1]
+                        if (len(words)+2) >= input_ids.shape[1]:
+                            shape_difference = (len(words)+2) - input_ids.shape[1]
                             for j in range(0, shape_difference):
                                 words.pop()
                             
