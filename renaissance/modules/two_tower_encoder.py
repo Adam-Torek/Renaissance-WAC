@@ -386,13 +386,13 @@ class BertWACTransformer(BertWACPreTrainedModel):
 
         if config.embedding_size != config.hidden_size:
             self.embeddings_projection = nn.Linear(config.embedding_size, config.hidden_size)
-        else:
-            self.embeddings_projection = None
 
         if config.wac_distribution_matrix is not None:
             self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
+            self.wac_distribution_activation = ACT2FN[config.hidden_act]
         else:
             self.wac_distribution_projection = None
+            self.wac_distribution_activation = None
 
         self.post_init()
 
@@ -457,6 +457,7 @@ class BertWACTransformer(BertWACPreTrainedModel):
                     self.printed_distributions_warning = True
             else:
                 wac_distributions = self.wac_distribution_projection(wac_distributions)
+                wac_distributions = self.wac_distribution_activation(wac_distributions)
         
         hidden_states = self.encoder(hidden_states=hidden_states,
                                      attention_mask=extended_attention_mask,

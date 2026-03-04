@@ -803,7 +803,7 @@ def glue_wac_embeddings_config():
     local_wac_directory = "wac_models"
     num_cores = 0
     save_wac_features = False
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
+    pretrained_wac_embedding_file = None
 
 
 @ex.named_config

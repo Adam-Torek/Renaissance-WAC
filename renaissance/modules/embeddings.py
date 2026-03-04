@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 from transformers.models.bert.configuration_bert import BertConfig
 from transformers.models.vit.configuration_vit import ViTConfig
+from transformers.activations import ACT2FN
 
 # from transformers.models.bert.modeling_bert import BertPredictionHeadTransform
 
@@ -103,8 +104,10 @@ class ElectraEmbeddings(nn.Module):
 
         if config.wac_embedding_size is not None and self.embedding_size != config.wac_embedding_size:
             self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
+            self.wac_embeddings_activation = ACT2FN[config.hidden_act]
         else:
             self.wac_embeddings_projection = None
+            self.wac_embeddings_activation = None
 
         # position_ids (1, len position emb) is contiguous in memory and exported when serialized
         self.register_buffer(
@@ -130,6 +133,7 @@ class ElectraEmbeddings(nn.Module):
             if wac_embeddings.shape[2] != self.embedding_size:
                 if self.wac_embeddings_projection is not None:
                     wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
+                    wac_embeddings = self.wac_embeddings_activation(wac_embeddings)
                 else:
                     raise ValueError("WAC embedding size does not match configured embedding size and no projection layer is defined.")
             embeddings = wac_embeddings
@@ -161,6 +165,7 @@ class ElectraEmbeddings(nn.Module):
                 if wac_embeddings.shape[2] != inputs_embeds.shape[2]:
                     if self.wac_embeddings_projection is not None:
                         wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
+                        wac_embeddings = self.wac_embeddings_activation(wac_embeddings)
                     else:
                         raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
 
