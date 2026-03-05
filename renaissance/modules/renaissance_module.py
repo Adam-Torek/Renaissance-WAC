@@ -201,6 +201,9 @@ class RenaissanceTransformer(pl.LightningModule):
             if not self.use_wac_models_only:
                 two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
+                if config['loss_names']['ref'] == 0 and self.wac_models is not None and two_tower_config.text_config.ignore_text_embeddings_epochs > 0:
+                    two_tower_config.text_config.ignore_text_embeddings_epochs = 0
+
                 self.encoder = TwoTowerEncoder(
                     two_tower_config,
                     self.fine_tune,
