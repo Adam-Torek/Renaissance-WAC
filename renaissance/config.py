@@ -261,6 +261,7 @@ def pretrain_mlm_onetower_electrasmall():
     max_steps = 1000000
     warmup_steps = 0.1
     whole_word_masking = False
+    complete_encoder_path = None
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
     freeze_text_encoder = False
