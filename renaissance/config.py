@@ -588,7 +588,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     per_gpu_batchsize = 8
     complete_encoder_path = None
     
-    max_epoch = 5
+    max_epoch = 2
     warmup_steps = 0.1
     whole_word_masking = False
     learning_rate = 1e-4
@@ -597,8 +597,9 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     freeze_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    random_init_text_encoder = True
-    text_encoder_manual_configuration = True
+    random_init_text_encoder = False
+    text_encoder_manual_configuration = False
+    ignore_text_embeddings_epochs = 0
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa

@@ -106,7 +106,8 @@ class ElectraEmbeddings(nn.Module):
             self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
             self.wac_embeddings_activation = ACT2FN[config.hidden_act]
 
-            init_weights(self.wac_embeddings_activation)
+            init_weights(self.wac_embeddings_projection)
+           
         else:
             self.wac_embeddings_projection = None
             self.wac_embeddings_activation = None
@@ -175,7 +176,7 @@ class ElectraEmbeddings(nn.Module):
             embeddings = inputs_embeds + token_type_embeddings
 
             if wac_embeddings is not None:
-                visual_embeddings = wac_embeddings + token_type_embeddings
+                visual_embeddings = wac_embeddings
             else:
                 visual_embeddings = None
 
@@ -183,8 +184,8 @@ class ElectraEmbeddings(nn.Module):
                 position_embeddings = self.position_embeddings(position_ids)
                 embeddings += position_embeddings
 
-                if visual_embeddings is not None:
-                    visual_embeddings += position_embeddings
+                #if visual_embeddings is not None:
+                    #visual_embeddings = visual_embeddings + position_embeddings
             
             if visual_embeddings is not None:
                 embeddings = visual_embeddings * embeddings

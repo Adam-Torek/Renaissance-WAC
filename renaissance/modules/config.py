@@ -105,6 +105,7 @@ class TwoTowerConfig(PretrainedConfig):
                         wac_encoder_kwargs = {
                             'wac_embedding_size': wac_embedding_size,
                             'wac_distribution_matrix': config['wac_distribution_matrix'],
+                            'ignore_text_embeddings_epochs': config['ignore_text_embeddings_epochs'],
                             }
                         
                         self.text_config = WACConfig(**wac_encoder_kwargs)
