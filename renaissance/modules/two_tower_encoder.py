@@ -392,7 +392,7 @@ class BertWACTransformer(BertWACPreTrainedModel):
         if config.wac_distribution_matrix is not None:
             self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
             self.wac_distribution_activation = ACT2FN[config.hidden_act]
-            init_weights(self.wac_distribution_projection)
+            self.wac_distribution_projection.apply(init_weights)
         else:
             self.wac_distribution_projection = None
             self.wac_distribution_activation = None

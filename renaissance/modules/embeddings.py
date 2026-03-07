@@ -106,7 +106,7 @@ class ElectraEmbeddings(nn.Module):
             self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
             self.wac_embeddings_activation = ACT2FN[config.hidden_act]
 
-            init_weights(self.wac_embeddings_projection)
+            self.wac_embeddings_projection.apply(init_weights)
            
         else:
             self.wac_embeddings_projection = None

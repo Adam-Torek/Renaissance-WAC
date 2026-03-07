@@ -107,23 +107,15 @@ class RenaissanceTransformer(pl.LightningModule):
             self.hidden_size = self.encoder.get_hidden_size()
             self.embedding_size = self.encoder.get_embedding_size()
         
-        elif self.model_type == 'two-tower':
+        elif 'two-tower' in self.model_type:
 
-            if config['use_wac_embeddings'] or config['wac_distribution_matrix'] is not None:
+            if self.model_type == 'two-tower-wac':
                 wac_image_encoder_path = config['wac_image_encoder']
-                if wac_image_encoder_path is None:
-                    raise ValueError("WAC image encoder must be defined if WAC models are enabled")
-                
-                local_directory = config['local_wac_directory']
-                if local_directory is None:
-                    raise ValueError("WAC model folder must be defined if they are enabled")
-
                 tokenizer_path = config['tokenizer']
-                if tokenizer_path is None:
-                    raise ValueError("Tokenizer must be defined for WAC models so the vocabulary can be defined")
 
-                self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
-                self.wac_image_encoder = self.wac_image_encoder.eval()
+                if wac_image_encoder_path is not None:
+                    self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
+                    self.wac_image_encoder = self.wac_image_encoder.eval()
 
                 if hasattr(self.wac_image_encoder, 'config'):
                     wac_image_encoder_config = self.wac_image_encoder.config
@@ -195,6 +187,9 @@ class RenaissanceTransformer(pl.LightningModule):
 
                 self.current_training_epoch = 0
 
+                if config['loss_names']['ref'] == 0:
+                    self.delete_wac_image_encoder()
+
             if config['use_wac_embeddings']:
                 self.use_wac_embeddings = True
             
@@ -212,6 +207,8 @@ class RenaissanceTransformer(pl.LightningModule):
                 self.hidden_size = self.encoder.get_hidden_size()
             else:
                 hidden_size = self.wac_embedding_size
+
+            
             
         else:
             raise TypeError('Model Type not supported.')
@@ -520,7 +517,7 @@ class RenaissanceTransformer(pl.LightningModule):
             )
             return ret
         
-        elif self.model_type == 'two-tower':
+        elif 'two-tower' in self.model_type:
             
             ret = self.encoder(
                 batch,
@@ -688,7 +685,7 @@ class RenaissanceTransformer(pl.LightningModule):
                                         filename="model.safetensors",)
         
         safetensors_weights = load_file(download_path)
-        self.encoder.load_state_dict(safetensors_weights, strict=False)
+        self.encoder.load_state_dict(safetensors_weights, strict=True)
         self.encoder.train()
 
     def delete_wac_image_encoder(self):

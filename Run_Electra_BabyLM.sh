@@ -11,4 +11,17 @@
 
 source activate renaissance
 
-srun python3 run.py with pretrain_mlm_onetower_electrasmall_embedding520
+if [ "$1" = "wac-embeddings" ]; then
+    task="pretrain_mlm_onetower_electrasmall_wac_embeddings"
+
+elif [ "$1" = "wac-distributions" ]; then
+    task="pretrain_mlm_onetower_electrasmall_wac_distributions"
+
+elif [ "$1" = "wac-embeddings-distributions" ]; then
+    task="pretrain_mlm_onetower_electrasmall_wac_embeddings_distributions"
+
+else
+    task="pretrain_mlm_onetower_electrasmall"
+fi
+
+srun python3 run.py with $task

@@ -184,9 +184,9 @@ def config():
     precision = 32
 
     # WAC distribution and embedding settings
-    use_wac_embeddings = False
+    use_wac_embeddings = True
     wac_distribution_matrix = None
-    wac_image_encoder = None
+    wac_image_encoder = ""
     use_wac_models_only = False
     pretrained_wac_embedding_file = None
     wac_pretraining_objectives = ["ref"]
@@ -281,16 +281,151 @@ def pretrain_mlm_onetower_electrasmall():
     use_image_encoder = False
 
     # WAC model settings
-    # wac_embedding_size = 512
-    # wac_distribution_matrix = "value"
-    # wac_image_encoder = "openai/clip-vit-base-patch16"
-    # save_directory = "wac_models"
-    # wac_train_steps = 5
-    # num_cores = 0
+    use_wac_embeddings = False
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    local_wac_directory = None
+    wac_train_steps = 5
+    num_cores = 0
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-babylm"
+    subsection_to_save = "text_transformer"
+    push_to_hub = True
+
+@ex.named_config
+def pretrain_mlm_onetower_electrasmall_wac_embeddings():
+    exp_name = "mlm_onetower_electrasmall_wac_embeddings"
+    model_type = "two-tower-wac"
+    datasets = ["babylm"]
+    loss_names = _loss_names({"mlm": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    max_steps = 1000000
+    warmup_steps = 0.1
+    whole_word_masking = False
+    complete_encoder_path = None
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "bert_wac"
+    random_init_text_encoder = True
+    tokenizer = "google/electra-small-discriminator"
+    text_encoder = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/babylm"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    wac_train_steps = 0
+    num_cores = 0
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-renaissance-babylm-wac-embeddings"
+    subsection_to_save = "text_transformer"
+    push_to_hub = True
+
+@ex.named_config
+def pretrain_mlm_onetower_electrasmall_wac_distributions():
+    exp_name = "mlm_onetower_electrasmall_wac_distributions"
+    model_type = "two-tower-wac"
+    datasets = ["babylm"]
+    loss_names = _loss_names({"mlm": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    max_steps = 1000000
+    warmup_steps = 0.1
+    whole_word_masking = False
+    complete_encoder_path = None
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "bert_wac"
+    random_init_text_encoder = True
+    tokenizer = "google/electra-small-discriminator"
+    text_encoder = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/babylm"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+    # WAC model settings
+    use_wac_embeddings = False
+    wac_distribution_matrix = "value"
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    wac_train_steps = 0
+    num_cores = 0
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-renaissance-babylm-wac-distributons"
+    subsection_to_save = "text_transformer"
+    push_to_hub = True
+
+@ex.named_config
+def pretrain_mlm_onetower_electrasmall_wac_embeddings_distributions():
+    exp_name = "mlm_onetower_electrasmall_wac_embeddings_distributions"
+    model_type = "two-tower-wac"
+    datasets = ["babylm"]
+    loss_names = _loss_names({"mlm": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 10
+    max_steps = 1000000
+    warmup_steps = 0.1
+    whole_word_masking = False
+    complete_encoder_path = None
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "bert_wac"
+    random_init_text_encoder = True
+    tokenizer = "google/electra-small-discriminator"
+    text_encoder = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/babylm"
+
+    # Image settings to not use image encoders
+    use_image_encoder = False
+
+    # WAC model settings
+    use_wac_embeddings = True
+    wac_distribution_matrix = "value"
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    wac_train_steps = 0
+    num_cores = 0
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/huggingface_outputs"
+    huggingface_save_name = "ajtorek/electra-renaissance-babylm-wac-embeddings-distributons"
     subsection_to_save = "text_transformer"
     push_to_hub = True
 
@@ -336,7 +471,7 @@ def pretrain_mlm_onetower_electrasmall_embedding520():
 @ex.named_config
 def pretrain_mim_onetower_deit_tiny():
     exp_name = "pretrain_mim_onetower_deit_tiny"
-    model_type = "two-tower"
+    model_type = "two-tower-wac"
     datasets = ["sbu"]
     loss_names = _loss_names({"mim": 1})
     batch_size = 256
@@ -579,7 +714,7 @@ def eval_ref_twotower_electrasmall_deit_small():
 @ex.named_config
 def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     exp_name = "eval_ref_twotower_electrasmall_wac_embeddings"
-    model_type = "two-tower"
+    model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
     num_gpus = 1
@@ -638,7 +773,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
 @ex.named_config
 def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
     exp_name = "eval_ref_twotower_electrasmall_wac_text_pretrained_embeddings"
-    model_type = "two-tower"
+    model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
     num_gpus = 1
@@ -700,7 +835,7 @@ def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
 @ex.named_config
 def eval_ref_twotower_electrasmall_deit_wac_distributions():
     exp_name = "eval_ref_twotower_electrasmall_wac_distributions"
-    model_type = "two-tower"
+    model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
     num_gpus = 1

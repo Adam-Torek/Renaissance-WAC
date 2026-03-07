@@ -59,8 +59,8 @@ def run_experiment(_config):
     
     print('\n\n')
     print('Running Renaissance vision-language platform with:', file=sys.stderr)
-    print()
     print('Experiment Info')
+    print('Experiment Name: ')
     print(f'Task: {exp_name}', file=sys.stderr)
     # print('Log Dir: ', model.logger.log_dir)
     print()

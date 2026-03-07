@@ -93,7 +93,7 @@ class TwoTowerConfig(PretrainedConfig):
                     }
                     if 'electra' in config['text_encoder']:
                         text_encoder_kwargs['embedding_size'] = config['text_encoder_embedding_size']
-                    if 'wac' in config['text_encoder']:
+                    if config['model_type'] == 'two-tower-wac':
                         text_encoder_kwargs['wac_embedding_size'] = wac_embedding_size
                         text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
                         text_encoder_kwargs['ignore_text_embeddings_epochs'] = config['ignore_text_embeddings_epochs']
@@ -101,7 +101,7 @@ class TwoTowerConfig(PretrainedConfig):
                     else:
                         self.text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
                 else:
-                    if 'wac' in config['text_encoder']:
+                    if config['model_type'] == 'two-tower-wac':
                         wac_encoder_kwargs = {
                             'wac_embedding_size': wac_embedding_size,
                             'wac_distribution_matrix': config['wac_distribution_matrix'],
