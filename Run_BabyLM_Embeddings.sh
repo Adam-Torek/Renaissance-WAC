@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J Renaissance-Electra-BabyLM         # job name
-#SBATCH -o slurm_logs/renaissance_wac/renaissance_electra_babylm.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -J Embeddings-Electra        # job name
+#SBATCH -o slurm_logs/renaissance_wac/embeddings_electra.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16      # Number of CPU nodes per task to run
@@ -11,4 +11,4 @@
 
 source activate renaissance
 
-srun python3 run.py with pretrain_mlm_onetower_electrasmall
+srun python3 run.py with pretrain_mlm_onetower_electrasmall_wac_embeddings
