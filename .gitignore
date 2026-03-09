@@ -6,3 +6,4 @@ slurm_logs/*
 models/*
 wac_models/*
 *.zip
+wac_models*/*

@@ -142,10 +142,10 @@ class RenaissanceTransformer(pl.LightningModule):
                     self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
                 else:
                     self.wac_embedding_size = wac_embedding_size + 1
-                
-                self.use_position_data = config['use_position_data']
+               
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
                 self.wac_train_steps = config['wac_train_steps']
+                self.use_position_data = config['use_position_data']
                 self.vocab = vocab
                 
                 wac_args['vocab'] = vocab
@@ -155,7 +155,10 @@ class RenaissanceTransformer(pl.LightningModule):
                 wac_args['embedding_size'] = wac_embedding_size
                 wac_args['wac_repo_id'] = config['wac_repo_id']
                 wac_args['local_wac_directory'] = config['local_wac_directory']
-                wac_args['position_size'] = config['position_size']
+                if self.use_position_data:
+                    wac_args['position_size'] = config['position_size']
+                else:
+                    wac_args['position_size'] = 0
                 
                 neg_to_pos = config['neg_to_pos']
                 if neg_to_pos is not None:
