@@ -732,7 +732,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     freeze_image_encoder = False
     freeze_text_encoder = False
     # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    text_encoder = "ajtorek/electra-renaissance-babylm-wac-embeddings"
     random_init_text_encoder = False
     text_encoder_manual_configuration = False
     ignore_text_embeddings_epochs = 0
