@@ -85,6 +85,8 @@ class RenaissanceTransformer(pl.LightningModule):
 
         if self.use_wac_models_only:
             self.use_wac_embeddings = True
+
+        self.use_position_data = True
         
         self.csv_log_file = config['csv_log_file']
         
@@ -136,7 +138,12 @@ class RenaissanceTransformer(pl.LightningModule):
                 for special_word in wac_tokenizer.special_tokens_map.values():
                     special_vocab.append(special_word)
 
-                self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
+                if config['use_position_data']:
+                    self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
+                else:
+                    self.wac_embedding_size = wac_embedding_size + 1
+                
+                self.use_position_data = config['use_position_data']
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
                 self.wac_train_steps = config['wac_train_steps']
                 self.vocab = vocab
@@ -685,7 +692,7 @@ class RenaissanceTransformer(pl.LightningModule):
                                         filename="model.safetensors",)
         
         safetensors_weights = load_file(download_path)
-        self.encoder.load_state_dict(safetensors_weights, strict=True)
+        self.encoder.load_state_dict(safetensors_weights, strict=False)
         self.encoder.train()
 
     def delete_wac_image_encoder(self):
@@ -728,7 +735,9 @@ class RenaissanceTransformer(pl.LightningModule):
                 
                 aligned_positions_numpy = np.stack(aligned_position_data_list)
                 wac_features = image_features.cpu().numpy()
-                wac_features = np.concatenate([wac_features, aligned_positions_numpy], axis=1)
+
+                if self.use_position_data:
+                    wac_features = np.concatenate([wac_features, aligned_positions_numpy], axis=1)
                 
                 self.wac_models.add_features(feature_ids, wac_features, tokenized_words, split)
 
