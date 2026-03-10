@@ -955,7 +955,7 @@ def eval_ref_twotower_electrasmall_deit_wac_distributions():
 @ex.config
 def glue_wac_embeddings_config():
 
-    model_type = "two-tower"
+    model_type = "two-tower-wac"
     datasets = ["glue"]
     csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
     complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
@@ -1068,6 +1068,7 @@ def finetune_wnli_twotower_electrasmall():
 
 @ex.named_config
 def finetune_cola_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_cola_onetower_electrasmall"
     loss_names = _loss_names({"cola":1})
     data_root = "data/arrow/glue/cola"
@@ -1091,6 +1092,7 @@ def finetune_cola_onetower_electrasmall():
 
 @ex.named_config
 def finetune_mnli_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_mnli_onetower_electrasmall"
     loss_names = _loss_names({"mnli": 1})
     data_root = "data/arrow/glue/mnli"
@@ -1116,6 +1118,7 @@ def finetune_mnli_onetower_electrasmall():
 
 @ex.named_config
 def finetune_mrpc_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_mrpc_onetower_electrasmall"
     loss_names = _loss_names({"mrpc": 1})
     data_root = "data/arrow/glue/mrpc"
@@ -1140,6 +1143,7 @@ def finetune_mrpc_onetower_electrasmall():
 
 @ex.named_config
 def finetune_qqp_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_qqp_onetower_electrasmall"
     loss_names = _loss_names({"qqp": 1})
     data_root = "data/arrow/glue/qqp"
@@ -1163,6 +1167,7 @@ def finetune_qqp_onetower_electrasmall():
 
 @ex.named_config
 def finetune_qnli_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_qnli_onetower_electrasmall"
     loss_names = _loss_names({"qnli": 1})
     data_root = "data/arrow/glue/qnli"
@@ -1187,6 +1192,7 @@ def finetune_qnli_onetower_electrasmall():
 
 @ex.named_config
 def finetune_rte_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_rte_onetower_electrasmall"
     loss_names = _loss_names({"rte": 1})
     data_root = "data/arrow/glue/rte"
@@ -1211,6 +1217,7 @@ def finetune_rte_onetower_electrasmall():
 
 @ex.named_config
 def finetune_sst2_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_sst2_onetower_electrasmall"
     loss_names = _loss_names({"sst2": 1})
     data_root = "data/arrow/glue/sst2"
@@ -1236,6 +1243,7 @@ def finetune_sst2_onetower_electrasmall():
 
 @ex.named_config
 def finetune_stsb_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_stsb_onetower_electrasmall"
     loss_names = _loss_names({"stsb": 1})
     data_root = "data/arrow/glue/stsb"
@@ -1261,6 +1269,7 @@ def finetune_stsb_onetower_electrasmall():
 
 @ex.named_config
 def finetune_wnli_onetower_electrasmall():
+    model_type = "two-tower"
     exp_name = "finetune_wnli_onetower_electrasmall"
     loss_names = _loss_names({"wnli": 1})
     data_root = "data/arrow/glue/wnli"

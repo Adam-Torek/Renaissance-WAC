@@ -600,13 +600,13 @@ class TwoTowerEncoder(PreTrainedModel):
         if config.text_encoder_path is not None:
             text_encoder_config = config.text_config
             if self.random_init_text_encoder:
-                    if 'wac' in config.text_encoder_path:
+                    if config.text_model_type == 'wac':
                         self.text_transformer = BertWACTransformer(text_encoder_config)
                     else:
                         self.text_transformer = AutoModel.from_config(text_encoder_config)
             else:
                 # hf_text_config = AutoConfig.from_pretrained(config['text_encoder'])
-                if 'wac' in config.text_encoder_path:
+                if config.text_model_type == 'wac':
                     self.text_transformer = BertWACTransformer.from_pretrained(config.text_encoder_path, config=text_encoder_config)
                 else:
                     self.text_transformer = AutoModel.from_pretrained(config.text_encoder_path)

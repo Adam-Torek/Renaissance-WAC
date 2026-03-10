@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "pretrain_ref_twotower_electrasmall_deit_wac_embeddings_no_positions", 
+                "finetune_cola_twotower_electrasmall", 
             ]
         },
 

@@ -98,8 +98,10 @@ class TwoTowerConfig(PretrainedConfig):
                         text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
                         text_encoder_kwargs['ignore_text_embeddings_epochs'] = config['ignore_text_embeddings_epochs']
                         self.text_config = WACConfig(**text_encoder_kwargs)
+                        self.text_model_type = 'wac'
                     else:
                         self.text_config = AutoConfig.from_pretrained(config['text_encoder'], **text_encoder_kwargs)
+                        self.text_model_type = 'normal'
                 else:
                     if config['model_type'] == 'two-tower-wac':
                         wac_encoder_kwargs = {
@@ -109,11 +111,14 @@ class TwoTowerConfig(PretrainedConfig):
                             }
                         
                         self.text_config = WACConfig(**wac_encoder_kwargs)
+                        self.text_model_type = 'wac'
                     else:
                         self.text_config = AutoConfig.from_pretrained(config['text_encoder'])
+                        self.text_model_type = 'normal'
             else:
                 self.text_encoder_path = None
                 self.text_config = None
+                self.text_model_type = None
 
             if config['use_image_encoder']:
                 self.image_encoder_path = config["image_encoder"]
