@@ -796,6 +796,8 @@ def pretrain_ref_twotower_electrasmall_deit_wac_embeddings_no_positions():
     random_init_text_encoder = True
     text_encoder_manual_configuration = True
     ignore_text_embeddings_epochs = 2
+    text_encoder_hidden_size = 256
+    text_encoder_embedding_size = 128
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa

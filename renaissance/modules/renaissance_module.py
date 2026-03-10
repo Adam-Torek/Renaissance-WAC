@@ -553,7 +553,7 @@ class RenaissanceTransformer(pl.LightningModule):
         else:
             token_type_ids = None
         
-        if self.model_type == 'two-tower':
+        if 'two-tower' in self.model_type:
             if self.wac_models is not None and "wac_embeddings" in batch.keys():
                 wac_embeddings = batch["wac_embeddings"]
 
@@ -578,7 +578,7 @@ class RenaissanceTransformer(pl.LightningModule):
         else:
             image_masks = None
         
-        if self.model_type == "two-tower":
+        if 'two-tower' in self.model_type:
             if image_masks is not None:
                 hidden_state = self.encoder.image_encoder(pixel_values=images, 
                                                           bool_masked_pos=image_masks).last_hidden_state

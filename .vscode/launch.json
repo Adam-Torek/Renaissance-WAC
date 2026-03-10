@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "finetune_cola_twotower_electrasmall", 
+                ""
             ]
         },
 
