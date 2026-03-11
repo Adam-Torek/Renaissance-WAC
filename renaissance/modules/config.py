@@ -34,6 +34,10 @@ class WACConfig(ElectraConfig):
                  use_cache=True,
                  classifier_dropout=None,
                  ignore_text_embeddings_epochs=2,
+                 wac_embedding_act=None,
+                 wac_distribution_act=None,
+                 wac_embedding_encoder_sizes = [],
+                 wac_distribution_encoder_sizes = [],
                  **kwargs) -> None:
         
         super().__init__(vocab_size=vocab_size,
@@ -62,7 +66,19 @@ class WACConfig(ElectraConfig):
         self.wac_embedding_size = wac_embedding_size
         self.wac_distribution_matrix = wac_distribution_matrix
         self.ignore_text_embeddings_epochs = ignore_text_embeddings_epochs
-    
+        if wac_embedding_act is not None:
+            self.wac_embedding_act = wac_embedding_act
+        else:
+            self.wac_embedding_act = hidden_act
+
+        if wac_distribution_act is not None:
+            self.wac_distribution_act = wac_distribution_act
+        else:
+            self.wac_distribution_act = hidden_act
+
+        self.wac_embedding_encoder_sizes = wac_embedding_encoder_sizes
+        self.wac_distribution_encoder_sizes = wac_distribution_encoder_sizes
+
 class TwoTowerConfig(PretrainedConfig):
 
     model_type = "two_tower"
@@ -97,6 +113,10 @@ class TwoTowerConfig(PretrainedConfig):
                         text_encoder_kwargs['wac_embedding_size'] = wac_embedding_size
                         text_encoder_kwargs['wac_distribution_matrix'] = config['wac_distribution_matrix']
                         text_encoder_kwargs['ignore_text_embeddings_epochs'] = config['ignore_text_embeddings_epochs']
+                        text_encoder_kwargs['wac_embedding_act'] = config['wac_embedding_act']
+                        text_encoder_kwargs['wac_distribution_act'] = config['wac_distribution_act']
+                        text_encoder_kwargs['wac_embedding_encoder_sizes'] = config['wac_embedding_encoder_sizes']
+                        text_encoder_kwargs['wac_distribution_encoder_sizes'] = config['wac_distribution_encoder_sizes']
                         self.text_config = WACConfig(**text_encoder_kwargs)
                         self.text_model_type = 'wac'
                     else:
@@ -108,6 +128,10 @@ class TwoTowerConfig(PretrainedConfig):
                             'wac_embedding_size': wac_embedding_size,
                             'wac_distribution_matrix': config['wac_distribution_matrix'],
                             'ignore_text_embeddings_epochs': config['ignore_text_embeddings_epochs'],
+                            'wac_embedding_act': config['wac_embedding_act'],
+                            'wac_distribution_act': config['wac_distribution_act'],
+                            'wac_embedding_encoder_sizes': config['wac_embedding_encoder_sizes'],
+                            'wac_distribution_encoder_sizes': config['wac_distribution_encoder_sizes'],
                             }
                         
                         self.text_config = WACConfig(**wac_encoder_kwargs)

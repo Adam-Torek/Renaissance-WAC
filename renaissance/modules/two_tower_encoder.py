@@ -375,7 +375,7 @@ class BertWACPreTrainedModel(PreTrainedModel):
 
 class BertWACTransformer(BertWACPreTrainedModel):
 
-    def __init__(self, config):
+    def __init__(self, config: WACConfig):
         super().__init__(config)
         self.config = config
         self.embeddings = ElectraEmbeddings(config)
@@ -391,7 +391,7 @@ class BertWACTransformer(BertWACPreTrainedModel):
 
         if config.wac_distribution_matrix is not None:
             self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
-            self.wac_distribution_activation = ACT2FN[config.hidden_act]
+            self.wac_distribution_activation = ACT2FN[config.wac_distribution_act]
             self.wac_distribution_projection.apply(init_weights)
         else:
             self.wac_distribution_projection = None

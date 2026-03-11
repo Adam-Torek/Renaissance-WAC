@@ -39,10 +39,6 @@ finetune_cola_twotower_electrasmall,val,9,mcc,-0.02564101107418537
 finetune_cola_twotower_electrasmall,val,9,loss,nan
 finetune_cola_twotower_electrasmall,train,9,mcc,-0.009685983881354332
 finetune_cola_twotower_electrasmall,train,9,loss,nan
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,val,4,accuracy,0.18591740727424622
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,val,4,loss,3.9860212802886963
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,train,4,accuracy,0.15890908241271973
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,train,4,loss,4.058289051055908
 finetune_mnli_twotower_electrasmall,val,0,accuracy,0.3533363938331604
 finetune_mnli_twotower_electrasmall,val,0,loss,nan
 finetune_mnli_twotower_electrasmall,train,0,accuracy,0.33332908153533936
@@ -343,7 +339,3 @@ finetune_wnli_twotower_electrasmall,val,9,accuracy,0.5633803009986877
 finetune_wnli_twotower_electrasmall,val,9,loss,nan
 finetune_wnli_twotower_electrasmall,train,9,accuracy,0.5086613893508911
 finetune_wnli_twotower_electrasmall,train,9,loss,nan
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,val,0,accuracy,0.1813400834798813
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,val,0,loss,3.9999194145202637
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,train,0,accuracy,0.1951611042022705
-eval_ref_twotower_electrasmall_wac_embeddings_no_positions,train,0,loss,3.9497487545013428

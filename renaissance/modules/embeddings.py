@@ -18,6 +18,8 @@ from transformers.activations import ACT2FN
 
 from typing import List, Optional, Tuple, Union
 
+from .config import WACConfig
+
 from .objectives import init_weights
 
 def _get_resized_embeddings(
@@ -87,7 +89,7 @@ class ElectraEmbeddings(nn.Module):
     the ElectraEmbeddings class from 
     https://github.com/huggingface/transformers/blob/main/src/transformers/models/electra/modeling_electra.py"""
 
-    def __init__(self, config):
+    def __init__(self, config: WACConfig):
         super().__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.embedding_size, padding_idx=config.pad_token_id)
         self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.embedding_size)
@@ -103,10 +105,16 @@ class ElectraEmbeddings(nn.Module):
         self.current_training_epoch = 0
 
         if config.wac_embedding_size is not None and self.embedding_size != config.wac_embedding_size:
-            self.wac_embeddings_projection = nn.Linear(config.wac_embedding_size, config.embedding_size)
-            self.wac_embeddings_activation = ACT2FN[config.hidden_act]
-
-            self.wac_embeddings_projection.apply(init_weights)
+            embeddings_encoder_sizes = config.wac_embedding_encoder_sizes
+            embeddings_encoder_sizes.insert(0, config.wac_embedding_size)
+            embeddings_encoder_sizes.append(config.embedding_size)
+            self.wac_embeddings_projection = nn.ModuleList()
+            for i in range(0, len(embeddings_encoder_sizes)-1):
+                wac_embedding_layer = nn.Linear(embeddings_encoder_sizes[i], embeddings_encoder_sizes[i+1])
+                wac_embedding_layer.apply(init_weights)
+                self.wac_embeddings_projection.append(wac_embedding_layer)
+                
+            self.wac_embeddings_activation = ACT2FN[config.wac_embedding_act]
            
         else:
             self.wac_embeddings_projection = None
@@ -135,8 +143,9 @@ class ElectraEmbeddings(nn.Module):
         if wac_embeddings is not None and (self.current_training_epoch < self.ignore_text_embeddings_epochs):
             if wac_embeddings.shape[2] != self.embedding_size:
                 if self.wac_embeddings_projection is not None:
-                    wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
-                    wac_embeddings = self.wac_embeddings_activation(wac_embeddings)
+                    for embedding_layer in self.wac_embeddings_projection:
+                        wac_embeddings = embedding_layer(wac_embeddings)
+                        wac_embeddings = self.wac_embeddings_activation(wac_embeddings)
                 else:
                     raise ValueError("WAC embedding size does not match configured embedding size and no projection layer is defined.")
             embeddings = wac_embeddings
@@ -166,9 +175,10 @@ class ElectraEmbeddings(nn.Module):
 
             if wac_embeddings is not None:
                 if wac_embeddings.shape[2] != inputs_embeds.shape[2]:
-                    if self.wac_embeddings_projection is not None:
-                        wac_embeddings = self.wac_embeddings_projection(wac_embeddings)
+                    for embedding_layer in self.wac_embeddings_projection:
+                        wac_embeddings = embedding_layer(wac_embeddings)
                         wac_embeddings = self.wac_embeddings_activation(wac_embeddings)
+                    
                     else:
                         raise ValueError("WAC embedding sizes do not match input embeddings and WAC embeddings projection is not enabled")
 

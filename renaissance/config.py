@@ -191,6 +191,13 @@ def config():
     use_wac_models_only = False
     pretrained_wac_embedding_file = None
     wac_pretraining_objectives = ["ref"]
+    
+    # WAC compression settings
+    wac_embedding_act = "silu"
+    wac_embedding_encoder_sizes = []
+
+    wac_distribution_act = "silu"
+    wac_distribution_encoder_sizes = []
 
     # WAC model settings
     position_size = 7
