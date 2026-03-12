@@ -7,6 +7,7 @@ renaissance/modules/renaissance_module.py.
 import math
 import collections
 import torch
+import copy
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -105,7 +106,7 @@ class ElectraEmbeddings(nn.Module):
         self.current_training_epoch = 0
 
         if config.wac_embedding_size is not None and self.embedding_size != config.wac_embedding_size:
-            embeddings_encoder_sizes = config.wac_embedding_encoder_sizes
+            embeddings_encoder_sizes = copy.deepcopy(config.wac_embedding_encoder_sizes)
             embeddings_encoder_sizes.insert(0, config.wac_embedding_size)
             embeddings_encoder_sizes.append(config.embedding_size)
             self.wac_embeddings_projection = nn.ModuleList()

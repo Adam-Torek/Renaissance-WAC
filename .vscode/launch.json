@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "eval_ref_twotower_electrasmall_deit_wac_embeddings"
+                "eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes"
             ]
         },
 
