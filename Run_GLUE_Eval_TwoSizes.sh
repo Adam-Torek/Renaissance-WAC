@@ -12,18 +12,8 @@
 source activate renaissance
 
 glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
-numtowers=""
-
-if [ "$1" = "one-tower" ]; then
-    numtowers="onetower"
-elif [ "$1" = "two-tower" ]; then
-    numtowers="twotower"
-else
-    echo "$1 must be one-tower or two-tower"
-    exit 1
-fi
 
 for task in "${glue_tasks[@]}"
 do
-    srun python3 run.py with finetune_$task\_$numtowers\_electrasmall
+    srun python3 run.py with finetune_$task\_twotower_electrasmall complete_encoder_path=ajtorek/electra_deit_small_wac_embeddings_two_sizes wac_embedding_encoder_sizes=[256]
 done 
