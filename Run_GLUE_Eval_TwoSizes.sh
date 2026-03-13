@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J Renaissance-GLUE-Eval       # job name
-#SBATCH -o slurm_logs/renaissance_wac/renaissance_electra_glue.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -J GLUE_TwoSizes_Eval       # job name
+#SBATCH -o slurm_logs/renaissance_wac/glue_twosizes_eval.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16      # Number of CPU nodes per task to run
