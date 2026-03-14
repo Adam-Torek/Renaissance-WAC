@@ -780,8 +780,8 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings():
     push_to_hub = True
 
 @ex.named_config
-def eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes():
-    exp_name = "eval_ref_twotower_electrasmall_wac_embeddings_two_sizes"
+def eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes_silu():
+    exp_name = "eval_ref_twotower_electrasmall_wac_embeddings_two_sizes_silu"
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
@@ -836,11 +836,11 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes():
     save_wac_features = True
 
     wac_embedding_encoder_sizes = [256]
-    wac_embedding_act = None
+    wac_embedding_act = "silu"
 
     # HuggingFace settings
     huggingface_save_directory = "models"
-    huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings_two_sizes"
+    huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings_two_sizes_silu"
     push_to_hub = True
     
 @ex.named_config
