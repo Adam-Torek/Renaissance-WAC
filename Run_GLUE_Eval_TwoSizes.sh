@@ -15,5 +15,5 @@ glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
 
 for task in "${glue_tasks[@]}"
 do
-    srun python3 run.py with finetune_$task\_twotower_electrasmall complete_encoder_path=ajtorek/electra_deit_small_wac_embeddings_two_sizes wac_embedding_encoder_sizes=[256]
+    srun python3 run.py with finetune_$task\_twotower_electrasmall complete_encoder_path=ajtorek/electra_deit_small_wac_embeddings_two_sizes wac_embedding_encoder_sizes=[256] csv_log_file=glue_results/glue_two_sizes_wac_embeddings/glue.csv
 done 
