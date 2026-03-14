@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J WAC_Embedding_Evaluation         # job name
-#SBATCH -o slurm_logs/renaissance_wac/wac_embedding_eval.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -J Two_Sizes_WAC_Evaluation         # job name
+#SBATCH -o slurm_logs/renaissance_wac/two_sizes_evaluation.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16      # Number of CPU nodes per task to run
@@ -11,4 +11,4 @@
 
 source activate renaissance
 
-srun python3 run.py with eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes
+srun python3 run.py with eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes_silu
