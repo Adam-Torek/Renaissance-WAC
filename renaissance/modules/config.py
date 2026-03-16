@@ -39,6 +39,7 @@ class WACConfig(ElectraConfig):
                  wac_embedding_encoder_sizes = [],
                  wac_distribution_encoder_sizes = [],
                  wac_distribution_weight = 1.0,
+                 wac_distribution_encoder_location = "all",
                  **kwargs) -> None:
         
         super().__init__(vocab_size=vocab_size,
@@ -80,6 +81,7 @@ class WACConfig(ElectraConfig):
         self.wac_embedding_encoder_sizes = wac_embedding_encoder_sizes
         self.wac_distribution_encoder_sizes = wac_distribution_encoder_sizes
         self.wac_distribution_weight = wac_distribution_weight
+        self.wac_distribution_encoder_location = wac_distribution_encoder_location
 
 class TwoTowerConfig(PretrainedConfig):
 
@@ -109,6 +111,7 @@ class TwoTowerConfig(PretrainedConfig):
                         'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
                         'layer_norm_eps': config['text_encoder_norm_eps'],
                         'wac_distribution_weight': config['wac_distribution_weight'],
+                        'wac_distribution_encoder_location': config['wac_distribution_encoder_location'],
                     }
                     if 'electra' in config['text_encoder']:
                         text_encoder_kwargs['embedding_size'] = config['text_encoder_embedding_size']
@@ -121,6 +124,7 @@ class TwoTowerConfig(PretrainedConfig):
                         text_encoder_kwargs['wac_embedding_encoder_sizes'] = config['wac_embedding_encoder_sizes']
                         text_encoder_kwargs['wac_distribution_encoder_sizes'] = config['wac_distribution_encoder_sizes']
                         text_encoder_kwargs['wac_distribution_weight'] = config['wac_distribution_weight']
+                        text_encoder_kwargs['wac_distribution_encoder_location'] = config['wac_distribution_encoder_location']
                         self.text_config = WACConfig(**text_encoder_kwargs)
                         self.text_model_type = 'wac'
                     else:
@@ -137,6 +141,7 @@ class TwoTowerConfig(PretrainedConfig):
                             'wac_embedding_encoder_sizes': config['wac_embedding_encoder_sizes'],
                             'wac_distribution_encoder_sizes': config['wac_distribution_encoder_sizes'],
                             'wac_distribution_weight': config['wac_distribution_weight'],
+                            'wac_distribution_encoder_location': config['wac_distribution_encoder_location'],
                             }
                         
                         self.text_config = WACConfig(**wac_encoder_kwargs)

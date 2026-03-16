@@ -22,6 +22,37 @@ from .config import WACConfig, TwoTowerConfig
 from .objectives import init_weights
 from .heads import Pooler
 
+class BertWACDistributionEncoder(nn.Module):
+
+    def __init__(self, config):
+        super().__init__()
+        self.vocab_size = config.vocab_size
+        self.hidden_size = config.hidden_size
+
+        wac_distribution_sizes = copy.deepcopy(config.wac_distribution_encoder_sizes)
+        wac_distribution_sizes.insert(0, config.vocab_size)
+        wac_distribution_sizes.append(config.hidden_size)
+
+        self.wac_distribution_projection = nn.ModuleList()
+
+        for i in range(0, len(wac_distribution_sizes)-1):
+            wac_distribution_projection_layer = nn.Linear(wac_distribution_sizes[i], wac_distribution_sizes[i+1])
+            wac_distribution_projection_layer.apply(init_weights)
+            self.wac_distribution_projection.append(wac_distribution_projection_layer)
+
+        self.wac_distribution_activation = nn.ModuleList()
+        distribution_function = ACT2FN[config.wac_distribution_act]
+        for i in range(0, len(wac_distribution_sizes)-1):
+            self.wac_distribution_activation.append(distribution_function)
+
+    def forward(self, x):
+
+        for layer, activation in zip(self.wac_distribution_projection, self.wac_distribution_activation):
+            x = layer(x)
+            x = activation(x)
+
+        return x
+
 class BertSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -48,6 +79,7 @@ class BertSelfAttention(nn.Module):
             self.distance_embedding = nn.Embedding(2 * config.max_position_embeddings - 1, self.attention_head_size)
 
         self.is_decoder = config.is_decoder
+
 
     def save_attn_gradients(self, attn_gradients):
         self.attn_gradients = attn_gradients
@@ -105,6 +137,7 @@ class BertSelfAttention(nn.Module):
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
         if wac_distributions is not None and self.wac_distribution_matrix is not None:
+            
             wac_distributions = wac_distributions[:, None, :]
             wac_distributions = wac_distributions.expand(-1, query_layer.shape[2], -1)
             wac_distributions = self.transpose_for_scores(wac_distributions)
@@ -342,6 +375,11 @@ class BertWACEncoder(nn.Module):
         super().__init__()
         self.config = config
         self.layers = nn.ModuleList([BertCrossLayer(config) for _ in range(0, config.num_hidden_layers)])
+        
+        if config.wac_distribution_encoder_location == "layers":
+            self.wac_distribution_encoders = nn.ModuleList([BertWACDistributionEncoder(config) for _ in range(0, config.num_hidden_layers)])
+        else:
+            self.wac_distribution_encoders = None
 
     def forward(self, 
                 hidden_states, 
@@ -353,14 +391,27 @@ class BertWACEncoder(nn.Module):
                 wac_distributions=None,):
         
         last_hidden_state = hidden_states
-        for layer in self.layers:
-            hidden_states = layer(hidden_states=last_hidden_state, 
-                                  attention_mask=attention_mask, 
-                                  encoder_hidden_states=encoder_hidden_states, 
-                                  encoder_attention_mask=encoder_attention_mask, 
-                                  output_attentions=output_attentions,
-                                  past_key_value=past_key_values,
-                                  wac_distributions=wac_distributions)
+        for i, layer in enumerate(self.layers):
+            if wac_distributions is not None and self.wac_distribution_encoders is not None:
+                wac_dist_encoder_layer = self.wac_distribution_encoders[i]
+                wac_distributions_compacted = wac_dist_encoder_layer(wac_distributions)
+
+                hidden_states = layer(hidden_states=last_hidden_state, 
+                                    attention_mask=attention_mask, 
+                                    encoder_hidden_states=encoder_hidden_states, 
+                                    encoder_attention_mask=encoder_attention_mask, 
+                                    output_attentions=output_attentions,
+                                    past_key_value=past_key_values,
+                                    wac_distributions=wac_distributions_compacted)
+                
+            else:
+                hidden_states = layer(hidden_states=last_hidden_state, 
+                                    attention_mask=attention_mask, 
+                                    encoder_hidden_states=encoder_hidden_states, 
+                                    encoder_attention_mask=encoder_attention_mask, 
+                                    output_attentions=output_attentions,
+                                    past_key_value=past_key_values,
+                                    wac_distributions=wac_distributions)
             
             last_hidden_state = hidden_states[0]
 
@@ -390,29 +441,22 @@ class BertWACTransformer(BertWACPreTrainedModel):
         else:
             self.embeddings_projection = None
 
+        self.wac_distribution_matrix = config.wac_distribution_matrix
+
         if config.wac_distribution_matrix is not None:
-            wac_distribution_sizes = copy.deepcopy(config.wac_distribution_encoder_sizes)
-            wac_distribution_sizes.insert(0, config.vocab_size)
-            wac_distribution_sizes.append(config.hidden_size)
-
-            self.wac_distribution_projection = nn.ModuleList()
-
-            for i in range(0, len(wac_distribution_sizes)-1):
-                wac_distribution_projection_layer = nn.Linear(wac_distribution_sizes[i], wac_distribution_sizes[i+1])
-                wac_distribution_projection_layer.apply(init_weights)
-                self.wac_distribution_projection.append(wac_distribution_projection_layer)
-
-            self.wac_distribution_activation = nn.ModuleList()
-            distribution_function = ACT2FN[config.wac_distribution_act]
-            for i in range(0, len(wac_distribution_sizes)-1):
-                self.wac_distribution_activation.append(distribution_function)
-
-            self.wac_distribution_weight = config.wac_distribution_weight
+            if config.wac_distribution_encoder_location != "all" and config.wac_distribution_encoder_location != "layers":
+                raise ValueError("WAC distribution encoder location must either be `all` or `layers`")
             
-        else:
-            self.wac_distribution_projection = None
-            self.wac_distribution_activation = None
-            self.wac_distribution_weight = None
+            if config.wac_distribution_encoder_location == "all":
+                self.wac_distribution_encoder = BertWACDistributionEncoder(config)
+
+            else:
+                self.wac_distribution_encoder = None
+
+            if config.wac_distribution_matrix is not None:
+                self.wac_distribution_weight = config.wac_distribution_weight
+            else:
+                self.wac_distribution_weight = None
 
         self.post_init()
 
@@ -470,17 +514,11 @@ class BertWACTransformer(BertWACPreTrainedModel):
         if self.embeddings_projection is not None:
             hidden_states = self.embeddings_projection(hidden_states)
 
-        if wac_distributions is not None:
-            if self.wac_distribution_projection is None:
-                if not self.printed_distributions_warning:
-                    print("Warning: WAC distribution projection must be enabled if WAC distributions are used. Ignoring WAC distributions.")
-                    self.printed_distributions_warning = True
-            else:
-                wac_distributions = wac_distributions * self.wac_distribution_weight
-
-                for layer, activation in zip(self.wac_distribution_projection, self.wac_distribution_activation):
-                    wac_distributions = layer(wac_distributions)
-                    wac_distributions = activation(wac_distributions)
+        if wac_distributions is not None and self.wac_distribution_matrix is not None:
+            wac_distributions = wac_distributions * self.wac_distribution_weight
+      
+            if self.wac_distribution_encoder is not None:
+                wac_distributions = self.wac_distribution_encoder(wac_distributions)
         
         hidden_states = self.encoder(hidden_states=hidden_states,
                                      attention_mask=extended_attention_mask,

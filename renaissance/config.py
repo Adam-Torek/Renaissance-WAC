@@ -198,7 +198,8 @@ def config():
 
     wac_distribution_act = "silu"
     wac_distribution_encoder_sizes = []
-    wac_distribution_weight = 2.0
+    wac_distribution_weight = 1.0
+    wac_distribution_encoder_location = "all"
 
     # WAC model settings
     position_size = 7
