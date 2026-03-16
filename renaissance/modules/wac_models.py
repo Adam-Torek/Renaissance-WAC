@@ -394,6 +394,8 @@ class WACModels():
             for i, feature_id in enumerate(indices):
                 word_prob = word_probabilities_feature_ids[feature_id]
                 probabilities_array[i, word_index] = word_prob
+
+            probabilities_array[:, word_index] = np.linalg.norm(probabilities_array[:, word_index])
             
         return probabilities_array
 

@@ -1,5 +1,6 @@
 import math
 import torch
+import copy
 import torch.nn as nn
 
 from transformers import PreTrainedModel
@@ -390,12 +391,28 @@ class BertWACTransformer(BertWACPreTrainedModel):
             self.embeddings_projection = None
 
         if config.wac_distribution_matrix is not None:
-            self.wac_distribution_projection = nn.Linear(config.vocab_size, config.hidden_size)
-            self.wac_distribution_activation = ACT2FN[config.wac_distribution_act]
-            self.wac_distribution_projection.apply(init_weights)
+            wac_distribution_sizes = copy.deepcopy(config.wac_distribution_encoder_sizes)
+            wac_distribution_sizes.insert(0, config.vocab_size)
+            wac_distribution_sizes.append(config.hidden_size)
+
+            self.wac_distribution_projection = nn.ModuleList()
+
+            for i in range(0, len(wac_distribution_sizes)-1):
+                wac_distribution_projection_layer = nn.Linear(wac_distribution_sizes[i], wac_distribution_sizes[i+1])
+                wac_distribution_projection_layer.apply(init_weights)
+                self.wac_distribution_projection.append(wac_distribution_projection_layer)
+
+            self.wac_distribution_activation = nn.ModuleList()
+            distribution_function = ACT2FN[config.wac_distribution_act]
+            for i in range(0, len(wac_distribution_sizes)-1):
+                self.wac_distribution_activation.append(distribution_function)
+
+            self.wac_distribution_weight = config.wac_distribution_weight
+            
         else:
             self.wac_distribution_projection = None
             self.wac_distribution_activation = None
+            self.wac_distribution_weight = None
 
         self.post_init()
 
@@ -459,8 +476,11 @@ class BertWACTransformer(BertWACPreTrainedModel):
                     print("Warning: WAC distribution projection must be enabled if WAC distributions are used. Ignoring WAC distributions.")
                     self.printed_distributions_warning = True
             else:
-                wac_distributions = self.wac_distribution_projection(wac_distributions)
-                wac_distributions = self.wac_distribution_activation(wac_distributions)
+                wac_distributions = wac_distributions * self.wac_distribution_weight
+
+                for layer, activation in zip(self.wac_distribution_projection, self.wac_distribution_activation):
+                    wac_distributions = layer(wac_distributions)
+                    wac_distributions = activation(wac_distributions)
         
         hidden_states = self.encoder(hidden_states=hidden_states,
                                      attention_mask=extended_attention_mask,
