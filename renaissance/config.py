@@ -344,6 +344,9 @@ def pretrain_mlm_onetower_electrasmall_wac_embeddings():
     wac_train_steps = 0
     num_cores = 0
 
+    wac_embedding_encoder_sizes = [256]
+    wac_embedding_act = "silu"
+
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-babylm-wac-embeddings"
@@ -388,6 +391,9 @@ def pretrain_mlm_onetower_electrasmall_wac_distributions():
     wac_image_encoder = "openai/clip-vit-base-patch16"
     wac_train_steps = 0
     num_cores = 0
+
+    wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
+    wac_distribution_act = "silu"
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
@@ -434,6 +440,12 @@ def pretrain_mlm_onetower_electrasmall_wac_embeddings_distributions():
     wac_train_steps = 0
     num_cores = 0
 
+    wac_embedding_encoder_sizes = [256]
+    wac_embedding_act = "silu"
+    
+    wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
+    wac_distribution_act = "silu"
+
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-babylm-wac-embeddings-distributons"
@@ -477,34 +489,6 @@ def pretrain_mlm_onetower_electrasmall_embedding520():
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-renaissance-babylm-embedding520"
     subsection_to_save = "text_transformer"
-    push_to_hub = True
-
-@ex.named_config
-def pretrain_mim_onetower_deit_tiny():
-    exp_name = "pretrain_mim_onetower_deit_tiny"
-    model_type = "two-tower-wac"
-    datasets = ["sbu"]
-    loss_names = _loss_names({"mim": 1})
-    batch_size = 256
-    per_gpu_batchsize = 256
-    max_epoch = 20
-    max_steps = 1000000
-    warmup_steps = 0.1
-    whole_word_masking = False
-    num_gpus = 1
-    data_root = "data/arrow/sbucaptions"
-
-    use_text_encoder = False
-
-    use_image_encoder = True
-    random_init_vision_encoder = True
-    image_encoder_manual_configuration = True
-    image_encoder = "facebook/deit-tiny-patch16-224"
-    image_encoder_mlp_ratio = 1
-
-    huggingface_save_directory = "results/huggingface_outputs"
-    huggingface_save_name = "ajtorek/deit-tiny-renaissance"
-    subsection_to_save = "image_encoder"
     push_to_hub = True
 
 @ex.named_config
@@ -723,67 +707,8 @@ def eval_ref_twotower_electrasmall_deit_small():
     push_to_hub = False
 
 @ex.named_config
-def eval_ref_twotower_electrasmall_deit_wac_embeddings():
-    exp_name = "eval_ref_twotower_electrasmall_wac_embeddings"
-    model_type = "two-tower-wac"
-    datasets = ["coco"]
-    loss_names = _loss_names({"ref": 1})
-    num_gpus = 1
-    precision = 32
-    batch_size = 8
-    per_gpu_batchsize = 8
-    complete_encoder_path = None
-    
-    max_epoch = 5
-    warmup_steps = 0.1
-    whole_word_masking = False
-    learning_rate = 1e-4
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = False
-    freeze_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-renaissance-babylm-wac-embeddings"
-    random_init_text_encoder = False
-    text_encoder_manual_configuration = False
-    ignore_text_embeddings_epochs = 2
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
-    data_root = "data/arrow/coco"
-    
-    # Image settings to not use image encoders
-    use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
-
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    #wac_train_steps = 5
-    num_cores = 0
-    save_wac_features = True
-
-    # HuggingFace settings
-    huggingface_save_directory = "models"
-    huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings"
-    push_to_hub = True
-
-@ex.named_config
-def eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes_silu():
-    exp_name = "eval_ref_twotower_electrasmall_wac_embeddings_two_sizes_silu"
+def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
+    exp_name = "eval_ref_twotower_electrasmall_deitsmall_wac_embeddings"
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
@@ -842,7 +767,7 @@ def eval_ref_twotower_electrasmall_deit_wac_embeddings_two_sizes_silu():
 
     # HuggingFace settings
     huggingface_save_directory = "models"
-    huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings_two_sizes_silu"
+    huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings"
     push_to_hub = True
     
 @ex.named_config
@@ -905,68 +830,6 @@ def pretrain_ref_twotower_electrasmall_deit_wac_embeddings_no_positions():
     # HuggingFace settings
     huggingface_save_directory = "models"
     huggingface_save_name = "ajtorek/electra_deit_small_wac_embeddings_no_positions"
-    push_to_hub = True
-
-@ex.named_config
-def eval_ref_twotower_electrasmall_deit_text_pretrained_wac_embeddings():
-    exp_name = "eval_ref_twotower_electrasmall_wac_text_pretrained_embeddings"
-    model_type = "two-tower-wac"
-    datasets = ["coco"]
-    loss_names = _loss_names({"ref": 1})
-    num_gpus = 1
-    precision = 32
-    batch_size = 8
-    per_gpu_batchsize = 8
-    #complete_encoder_path = "ajtorek/electra-deit-itm-renaissance-wac"
-    
-    max_epoch = 5
-    warmup_steps = 0.1
-    whole_word_masking = False
-    learning_rate = 1e-4
-    # DO NOT Freeze Encoders
-    freeze_image_encoder = True
-    freeze_text_encoder = False
-    # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
-    random_init_text_encoder = False
-    text_encoder_manual_configuration = False
-    text_encoder_hidden_size = 256
-    tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
-    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
-    mlm_prob = 0.15
-    draw_false_text = 0
-    draw_false_image = 0
-    num_gpus = 1
-    data_root = "data/arrow/coco"
-    
-    # Image settings to not use image encoders
-    use_image_encoder = False
-    image_encoder = "facebook/deit-small-patch16-224"
-    use_wac_models_only = False
-   
-    # Cross Layer Settings
-    cross_layer_hidden_size = 320
-    num_cross_layers = 6
-    num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
-    cross_layer_drop_rate = 0.1
-
-    # WAC model settings
-    use_wac_embeddings = True
-    wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
-    wac_repo_id = "ajtorek/wac_weights"
-    local_wac_directory = "wac_models"
-    pretrained_wac_embedding_file = "pretrained_embeddings/clip.bertvocab.embeddings.128.txt"
-
-    #wac_train_steps = 5
-    num_cores = 0
-    save_wac_features = True
-
-    # HuggingFace settings
-    huggingface_save_directory = "models"
-    huggingface_save_name = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
     push_to_hub = True
 
 @ex.named_config
