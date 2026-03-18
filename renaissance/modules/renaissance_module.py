@@ -206,7 +206,9 @@ class RenaissanceTransformer(pl.LightningModule):
             if not self.use_wac_models_only:
                 two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
-                if config['loss_names']['ref'] == 0 and self.wac_models is not None and two_tower_config.text_config.ignore_text_embeddings_epochs > 0:
+                if config['loss_names']['ref'] == 0 and self.wac_models is not None \
+                                                    and two_tower_config.text_config.ignore_text_embeddings_epochs > 0:
+                    
                     two_tower_config.text_config.ignore_text_embeddings_epochs = 0
 
                 self.encoder = TwoTowerEncoder(
@@ -217,8 +219,6 @@ class RenaissanceTransformer(pl.LightningModule):
                 self.hidden_size = self.encoder.get_hidden_size()
             else:
                 hidden_size = self.wac_embedding_size
-
-            
             
         else:
             raise TypeError('Model Type not supported.')

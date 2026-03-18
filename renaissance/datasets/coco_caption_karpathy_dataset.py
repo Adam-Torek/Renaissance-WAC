@@ -85,7 +85,7 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             bboxes_normalized = self.get_bounding_boxes(index, only_one=False, return_normalized=True)
             return_dict["bboxes"] = bboxes_normalized
 
-        elif self.subimages_format == "all" or self.include_wac_data:
+        elif self.subimages_format == "all":
             subimages = self.get_subimages(index, only_one=False)
             return_dict["subimages"] = torch.stack(subimages)
             
@@ -93,16 +93,27 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             return_dict["image"] = self.get_subimages(index, only_one=True)[0]
             for i in range(0, self.draw_false_image):
                 random_index = random.randint(0, len(self.index_mapper) - 1)
+                
+                text_index, _ = self.index_mapper[random_index]
+                return_dict[f"false_image_ann_id_{i}"] = self.table["ann_ids"][text_index].as_py()
+
                 random_subimage = self.get_subimages(random_index, only_one=True)[0]
                 return_dict[f"false_image_{i}"] = random_subimage
 
             for i in range(0, self.draw_false_text):
                 random_index = random.randint(0, len(self.index_mapper) - 1)
+
+                text_index, _ = self.index_mapper[random_index]
+                return_dict[f"false_text_ann_id_{i}"] = self.table["ann_ids"][text_index].as_py()
+
                 random_text = self.get_text(random_index)
                 return_dict[f"false_text_{i}"] = random_text
         
         # Get subimage and position data for WAC models if needed
-        if self.include_wac_data:
+        if self.include_wac_data and "subimages" not in return_dict:
+            
+            subimages = self.get_subimages(index, only_one=False)
+            return_dict["subimages"] = torch.stack(subimages)
 
             # Gather position data to supplement WAC models with location information
             bounding_boxes = self.get_bounding_boxes(index)
@@ -131,6 +142,12 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
             bbox_position_list = np.stack(bbox_position_list)
             text = text_data["text"][0]
+            for i in range(0, self.draw_false_text):
+                false_text_to_tokenize = return_dict[f"false_text_{i}"]["text"][0]
+                false_tokenized_text = self.tokenizer.tokenize(false_text_to_tokenize)
+                return_dict[f"false_tokenized_text_{i}"] = false_tokenized_text
+
+
             tokenized_text = self.tokenizer.tokenize(text)
             return_dict["tokenized_words"] = tokenized_text
             return_dict["position_data"] = bbox_position_list
@@ -172,6 +189,21 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             batch_text = batch_text_pair[0]
             
             dict_batch["text"].append(batch_text)
+
+            for i in range(0, self.draw_false_text):
+                false_tokenized_key = f"false_tokenized_text_{i}"
+                false_text = batch_item[false_tokenized_key]
+                if false_tokenized_key not in dict_batch:
+                    dict_batch[false_tokenized_key] = []
+
+                dict_batch[false_tokenized_key].append(false_text)
+
+                false_ann_id_key = f"false_text_ann_id_{i}"
+                false_ann_id = batch_item[false_ann_id_key]
+                if false_ann_id_key not in dict_batch:
+                    dict_batch[false_ann_id_key] = []
+                dict_batch[false_ann_id_key].append(false_ann_id)
+
             dict_batch["text_ids"].append(torch.tensor(batch_text_data["input_ids"]))
             if "attention_mask" in batch_text_data:
                 if "text_masks" not in dict_batch:
@@ -191,6 +223,6 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             for i in range(0, self.draw_false_image):
                 false_images_tensor = torch.stack([batch_item[f"false_image_{i}"] for batch_item in batch])
                 dict_batch[f"false_image_{i}"] = [false_images_tensor]
-
+            
         return dict_batch
                     
