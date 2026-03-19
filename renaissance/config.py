@@ -890,6 +890,63 @@ def eval_ref_twotower_electrasmall_deit_wac_distributions():
     push_to_hub = True
 
 @ex.named_config
+def eval_ref_twotower_electrasmall_deit_wac_distributions_pretrained_itm():
+    exp_name = "eval_ref_twotower_electrasmall_wac_distributions_pretrained_itm"
+    model_type = "two-tower-wac"
+    datasets = ["coco"]
+    loss_names = _loss_names({"ref": 1})
+    num_gpus = 1
+    precision = 32
+    batch_size = 8
+    per_gpu_batchsize = 8
+    complete_encoder_path = "ajtorek/electra_deit_small_itm_wac_distributions"
+    
+    max_epoch = 1
+    warmup_steps = 0.1
+    whole_word_masking = False
+    learning_rate = 1e-4
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-renaissance-babylm-wac-distributons"
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    num_gpus = 1
+    data_root = "data/arrow/coco"
+    
+    # Image settings to not use image encoders
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 7
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = False
+    wac_distribution_matrix = "value"
+    wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    #wac_train_steps = 5
+    wac_repo_id = "ajtorek/wac_weights"
+    local_wac_directory = "wac_models"
+    num_cores = 0
+    save_wac_features = True
+
+    # HuggingFace settings
+    huggingface_save_directory = "models"
+    huggingface_save_name = "ajtorek/electra_deit_small_wac_distributions_pretrained_itm"
+    push_to_hub = False
+
+@ex.named_config
 def pretrain_itm_twotower_electrasmall_deit_wac_distributions():
     exp_name = "pretrain_itm_twotower_electrasmall_deit_wac_distributions"
     model_type = "two-tower-wac"

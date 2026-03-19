@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "pretrain_itm_twotower_electrasmall_deit_wac_distributions"
+                "eval_ref_twotower_electrasmall_deit_wac_distributions_pretrained_itm"
             ]
         },
 

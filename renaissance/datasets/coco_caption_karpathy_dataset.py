@@ -110,10 +110,11 @@ class CocoCaptionKarpathyDataset(BaseDataset):
                 return_dict[f"false_text_{i}"] = random_text
         
         # Get subimage and position data for WAC models if needed
-        if self.include_wac_data and "subimages" not in return_dict:
+        if self.include_wac_data:
             
-            subimages = self.get_subimages(index, only_one=False)
-            return_dict["subimages"] = torch.stack(subimages)
+            if "subimages" not in return_dict:
+                subimages = self.get_subimages(index, only_one=False)
+                return_dict["subimages"] = torch.stack(subimages)
 
             # Gather position data to supplement WAC models with location information
             bounding_boxes = self.get_bounding_boxes(index)
