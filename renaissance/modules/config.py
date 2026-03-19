@@ -100,7 +100,7 @@ class TwoTowerConfig(PretrainedConfig):
             if config['use_text_encoder']:
                 self.text_encoder_path = config["text_encoder"]
                 self.freeze_text_encoder = config["freeze_text_encoder"]
-
+                
                 if config['text_encoder_manual_configuration']:
                     text_encoder_kwargs = {
                         'hidden_size' : config["text_encoder_hidden_size"],
@@ -110,8 +110,6 @@ class TwoTowerConfig(PretrainedConfig):
                         'hidden_dropout_prob' : config["text_encoder_drop_rate"],
                         'attention_probs_dropout_prob' : config["text_encoder_drop_rate"],
                         'layer_norm_eps': config['text_encoder_norm_eps'],
-                        'wac_distribution_weight': config['wac_distribution_weight'],
-                        'wac_distribution_encoder_location': config['wac_distribution_encoder_location'],
                     }
                     if 'electra' in config['text_encoder']:
                         text_encoder_kwargs['embedding_size'] = config['text_encoder_embedding_size']

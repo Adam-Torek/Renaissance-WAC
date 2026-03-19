@@ -64,19 +64,15 @@ class WACModels():
         # in the next training round
         self.current_wac_datasets = {}
 
-        self.word_distribution_feature_ids = {}
-
         # Dictionary used to store WAC features
         self.wac_features = {}
         for split in self.splits_to_use:
             self.wac_features[split] = {}
             self.positive_feature_ids[split] = {} 
             self.current_wac_datasets[split] = {}
-            self.word_distribution_feature_ids[split] = {}
             for word in self.vocab:
                 self.positive_feature_ids[split][word] = set()
                 self.current_wac_datasets[split][word] = None
-                self.word_distribution_feature_ids[split][word] = dict()
 
         self.scaler = MinMaxScaler()
         
@@ -255,7 +251,6 @@ class WACModels():
         for word, model, pos_feature_ids in trained_model_results:
             self.wac_models[word] = model
             self.positive_feature_ids[self.current_split][word].update(pos_feature_ids)
-            self.word_distribution_feature_ids[self.current_split][word] = dict()
 
     def sample_negatives(self) -> None:
 
@@ -353,7 +348,6 @@ class WACModels():
         for word, trained_model in trained_model_list:
             self.current_wac_datasets[self.current_split][word] = None
             self.wac_models[word] = trained_model
-            self.word_distribution_feature_ids[self.current_split][word] = dict()
 
     def get_distributions(self, indices: list[int]) -> np.array:
 
@@ -362,40 +356,26 @@ class WACModels():
         probabilities_array = np.zeros(shape=(len(indices), len(self.vocab)))
 
         feature_ids_set = set(indices)
+        feature_values_to_predict = []
+
+        for feature_id in feature_ids_set:
+            feature_values = self.wac_features[self.current_split][feature_id]
+            feature_values_to_predict.append(feature_values)
+            
+        feature_values_to_predict = np.stack(feature_values_to_predict)
 
         for word, model in self.wac_models.items():
             if word in self.special_vocab:
                 continue
 
             word = re.sub(r"/", "{slash}", word)
-            feature_ids_with_probs = self.word_distribution_feature_ids[self.current_split][word]
-            feature_ids_with_probs_set = set(feature_ids_with_probs.keys())
-            feature_ids_without_probs = feature_ids_set.difference(feature_ids_with_probs_set)
             word_index = self.vocab.index(word)
-            if len(feature_ids_without_probs) > 0:
-                feature_list = []
-                feature_id_list = []
-                for feature_id in feature_ids_without_probs:
-                    feature_list.append(self.wac_features[self.current_split][feature_id])
-                    feature_id_list.append(feature_id)
-
-                feature_array = np.stack(feature_list)
-                try:
-                    word_probs = model.predict_proba(feature_array)[:,1]
-                except Exception as e:
-                    continue
             
-                for feature_id, word_prob in zip(feature_id_list, word_probs):
-                    feature_ids_with_probs[feature_id] = word_prob
-
-                self.word_distribution_feature_ids[self.current_split][word] = feature_ids_with_probs
-
-            word_probabilities_feature_ids = self.word_distribution_feature_ids[self.current_split][word]
-            for i, feature_id in enumerate(indices):
-                word_prob = word_probabilities_feature_ids[feature_id]
-                probabilities_array[i, word_index] = word_prob
-
-            probabilities_array[:, word_index] = np.linalg.norm(probabilities_array[:, word_index])
+            try:
+                word_probs = model.predict_proba(feature_values_to_predict)[:,1]
+                probabilities_array[:, word_index] = np.linalg.norm(word_probs)
+            except Exception as e:
+                continue 
             
         return probabilities_array
 

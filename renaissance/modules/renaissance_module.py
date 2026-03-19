@@ -661,19 +661,22 @@ class RenaissanceTransformer(pl.LightningModule):
                         subsection_to_save=None,
                         **kwargs):
         
-        config = self.encoder.config
-        config.save_pretrained(save_directory)
         model_save_name = os.path.join(save_directory, "model.safetensors")
 
         self.save_directory = save_directory
+        os.makedirs(save_directory, exist_ok=True)
 
         if subsection_to_save is not None:
             model_to_save = getattr(self.encoder, subsection_to_save)
+            config = model_to_save.config
         else:
             model_to_save = self.encoder
+            config = self.encoder.config
 
         save_file(model_to_save.state_dict(), 
                   model_save_name)
+        
+        config.save_pretrained(save_directory)
 
     def push_to_hub(self, model_hub_name, **kwargs):
         
