@@ -127,7 +127,7 @@ def config():
     cross_layer_mlp_ratio = 4
     cross_layer_drop_rate = 0.1
     cross_encoder_norm_eps = 1e-8
-    
+
     # Freeze Module Parameter Settings
     freeze_image_encoder = False
     freeze_text_encoder = False
@@ -638,9 +638,7 @@ def eval_ref_twotower_electrasmall_deit_small():
     freeze_text_encoder = False
     # Text Setting
     text_encoder = "ajtorek/electra-renaissance-babylm"
-    text_encoder_manual_configuration = True
-    text_encoder_hidden_size = 256
-    text_encoder_embedding_size = 128
+    text_encoder_manual_configuration = False   
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
@@ -669,9 +667,9 @@ def eval_ref_twotower_electrasmall_deit_small():
     num_cores = 0
 
     # HuggingFace settings
-    huggingface_save_directory = None
-    huggingface_save_name = None
-    push_to_hub = False
+    huggingface_save_directory = "results"
+    huggingface_save_name = "ajtorek/electra-small-deit-small-ref"
+    push_to_hub = True
 
 @ex.named_config
 def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
