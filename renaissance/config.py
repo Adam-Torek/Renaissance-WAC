@@ -1094,7 +1094,7 @@ def glue_wac_embeddings_config():
     model_type = "two-tower-wac"
     datasets = ["glue"]
     csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
-    complete_encoder_path = "ajtorek/electra-deit-small-text-pretrained-wac-embeddings"
+    complete_encoder_path = ""
     run_test = False
 
     batch_size = 128
@@ -1127,6 +1127,8 @@ def glue_wac_embeddings_config():
     num_cross_layer_heads = 4
     cross_layer_mlp_ratio = 4
     cross_layer_drop_rate = 0.1
+
+    wac_embedding_encoder_sizes = [256]
 
     # WAC model settings
     use_wac_embeddings = True

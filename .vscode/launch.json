@@ -14,8 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "finetune_cola_onetower_electrasmall",
-                "complete_encoder_path=ajtorek/electra-small-deit-small-ref"
+                "finetune_cola_twotower_electrasmall",
             ]
         },
 
