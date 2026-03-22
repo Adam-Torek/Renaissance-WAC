@@ -11,6 +11,8 @@
 
 source activate renaissance
 
+glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
+
 for task in "${glue_tasks[@]}"
 do
     srun python3 run.py with finetune_$task\_twotower_electrasmall \
