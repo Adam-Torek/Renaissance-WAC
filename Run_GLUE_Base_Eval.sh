@@ -15,9 +15,7 @@ glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
 
 for task in "${glue_tasks[@]}"
 do
-    srun python3 run.py with finetune_$task\_twotower_electrasmall \
-                                use_wac_embeddings=False \
-                                complete_encoder_path=ajtorek/electra-small-deit-small-ref \
-                                csv_log_file=glue_results/glue_base_eval/glue.csv
+    srun python3 run.py with finetune_$task\_onetower_electrasmall \
+                                complete_encoder_path=ajtorek/electra-small-deit-small-ref
                                 
 done 

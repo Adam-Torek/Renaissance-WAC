@@ -1211,9 +1211,18 @@ def finetune_cola_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1236,9 +1245,18 @@ def finetune_mnli_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1261,9 +1279,18 @@ def finetune_mrpc_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1286,9 +1313,18 @@ def finetune_qqp_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1311,9 +1347,18 @@ def finetune_qnli_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1335,9 +1380,18 @@ def finetune_rte_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1361,9 +1415,18 @@ def finetune_sst2_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1387,9 +1450,18 @@ def finetune_stsb_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
@@ -1413,9 +1485,18 @@ def finetune_wnli_onetower_electrasmall():
     complete_encoder_path = None
     csv_log_file = "glue_results/glue_no_wac_embeddings/glue.csv"
 
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+
     # Image settings to not use image encoders
-    use_image_encoder = False
+    use_image_encoder = True
     image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
 
     # WAC model settings
     use_wac_embeddings = None
