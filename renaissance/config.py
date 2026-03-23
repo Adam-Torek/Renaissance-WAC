@@ -714,7 +714,7 @@ def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
     cross_layer_hidden_size = 320
     num_cross_layers = 6
     num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 4
+    cross_layer_mlp_ratio = 7
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
