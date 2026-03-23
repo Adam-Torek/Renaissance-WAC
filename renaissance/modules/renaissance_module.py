@@ -79,12 +79,8 @@ class RenaissanceTransformer(pl.LightningModule):
         self.wac_distribution_matrix = None
         self.current_training_epoch = 0
         self.wac_train_steps = None
-        self.use_wac_embeddings = False
         self.vocab = []
         self.use_wac_models_only = config['use_wac_models_only']
-
-        if self.use_wac_models_only:
-            self.use_wac_embeddings = True
 
         self.use_position_data = True
         
@@ -111,7 +107,8 @@ class RenaissanceTransformer(pl.LightningModule):
         
         elif 'two-tower' in self.model_type:
 
-            if self.model_type == 'two-tower-wac':
+            if self.model_type == 'two-tower-wac' and (config['use_wac_embeddings'] or config['wac_distribution_matrix'] is not None):
+                
                 wac_image_encoder_path = config['wac_image_encoder']
                 tokenizer_path = config['tokenizer']
 
@@ -138,16 +135,19 @@ class RenaissanceTransformer(pl.LightningModule):
                 for special_word in wac_tokenizer.special_tokens_map.values():
                     special_vocab.append(special_word)
 
-                if config['use_position_data']:
-                    self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
+                if config['use_wac_embeddings']:
+                    if config['use_position_data']:
+                        self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
+                    else:
+                        self.wac_embedding_size = wac_embedding_size + 1
                 else:
-                    self.wac_embedding_size = wac_embedding_size + 1
+                    self.wac_embedding_size = None
                
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
                 self.wac_train_steps = config['wac_train_steps']
                 self.use_position_data = config['use_position_data']
                 self.vocab = vocab
-                
+
                 wac_args['vocab'] = vocab
                 wac_args['special_vocab'] = special_vocab
                 wac_args['save_wac_features'] = config['save_wac_features']
@@ -193,16 +193,12 @@ class RenaissanceTransformer(pl.LightningModule):
                     pretrained_wac_embedding_file = config['pretrained_wac_embedding_file']
                     self.wac_models.load_pretrained_wac_embeddings(pretrained_wac_embedding_file)
                     self.wac_embedding_size = self.wac_models.embedding_size
-                    self.use_wac_embeddings = True
 
                 self.current_training_epoch = 0
 
                 if config['loss_names']['ref'] == 0:
                     self.delete_wac_image_encoder()
 
-            if config['use_wac_embeddings']:
-                self.use_wac_embeddings = True
-            
             if not self.use_wac_models_only:
                 two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
@@ -456,6 +452,14 @@ class RenaissanceTransformer(pl.LightningModule):
             # state_dict = ckpt["state_dict"]
             self.load_state_dict(state_dict, strict=False)
 
+    def wac_models_available(self):
+        if self.wac_models is None:
+            return False
+        elif self.wac_embedding_size is None and self.wac_distribution_matrix is None:
+            return False
+        else:
+            return True
+
     def forward_wac_features(self, batch):
         wac_features_dict = {}
         if self.wac_models is not None:
@@ -480,7 +484,7 @@ class RenaissanceTransformer(pl.LightningModule):
                     
                     self.wac_models.update_wac_models(word_feature_ids)
                                 
-                if self.wac_embedding_size is not None and self.use_wac_embeddings:
+                if self.wac_embedding_size is not None and self.wac_embedding_size is not None:
 
                     wac_embeddings_tensor = torch.zeros((input_ids.shape[0], input_ids.shape[1], self.wac_embedding_size), device=input_ids.device)
                     

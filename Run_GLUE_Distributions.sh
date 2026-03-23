@@ -21,9 +21,9 @@ do
         srun python3 run.py with finetune_$task\_twotower_electrasmall \
                                     complete_encoder_path=ajtorek/electra_deit_small_wac_$distribution_matrix\_distributions \
                                     exp_name=finetune_twotower_electrasmall_wac_$distribution_matrix\_distributions \
-                                    wac_distribution_sizes=[4096, 2048, 1024, 512] \
-                                    wac_distribution_matrix=$wac_distribution_matrix \
-                                    csv_log_file=glue_results/$wac_distribution_matrix\_wac_distributions/glue.csv
+                                    wac_distribution_matrix=None \
+                                    csv_log_file=glue_results/$wac_distribution_matrix\_wac_distributions/glue.csv \
+                                    use_wac_embeddings=False
                                     
     done 
 done

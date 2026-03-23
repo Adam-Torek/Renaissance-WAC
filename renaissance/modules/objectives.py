@@ -75,7 +75,7 @@ def compute_stsb(pl_module, batch):
     batch_without_text = copy.deepcopy(batch)
     batch_without_text.pop("text_labels")
 
-    if pl_module.wac_models is not None:
+    if pl_module.wac_models_available():
         wac_features_data = pl_module.forward_wac_features(batch_without_text)
         batch_without_text["wac_embeddings"] = wac_features_data["wac_embeddings"]
 
@@ -110,7 +110,7 @@ def compute_text_accuracy(pl_module, batch, task):
     batch_without_text = copy.deepcopy(batch)
     batch_without_text.pop("text_labels")
 
-    if pl_module.wac_models is not None:
+    if pl_module.wac_models_available():
         wac_features_data = pl_module.forward_wac_features(batch_without_text)
         batch_without_text["wac_embeddings"] = wac_features_data["wac_embeddings"]
 
@@ -238,7 +238,7 @@ def compute_ref(pl_module, batch):
     else:
         text_masks = None
 
-    if pl_module.wac_models is not None:
+    if pl_module.wac_models_available():
         wac_models_batch = {}
         wac_models_batch["text_ids"] = text_ids
         wac_models_batch["tokenized_words"] = batch["tokenized_words"]

@@ -15,6 +15,11 @@
             "args": [
                 "with", 
                 "finetune_cola_twotower_electrasmall",
+                "complete_encoder_path=ajtorek/electra_deit_small_wac_key_distributions",
+                "exp_name=finetune_twotower_electrasmall_wac_key_distributions",
+                "wac_distribution_matrix=None",
+                "csv_log_file=glue_results/wac_distribution_key/glue.csv",
+                "use_wac_embeddings=False"
             ]
         },
 
