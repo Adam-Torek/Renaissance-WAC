@@ -1,6 +1,5 @@
 data/
 *pycache*
-result/*
 results/*
 slurm_logs/*
 models/*

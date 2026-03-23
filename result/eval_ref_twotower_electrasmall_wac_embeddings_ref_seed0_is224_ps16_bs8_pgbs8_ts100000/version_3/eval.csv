@@ -1,0 +1,9 @@
+phase,metric_name,epoch,metric_value
+val,accuracy,0,0.1813400834798813
+val,loss,0,nan
+train,accuracy,0,0.17941661179065704
+train,loss,0,nan
+val,accuracy,1,0.1813400834798813
+val,loss,1,nan
+train,accuracy,1,0.17941661179065704
+train,loss,1,nan
