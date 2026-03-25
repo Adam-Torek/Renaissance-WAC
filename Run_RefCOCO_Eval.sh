@@ -12,5 +12,3 @@
 source activate renaissance
 
 srun python3 run.py with eval_ref_twotower_electrasmall_deit_small
-
-

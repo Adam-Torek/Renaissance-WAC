@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH -J DistEmbeds-Electra        # job name
-#SBATCH -o slurm_logs/renaissance_wac/distembeds_electra.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -o slurm_logs/renaissance_wac/dist_embeds_electra.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16      # Number of CPU nodes per task to run
