@@ -44,7 +44,7 @@ class GlueDataset(BaseDataset):
                 self.sentence2 = None
             elif self.task in ["qqp"]:
                 self.sentence1 = self.data_dict["question1"]
-                self.sentence2 = self.data_dict["question2'"]
+                self.sentence2 = self.data_dict["question2"]
             elif self.task in ["qnli"]:
                 self.sentence1 = self.data_dict["question"]
                 self.sentence2 = self.data_dict["sentence"]
