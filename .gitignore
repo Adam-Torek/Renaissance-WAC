@@ -4,7 +4,7 @@ results/*
 slurm_logs/*
 models/*
 checkpoints/*
-events*
+events.*
 wac_models/*
 *.zip
 wac_models*/*
