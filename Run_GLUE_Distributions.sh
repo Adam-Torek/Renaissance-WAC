@@ -22,7 +22,7 @@ do
                                     complete_encoder_path=ajtorek/electra_deit_small_wac_$distribution_matrix\_distributions \
                                     exp_name=finetune_twotower_electrasmall_wac_$distribution_matrix\_distributions \
                                     wac_distribution_matrix=None \
-                                    csv_log_file=glue_results/$wac_distribution_matrix\_wac_distributions/glue.csv \
+                                    csv_log_file=glue_results/$distribution_matrix\_wac_distributions/glue.csv \
                                     use_wac_embeddings=False
                                     
     done 
