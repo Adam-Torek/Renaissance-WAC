@@ -3,6 +3,8 @@ data/
 results/*
 slurm_logs/*
 models/*
+checkpoints/*
+events*
 wac_models/*
 *.zip
 wac_models*/*
