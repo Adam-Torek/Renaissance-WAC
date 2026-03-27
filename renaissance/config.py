@@ -983,7 +983,7 @@ def eval_ref_twotower_electrasmall_wac_key_distributions_embeddings():
     freeze_image_encoder = False
     freeze_text_encoder = False
     # Text Setting
-    text_encoder = "ajtorek/electra-renaissance-babylm-wac-distributons-embeddings"
+    text_encoder = "ajtorek/electra-renaissance-babylm-wac-embeddings-distributons"
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
