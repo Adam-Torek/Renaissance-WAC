@@ -1006,6 +1006,7 @@ def eval_ref_twotower_electrasmall_wac_key_distributions_embeddings():
 
     # WAC model settings
     use_wac_embeddings = True
+    wac_embedding_encoder_sizes = [256]
     wac_distribution_matrix = "key"
     wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
     wac_image_encoder = "openai/clip-vit-base-patch16"
@@ -1063,7 +1064,7 @@ def eval_ref_twotower_electrasmall_wac_query_distributions_embeddings():
 
     # WAC model settings
     use_wac_embeddings = True
-    wac_embeddig_encoder_sizes = [256]
+    wac_embedding_encoder_sizes = [256]
     wac_distribution_matrix = "query"
     wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
     wac_image_encoder = "openai/clip-vit-base-patch16"
@@ -1121,7 +1122,7 @@ def eval_ref_twotower_electrasmall_wac_value_distributions_embeddings():
 
     # WAC model settings
     use_wac_embeddings = True
-    wac_embeddig_encoder_sizes = [256]
+    wac_embedding_encoder_sizes = [256]
     wac_distribution_matrix = "value"
     wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
     wac_image_encoder = "openai/clip-vit-base-patch16"
