@@ -14,7 +14,14 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "finetune_qqp_onetower_electrasmall",
+                "finetune_qqp_twotower_electrasmall",
+                        
+                                    "complete_encoder_path=ajtorek/electra-deit-small-wac-query-distributions-embeddings",
+                                    "exp_name=finetune_twotower_electrasmall_wac_query_distributions_embeddings",
+                                    
+                                    "wac_distribution_matrix=None",
+                                    "csv_log_file=glue_results/query_distembeds/glue.csv",
+                                    "use_wac_embeddings=True"
             ]
         },
 
