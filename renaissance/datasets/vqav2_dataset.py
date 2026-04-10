@@ -56,6 +56,6 @@ class VQAv2Dataset(BaseDataset):
         if self.include_wac_data:
             return_dict["tokenized_text"] = self.tokenizer.tokenize(text)
             return_dict["subimages"] = image_tensor
-            return_dict["position_data"] = torch.tensor([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])
+            return_dict["position_data"] = torch.tensor([0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0])
 
         return return_dict
