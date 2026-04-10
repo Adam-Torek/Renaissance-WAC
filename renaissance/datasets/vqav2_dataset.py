@@ -1,4 +1,5 @@
 from .base_dataset import BaseDataset
+import torch
 
 
 class VQAv2Dataset(BaseDataset):
@@ -12,6 +13,12 @@ class VQAv2Dataset(BaseDataset):
             names = ["vqav2_val"]
         elif split == "test":
             names = ["vqav2_test"]
+
+        if "include_wac_data" in kwargs:
+            include_wac_data = kwargs.pop("include_wac_data")
+            self.include_wac_data = include_wac_data
+        else:
+            self.include_wac_data = False
 
         super().__init__(
             *args,
@@ -36,8 +43,8 @@ class VQAv2Dataset(BaseDataset):
             answers = list()
             labels = list()
             scores = list()
-
-        return {
+            
+        return_dict =  {
             "image": image_tensor,
             "text": text,
             "vqa_answer": answers,
@@ -45,3 +52,10 @@ class VQAv2Dataset(BaseDataset):
             "vqa_scores": scores,
             "qid": qid,
         }
+
+        if self.include_wac_data:
+            return_dict["tokenized_text"] = self.tokenizer.tokenize(text)
+            return_dict["subimages"] = image_tensor
+            return_dict["position_data"] = torch.tensor([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])
+
+        return return_dict

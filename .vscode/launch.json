@@ -14,14 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "finetune_qqp_twotower_electrasmall",
-                        
-                                    "complete_encoder_path=ajtorek/electra-deit-small-wac-query-distributions-embeddings",
-                                    "exp_name=finetune_twotower_electrasmall_wac_query_distributions_embeddings",
-                                    
-                                    "wac_distribution_matrix=None",
-                                    "csv_log_file=glue_results/query_distembeds/glue.csv",
-                                    "use_wac_embeddings=True"
+                "pretrain_wac_vqa_twotower_electrasmall_deit_small",
             ]
         },
 
@@ -49,9 +42,9 @@
             "request": "launch",
             "program": "renaissance/utils/run_write.py",
             "console": "integratedTerminal",
-            "args": ["--dataset_to_write", "refcoco", 
-                     "--dataset_source_path", "data/coco/", 
-                     "--dataset_destination_path", "data/arrow/coco"]
+            "args": ["--dataset_to_write", "vqa", 
+                     "--dataset_source_path", "data/VQA2", 
+                     "--dataset_destination_path", "data/arrow/vqa"]
         },
         {
             "name": "Upload Model to HuggingFace",
