@@ -180,7 +180,7 @@ def run_experiment(_config):
 
     
     if _config["run_training"]:
-        if model.wac_models is not None and _config["loss_names"]["ref"] > 0:
+        if model.wac_models is not None and (_config["loss_names"]["ref"] > 0 or _config["loss_names"]["vqa"] > 0):
             print("WAC models enabled. Starting construction of WAC features.")
             dm.setup(stage="fit")
             training_dataloader = dm.train_dataloader()
@@ -192,7 +192,7 @@ def run_experiment(_config):
             model.delete_wac_image_encoder()
 
             print("WAC datasets constructed. Starting model training.")
-        elif model.wac_models is not None and _config["loss_names"]["ref"] == 0:
+        elif model.wac_models is not None and (_config["loss_names"]["ref"] == 0 and _config["loss_names"]["vqa"] == 0):
             model.wac_models.training_completed = True
 
         if _config["resume_from"]:

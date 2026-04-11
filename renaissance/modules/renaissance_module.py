@@ -181,7 +181,7 @@ class RenaissanceTransformer(pl.LightningModule):
                                 self.wac_models.download_from_hub()
                                 self.wac_models.load_models()
                             except Exception as e:
-                                print("Unable to download WAC models from HugginFace repo. Performing training from scratch.")
+                                print("Unable to download WAC models from HuggingFace repo. Performing training from scratch.")
                         else:
                             print("HuggingFace WAC Repo is not defined. Performing training from scratch.")
                     else:
@@ -196,13 +196,13 @@ class RenaissanceTransformer(pl.LightningModule):
 
                 self.current_training_epoch = 0
 
-                if config['loss_names']['ref'] == 0:
+                if config['loss_names']['ref'] == 0 and config['loss_names']['vqa'] == 0:
                     self.delete_wac_image_encoder()
 
             if not self.use_wac_models_only:
                 two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
-                if config['loss_names']['ref'] == 0 and self.wac_models is not None \
+                if (config['loss_names']['ref'] == 0 and config['loss_names']['vqa'] == 0) and self.wac_models is not None \
                                                     and two_tower_config.text_config.ignore_text_embeddings_epochs > 0:
                     
                     two_tower_config.text_config.ignore_text_embeddings_epochs = 0

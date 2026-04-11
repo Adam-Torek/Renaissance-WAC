@@ -405,6 +405,15 @@ def compute_snli(pl_module, batch):
     return ret
 
 def compute_vqa(pl_module, batch):
+    if pl_module.wac_models_available():
+        wac_batch_data = pl_module.forward_wac_features(batch)
+
+        if "wac_embeddings" in wac_batch_data:
+            batch["wac_embeddings"] = wac_batch_data["wac_embeddings"]
+        
+        if "wac_distributions" in wac_batch_data:
+            batch["wac_distributions"] = wac_batch_data["wac_distributions"]
+
     infer = pl_module.infer(batch, mask_text=False, mask_image=False)
     vqa_logits = pl_module.vqa_classifier(infer["cls_feats"])
     vqa_targets = torch.zeros(

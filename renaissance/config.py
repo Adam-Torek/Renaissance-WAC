@@ -178,9 +178,9 @@ def config():
     data_root = 'data/arrow/' 
     log_dir = "result"
     csv_log_file = None
-    num_gpus = 2
+    num_gpus = 1
     num_nodes = 1
-    num_workers = 12
+    num_workers = 4
     precision = 32
 
     # WAC distribution and embedding settings
@@ -550,10 +550,19 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
 
     # WAC model settings
     use_wac_embeddings = False
-    wac_distribution_matrix = None
-    wac_image_encoder = None
+    use_position_data = False
+    wac_distribution_matrix = "query"
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    local_wac_directory = "wac_models"
     #wac_train_steps = 5
     num_cores = 0
+    save_wac_features = False
+
+    wac_embedding_encoder_sizes = [256]
+    wac_embedding_act = "silu"
+
+    wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
+    wac_distribution_act = "silu"
 
     # Training settings
     learning_rate = 1e-4
