@@ -535,6 +535,7 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     draw_false_text = 0
     draw_false_image = 1
     num_gpus = 1
+    max_steps = 50000
     data_root = "data/arrow/vqa"
 
     # Image settings to not use image encoders
@@ -553,7 +554,7 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     use_position_data = False
     wac_distribution_matrix = "query"
     wac_image_encoder = "openai/clip-vit-base-patch16"
-    local_wac_directory = "wac_models"
+    local_wac_directory = "wac_models_vqa"
     #wac_train_steps = 5
     num_cores = 0
     save_wac_features = False
@@ -568,9 +569,9 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     learning_rate = 1e-4
 
     # HuggingFace settings
-    huggingface_save_directory = "results/huggingface_outputs"
-    huggingface_save_name = "ajtorek/electra-deit-itm-renaissance-wac"
-    push_to_hub = True
+    huggingface_save_directory = "results/wac_vqa"
+    huggingface_save_name = "ajtorek/electra-deit-wac-vqa-test"
+    push_to_hub = False
 
     # Two-tower model settings
     learning_rate = 1e-4
