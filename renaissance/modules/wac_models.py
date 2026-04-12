@@ -194,7 +194,7 @@ class WACModels():
         # Use this in the edge case where the number of negatives to sample is greater 
         # than the possible sample space, then sample the number of possible negatives instead 
         if num_negative_features >= len(negative_feature_space):
-            num_negative_features = len(negative_feature_space)-1
+            num_negative_features = len(negative_feature_space)-2
         
         negative_feature_ids = list(random.sample(negative_feature_space, k=num_negative_features))
 
