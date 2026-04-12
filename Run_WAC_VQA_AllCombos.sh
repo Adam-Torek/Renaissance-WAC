@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J WAC_VQA_Test         # job name
-#SBATCH -o slurm_logs/renaissance_wac/wac_vqa_test.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -J WAC_VQA_AllCombos         # job name
+#SBATCH -o slurm_logs/renaissance_wac/wac_vqa_allcombos.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16      # Number of CPU nodes per task to run
