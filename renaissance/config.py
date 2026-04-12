@@ -577,6 +577,69 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     learning_rate = 1e-4
 
 @ex.named_config
+def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
+    exp_name = "wac_enabled_vqa_twotower_electrasmall_deit_small"
+    model_type = "two-tower-wac"
+    datasets = ["vqa"]
+    loss_names = _loss_names({"vqa": 1})
+    batch_size = 128
+    per_gpu_batchsize = 128
+    max_epoch = 20
+    warmup_steps = 0.1
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    complete_encoder_path = None
+    # Text Setting
+    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    random_init_text_encoder = False
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 1
+    num_gpus = 1
+    max_steps = 50000
+    data_root = "data/arrow/vqa"
+
+    # Image settings to not use image encoders
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 320
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # WAC model settings
+    use_wac_embeddings = False
+    use_position_data = False
+    wac_distribution_matrix = None
+    wac_image_encoder = "openai/clip-vit-base-patch16"
+    local_wac_directory = "wac_vqa"
+    #wac_train_steps = 5
+    num_cores = 0
+    save_wac_features = False
+
+    wac_embedding_encoder_sizes = [256]
+    wac_embedding_act = "silu"
+
+    wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
+    wac_distribution_act = "silu"
+
+    # Training settings
+    learning_rate = 1e-4
+
+    # HuggingFace settings
+    huggingface_save_directory = "results/wac_vqa_enabled"
+    huggingface_save_name = "ajtorek/electra-deit-wac-vqa-test-enabled"
+    push_to_hub = False
+
+@ex.named_config
 def pretrain_wac_ref_twotower_electrasmall_deit_small():
     exp_name = "wac_ref_twotower_electrasmall_deit_small"
     model_type = "two-tower"
