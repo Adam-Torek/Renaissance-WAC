@@ -177,6 +177,11 @@ class WACModels():
         return (word, negative_samples)
     
     def _update_wac_model_word(self, word: str, positive_feature_ids: list[int]) -> None:
+
+        # Do not update WAC model if positive feature ID list is empty
+        if len(positive_feature_ids) == 0:
+            return 
+        
         positive_features = []
         for pos_feature_id in positive_feature_ids:
             self.positive_feature_ids[self.current_split][word].add(pos_feature_id)
@@ -191,10 +196,14 @@ class WACModels():
 
         negative_feature_space = list(negative_feature_space)
 
+        # If no possible negeative embedding features are available then do not train this model
+        if len(negative_feature_space) == 0:
+            return
+
         # Use this in the edge case where the number of negatives to sample is greater 
         # than the possible sample space, then sample the number of possible negatives instead 
         if num_negative_features >= len(negative_feature_space):
-            num_negative_features = len(negative_feature_space)-2
+            num_negative_features = len(negative_feature_space)-1
         
         negative_feature_ids = list(random.sample(negative_feature_space, k=num_negative_features))
 
