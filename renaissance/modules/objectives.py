@@ -405,6 +405,7 @@ def compute_snli(pl_module, batch):
     return ret
 
 def compute_vqa(pl_module, batch):
+    batch_size = pl_module.hparams.config['per_gpu_batchsize']
     if pl_module.wac_models_available():
         wac_batch_data = pl_module.forward_wac_features(batch)
 
@@ -445,8 +446,8 @@ def compute_vqa(pl_module, batch):
     score = getattr(pl_module, f"{phase}_vqa_score")(
         ret["vqa_logits"], ret["vqa_targets"]
     )
-    pl_module.log(f"vqa/{phase}/loss", loss)
-    pl_module.log(f"vqa/{phase}/score", score)
+    pl_module.log(f"vqa/{phase}/loss", loss, batch_size=batch_size, sync_dist=True)
+    pl_module.log(f"vqa/{phase}/score", score, batch_size=batch_size, sync_dist=True)
 
     return ret
 

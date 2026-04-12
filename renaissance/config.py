@@ -518,8 +518,9 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     loss_names = _loss_names({"vqa": 1})
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 20
+    max_epoch = 5
     warmup_steps = 0.1
+    csv_log_file = None
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
@@ -584,9 +585,10 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
     loss_names = _loss_names({"vqa": 1})
     batch_size = 128
     per_gpu_batchsize = 128
-    max_epoch = 20
+    max_epoch = 5
     warmup_steps = 0.1
     whole_word_masking = False
+    csv_log_file = None
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
     freeze_text_encoder = False

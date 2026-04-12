@@ -207,20 +207,19 @@ def epoch_wrapup(pl_module):
         
         # Create function to minimeze these steps
         if loss_name == "vqa":
-            value = getattr(pl_module, f"{phase}_{loss_name}_score").compute()
-            pl_module.log(f"{loss_name}/{phase}/score_epoch", value)
-            getattr(pl_module, f"{phase}_{loss_name}_score").reset()
-            pl_module.log(
-                f"{loss_name}/{phase}/loss_epoch",
-                getattr(pl_module, f"{phase}_{loss_name}_loss").compute(),
-            )
-            getattr(pl_module, f"{phase}_{loss_name}_loss").reset()
+            write_metrics(pl_module, 
+                          phase, 
+                          loss_name, 
+                          ["score", "loss"], 
+                          include_summary_value=True)
+            
         elif loss_name == 'ref':
              write_metrics(pl_module, 
                           phase, 
                           loss_name, 
                           ["accuracy","loss"], 
                           include_summary_value=True)
+             
         elif loss_name == 'ref_bbox':
             write_metrics(pl_module, 
                           phase, 
