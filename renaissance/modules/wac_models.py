@@ -181,6 +181,8 @@ class WACModels():
         # Do not update WAC model if positive feature ID list is empty
         if len(positive_feature_ids) == 0:
             return None
+
+        word = re.sub(r"/", "{slash}", word)
         
         positive_features = []
         for pos_feature_id in positive_feature_ids:

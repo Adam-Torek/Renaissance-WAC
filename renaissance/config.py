@@ -178,9 +178,9 @@ def config():
     data_root = 'data/arrow/' 
     log_dir = "result"
     csv_log_file = None
-    num_gpus = 1
+    num_gpus = 2
     num_nodes = 1
-    num_workers = 4
+    num_workers = 16
     precision = 32
 
     # WAC distribution and embedding settings
