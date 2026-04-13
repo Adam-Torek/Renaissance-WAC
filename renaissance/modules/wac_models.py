@@ -180,7 +180,7 @@ class WACModels():
 
         # Do not update WAC model if positive feature ID list is empty
         if len(positive_feature_ids) == 0:
-            return 
+            return None
         
         positive_features = []
         for pos_feature_id in positive_feature_ids:
@@ -198,7 +198,7 @@ class WACModels():
 
         # If no possible negeative embedding features are available then do not train this model
         if len(negative_feature_space) == 0:
-            return
+            return None
 
         # Use this in the edge case where the number of negatives to sample is greater 
         # than the possible sample space, then sample the number of possible negatives instead 
@@ -257,7 +257,11 @@ class WACModels():
                     word_model = self._update_wac_model_word(word, pos_feature_ids)
                     trained_model_results.append(word_model)
         
-        for word, model, pos_feature_ids in trained_model_results:
+        for trained_model_result in trained_model_results:
+            if trained_model_result is None:
+                continue
+            
+            word, model, pos_feature_ids = trained_model_result
             self.wac_models[word] = model
             self.positive_feature_ids[self.current_split][word].update(pos_feature_ids)
 
