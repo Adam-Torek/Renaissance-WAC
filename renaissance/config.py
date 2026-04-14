@@ -519,6 +519,7 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 5
+    num_gpus = 2
     warmup_steps = 0.1
     csv_log_file = None
     whole_word_masking = False
@@ -535,7 +536,6 @@ def pretrain_wac_vqa_twotower_electrasmall_deit_small():
     mlm_prob = 0.15
     draw_false_text = 0
     draw_false_image = 1
-    num_gpus = 1
     max_steps = 50000
     data_root = "data/arrow/vqa"
 

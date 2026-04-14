@@ -160,7 +160,7 @@ def run_experiment(_config):
     torch.set_float32_matmul_precision('medium')
 
     trainer = pl.Trainer(
-        devices= _config["num_gpus"],
+        devices=_config["num_gpus"],
         num_nodes=_config["num_nodes"],
         precision=_config["precision"],
         accelerator = 'gpu',
