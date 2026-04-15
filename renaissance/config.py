@@ -637,8 +637,8 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
     learning_rate = 1e-4
 
     # HuggingFace settings
-    huggingface_save_directory = "results/wac_vqa_enabled"
-    huggingface_save_name = "ajtorek/electra-deit-wac-vqa-test-enabled"
+    huggingface_save_directory = None
+    huggingface_save_name = None
     push_to_hub = False
 
 @ex.named_config
