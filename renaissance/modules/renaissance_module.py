@@ -148,6 +148,8 @@ class RenaissanceTransformer(pl.LightningModule):
                 self.use_position_data = config['use_position_data']
                 self.vocab = vocab
 
+                self.push_hub_enabled = config['push_to_hub']
+
                 wac_args['vocab'] = vocab
                 wac_args['special_vocab'] = special_vocab
                 wac_args['save_wac_features'] = config['save_wac_features']
@@ -623,7 +625,8 @@ class RenaissanceTransformer(pl.LightningModule):
         renaissance_utils.epoch_wrapup(self)
         if self.current_training_epoch == 0 and self.wac_models is not None and not self.wac_models.training_completed:
             self.wac_models.save_models()
-            self.wac_models.push_to_hub()
+            if self.push_hub_enabled:
+                self.wac_models.push_to_hub()
 
         self.current_training_epoch += 1
         if isinstance(self.encoder, TwoTowerEncoder):
