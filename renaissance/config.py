@@ -619,7 +619,7 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
 
     # WAC model settings
     use_wac_embeddings = True
-    use_position_data = False
+    use_position_data = True
     wac_distribution_matrix = None
     wac_image_encoder = "openai/clip-vit-base-patch16"
     local_wac_directory = "wac_vqa"
