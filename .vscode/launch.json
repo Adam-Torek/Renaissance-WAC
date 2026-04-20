@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "pretrain_wac_vqa_twotower_electrasmall_deit_small",
+                "pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small",
             ]
         },
 

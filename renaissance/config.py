@@ -594,7 +594,7 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
     freeze_text_encoder = False
     complete_encoder_path = None
     # Text Setting
-    text_encoder = "ajtorek/electra-wac-renaissance-babylm"
+    text_encoder = "ajtorek/electra-renaissance-babylm-wac-embeddings"
     random_init_text_encoder = False
     tokenizer = "google/electra-small-discriminator"
     max_text_len = 50
@@ -618,7 +618,7 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
-    use_wac_embeddings = False
+    use_wac_embeddings = True
     use_position_data = False
     wac_distribution_matrix = None
     wac_image_encoder = "openai/clip-vit-base-patch16"

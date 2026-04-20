@@ -15,4 +15,5 @@ srun python3 run.py with pretrain_wac_enabled_vqa_twotower_electrasmall_deit_sma
                                     exp_name=pretrain_wac_enabled_embeddings_vqa_twotower_electrasmall_deit_small \
                                     wac_distribution_matrix=None \
                                     use_wac_embeddings=True \
+                                    text_encoder=ajtorek/electra-renaissance-babylm-wac-embeddings \
                                     num_gpus=2
