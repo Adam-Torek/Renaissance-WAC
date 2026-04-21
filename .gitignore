@@ -9,3 +9,4 @@ wac_models/*
 *.zip
 wac_models*/*
 result/*
+wac_vqa/*
