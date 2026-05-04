@@ -106,16 +106,23 @@ class RenaissanceTransformer(pl.LightningModule):
             self.embedding_size = self.encoder.get_embedding_size()
         
         elif 'two-tower' in self.model_type:
-
+            # Set up the WAC models for the two-tower LM if they are enabled 
+            # and the model type is set to use WAC models 
             if self.model_type == 'two-tower-wac' and (config['use_wac_embeddings'] or config['wac_distribution_matrix'] is not None):
                 
+                # Get the object embedding model path to load from HuggingFace 
                 wac_image_encoder_path = config['wac_image_encoder']
                 tokenizer_path = config['tokenizer']
 
+                # Download the embedding model weights from HuggingFace and load them into memory 
                 if wac_image_encoder_path is not None:
                     self.wac_image_encoder = AutoModel.from_pretrained(wac_image_encoder_path)
                     self.wac_image_encoder = self.wac_image_encoder.eval()
 
+                # Get the output embedding size for the object embedding model so 
+                # the WAC model embedding parameters can be properly set. This will also
+                # let WAC dynamically scale to different object embedding model outputs 
+                # and sizes besides CLIP (though I haven't tested this yet).
                 if hasattr(self.wac_image_encoder, 'config'):
                     wac_image_encoder_config = self.wac_image_encoder.config
                     if hasattr(wac_image_encoder_config, 'projection_dim'):
@@ -125,17 +132,27 @@ class RenaissanceTransformer(pl.LightningModule):
                     elif hasattr(wac_image_encoder_config, 'hidden_size'):
                         wac_embedding_size = wac_image_encoder_config.hidden_size
 
+                # Start putting together arguments for the WAC module so it can
+                # be properly created 
                 wac_args = {}
                 wac_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
                 vocab = []
+
+                # Get the vocabulary from the tokenizer so WAC can create a model
+                # for each token
                 for word in wac_tokenizer.vocab.keys():
                     vocab.append(word)
 
+                # Get the tokenizer's special vocabulary. This will be ignored 
+                # by the WAC module since these special tokens aren't a part
+                # of the training dataset. 
                 special_vocab = []
                 for special_word in wac_tokenizer.special_tokens_map.values():
                     special_vocab.append(special_word)
 
+                # Set the WAC embedding size if WAC embeddings are enabled in this experiment 
                 if config['use_wac_embeddings']:
+                    # Option to ignore configuration data if specified in experiment configuration 
                     if config['use_position_data']:
                         self.wac_embedding_size = wac_embedding_size + config['position_size'] + 1
                     else:
@@ -143,54 +160,83 @@ class RenaissanceTransformer(pl.LightningModule):
                 else:
                     self.wac_embedding_size = None
                
+                # Select the specified attention head matrix that the WAC distributions will be multiplied with. 
+                # Note that "none" here means WAC distribution multiplication is disabled. 
                 self.wac_distribution_matrix = config['wac_distribution_matrix']
                 self.wac_train_steps = config['wac_train_steps']
                 self.use_position_data = config['use_position_data']
                 self.vocab = vocab
 
+                # Set to 'false' if no WAC HuggingFace Repo ID is specified or 'push_to_hub' is set to false 
+                # in the experimental configuration. 
                 self.push_hub_enabled = config['push_to_hub']
 
                 wac_args['vocab'] = vocab
                 wac_args['special_vocab'] = special_vocab
                 wac_args['save_wac_features'] = config['save_wac_features']
             
+                # Set the embedding size for the WAC modules
                 wac_args['embedding_size'] = wac_embedding_size
+
+                # Set the local WAC directory and HuggingFace Repo ID 
                 wac_args['wac_repo_id'] = config['wac_repo_id']
                 wac_args['local_wac_directory'] = config['local_wac_directory']
+
+                # Ignore position data if experimental configuration says to do so
                 if self.use_position_data:
                     wac_args['position_size'] = config['position_size']
                 else:
                     wac_args['position_size'] = 0
                 
+                # Set the negative to positive ratio of negative features 
+                # to positive features. 
                 neg_to_pos = config['neg_to_pos']
                 if neg_to_pos is not None:
                     wac_args['neg_to_pos'] = neg_to_pos
 
+                # Set KWargs for the gradient descent logistic regression classifiers WAC 
+                # uses for to model symbol grounding. 
                 wac_kwargs = config['wac_kwargs']
                 if wac_kwargs is not None:
                     wac_args['wac_kwargs'] = wac_kwargs
 
+                # Use multiple cores for training WAC models if the experimental configuration 
+                # says to do so 
                 num_cores = config['num_cores']
                 if num_cores is not None:
                     wac_args['num_cores'] = num_cores
                 
+                # Initialize WAC module and construct all WAC models based on experimental
+                # configuration settings 
                 self.wac_models = WACModels(**wac_args)
 
+                # Load WAC models from HuggingFace or local directory if pretrained WAC 
+                # embeddings are not specified or disabled 
                 if config['pretrained_wac_embedding_file'] is None:
                     if not os.path.exists(self.wac_models.save_directory):
+                        # Load WAC models from HuggingFace Repo if repo ID is enabled and 
+                        # WAC directory does not exist 
                         if self.wac_models.wac_repo_id is not None:
                             try:
                                 self.wac_models.download_from_hub()
                                 self.wac_models.load_models()
+                            # WAC models will have to be trained from scratch if they cannot be loaded
+                            # from HuggingFace 
                             except Exception as e:
                                 print("Unable to download WAC models from HuggingFace repo. Performing training from scratch.")
                         else:
                             print("HuggingFace WAC Repo is not defined. Performing training from scratch.")
                     else:
+                        # If WAC models cannot be loaded from HuggingFace or repo ID is none, then
+                        # load models from local directory instead.
                         try:
                             self.wac_models.load_models()
+                        # Perform WAC training from scratch if they cannot be loaded from any local directory. 
                         except Exception as e:
                             print("Unable to load WAC models from disk. Performing training from scratch.")
+                # Use specified pretrained WAC model embeddings instead of using WAC models trained using Renaissance-WAC.
+                # Useful for testing to see if Renaissance-WAC can replicate results from another WAC training method or 
+                # experimental process. 
                 else:
                     pretrained_wac_embedding_file = config['pretrained_wac_embedding_file']
                     self.wac_models.load_pretrained_wac_embeddings(pretrained_wac_embedding_file)
@@ -198,17 +244,21 @@ class RenaissanceTransformer(pl.LightningModule):
 
                 self.current_training_epoch = 0
 
+                # Destroy the WAC object embedding model if RefCOCO and VQA are not used  
                 if config['loss_names']['ref'] == 0 and config['loss_names']['vqa'] == 0:
                     self.delete_wac_image_encoder()
 
+            # Use WAC models only for testing instead of a two-tower language model (disabling use of the two-tower LM does not work right now)
             if not self.use_wac_models_only:
                 two_tower_config = TwoTowerConfig(config, wac_embedding_size=self.wac_embedding_size)
 
+                # Disable LM word embedding freezing if RefCOCO and VQA are not used during training
                 if (config['loss_names']['ref'] == 0 and config['loss_names']['vqa'] == 0) and self.wac_models is not None \
                                                     and two_tower_config.text_config.ignore_text_embeddings_epochs > 0:
                     
                     two_tower_config.text_config.ignore_text_embeddings_epochs = 0
 
+                # construct the two-tower language model based on experimental settings 
                 self.encoder = TwoTowerEncoder(
                     two_tower_config,
                     self.fine_tune,
@@ -623,6 +673,9 @@ class RenaissanceTransformer(pl.LightningModule):
     
     def on_train_epoch_end(self):
         renaissance_utils.epoch_wrapup(self)
+        # Disable WAC model training once the first epoch has passed
+        # and save them to disk. If a HuggingFace Repo ID is defined,
+        # Push the models to the hub as well. 
         if self.current_training_epoch == 0 and self.wac_models is not None and not self.wac_models.training_completed:
             self.wac_models.save_models()
             if self.push_hub_enabled:
@@ -710,15 +763,24 @@ class RenaissanceTransformer(pl.LightningModule):
 
     def delete_wac_image_encoder(self):
         self.wac_image_encoder = None
-        
+    
+    # This function builds the object embedding features 
+    # and position features for the entire dataset prior to training.
+    # These features can be saved to and loaded from disk as a cache to speed up
+    # WAC testing on Borah. This feature is not meant to be used during
+    # real experiments. This function uses the object embedding model defined in
+    # the configuration to create the visual object embeddings. 
     def build_wac_features(self, dm, split):
+        # Do not build WAC features for the specified dataset split 
+        # if object embedding caching is enabled and one is found on disk.
         if self.wac_models.save_wac_features is True:
             if self.wac_models.load_features() \
                 and split in self.wac_models.wac_features \
                 and len(self.wac_models.wac_features[split]) > 0:
                 print(f"WAC features loaded from cache for split {split}. Skipping feature construction.")
                 return
-            
+
+        # Construct the visual object embeddings using the object embedding model 
         with torch.no_grad():
             device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
             self.wac_image_encoder = self.wac_image_encoder.to(device)
@@ -730,29 +792,45 @@ class RenaissanceTransformer(pl.LightningModule):
                 tokenized_words = batch["tokenized_words"]
                 aligned_position_data_list = []
                 position_data_list = batch["position_data"]
+                # This code aligns subimages and position data from the provided data 
+                # loader. This is done because the dataloader returns all subobject images
+                # and position data vectors in a given image. This is done for 
+                # the reference resolution task but does not align with constructing
+                # visual object embeddings. This code translates that format into a 
+                # list of aligned subobject images and position values that are aligned with each
+                # other. Once this happens the subobject image is sent into the embedding model 
+                # to create the embedding vector.
                 for label, subimage_tensor, position_data in zip(labels, subimage_lists, position_data_list):
                     aligned_subimage = subimage_tensor[label]
                     aligned_position_data = position_data[label]
                     aligned_subimages.append(aligned_subimage)
                     aligned_position_data_list.append(aligned_position_data)
-                    
+
+                # Get the object subimages into a 4D tensor to be sent into the object embedding model                     
                 subimages = torch.stack(aligned_subimages).to(device)
 
                 input_ids = batch["text_ids"].to(device)
                 attention_mask = batch["text_masks"].to(device)
                 feature_ids = batch["ann_id"]
-              
+
+                # Convert the subobject images into visual object embeddings using the model 
                 image_features = self.wac_image_encoder(pixel_values=subimages, 
                                                         input_ids=input_ids, 
                                                         attention_mask=attention_mask).image_embeds
                 
+                # Convert the visual object embeddings to numpy so they can be sent to the WAC models. 
                 aligned_positions_numpy = np.stack(aligned_position_data_list)
                 wac_features = image_features.cpu().numpy()
 
+                # Concatenate the visual object embeddings with the position data so they 
+                # can be sent into the WAC model module. This position data can be disabled
+                # if necessary in the  module configuration for testing or experimentation. 
                 if self.use_position_data:
                     wac_features = np.concatenate([wac_features, aligned_positions_numpy], axis=1)
                 
+                # Add the newly created visual object embeddings to the WAC model module. 
                 self.wac_models.add_features(feature_ids, wac_features, tokenized_words, split)
-
+            
+            # Save the object embedding features to disk if caching is enabled 
             if self.wac_models.save_wac_features:
                 self.wac_models.save_features()

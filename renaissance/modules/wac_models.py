@@ -1,3 +1,9 @@
+"""
+This file contains the code to save, load, and train WAC models and their datasets. 
+This is a separate module because WAC is a completely different system from most other 
+Renaissance modules. I built this 
+"""
+
 from typing import Unpack, Optional
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import MinMaxScaler
@@ -15,6 +21,21 @@ from huggingface_hub import upload_file, hf_hub_download, create_repo
 
 class WACModels():
 
+    # Initialize the WAC models. The vocabulary is 
+    # adjustable so that WAC could theoretically
+    # integrate with different base models. 
+    # (I say 'theoretically' because I haven't tested it yet.)
+    # The embedding size and position feature size 
+    # are adjustable as well so the WAC embeddings
+    # can change based on the number of embedding model
+    # features and position sizes provided. Once again
+    # I haven't tested this.
+
+    # The WAC models can also be uploaded and downloaded
+    # from HuggingFace independently of the language model
+    # if this feature is turned on. If the WAC Repo ID is null
+    # then this module uses the local folder to saving and 
+    # loading WAC models. 
     def __init__(self, 
                  local_wac_directory: str,
                  vocab: list[str], 
@@ -29,6 +50,8 @@ class WACModels():
                  **wac_kwargs: Unpack[dict],) -> None:
         
         self.wac_repo_id = wac_repo_id
+
+        # Use the WAC repo ID if it is defined 
         if wac_repo_id is not None:
             if "/" in wac_repo_id:
                 local_wac_repo_path = wac_repo_id.split("/")[-1]
@@ -83,10 +106,15 @@ class WACModels():
         for word in self.vocab:
             self.wac_models[word] = SGDClassifier(loss="log_loss", **wac_kwargs)
 
+    # This sets WAC training to completed in this module
+    # so that other modules know that WAC is done training.
     def set_training_completed(self):
         if not self.training_completed:
             self.training_completed = True
 
+    # Sets the dataset split for WAC to use. 
+    # Can use training, testing, and validation
+    # by default. 
     def set_current_split(self, split: str) -> None:
         if split not in self.splits_to_use:
             raise ValueError(f"Split {split} is not an available split. You must select from the following: {str(self.splits_to_use)}")
@@ -132,6 +160,8 @@ class WACModels():
         else:
             raise ValueError(f"Label {str(label)} is not 0 (negative) or 1 (positive)")
         
+    # Add a set of object embeddings to the positive samples 
+    # Of the given words. 
     def add_features(self, 
                      feature_ids: list[int], 
                      wac_features: list[np.ndarray],
@@ -149,6 +179,9 @@ class WACModels():
 
                     self.positive_feature_ids[split][word].add(feature_id)
         
+    # Add a positive feature ID (that corresponds with an object embedding feature)
+    # To the positive dataset of the word. Nothing in Renaissance-WAC calls this code  
+    # right now but I left in place in case I needed it in the future. 
     def add_positive(self, word: str, feature_id: int) -> None:
 
         if self.training_completed:
@@ -156,6 +189,9 @@ class WACModels():
 
         self.add_word_sample(word, feature_id, 1)
 
+    # Sample word negatives for all WAC word datasets that had positive samples
+    # added in a batch. This function is not called anywhere in Renaissance-WAC but
+    # remains in place in case it useful sometime in the future. 
     def _sample_word_negatives(self, word: str) -> tuple:
         num_negatives = len(self.current_wac_datasets[self.current_split][word]["pos"]) * self.neg_to_pos
         negative_samples = []
@@ -176,6 +212,9 @@ class WACModels():
         negative_samples = random.sample(sample_space, k=num_negatives)
         return (word, negative_samples)
     
+    # This function updates the WAC model dataset with positive feature IDs for a single 
+    # word, samples negatives, and then training the model. This function will ignore 
+    # any datasets and models that are not updated. 
     def _update_wac_model_word(self, word: str, positive_feature_ids: list[int]) -> None:
 
         # Do not update WAC model if positive feature ID list is empty
@@ -185,10 +224,14 @@ class WACModels():
         word = re.sub(r"/", "{slash}", word)
         
         positive_features = []
+
+        # Add positive object embedding features to the WAC word dataset
         for pos_feature_id in positive_feature_ids:
             self.positive_feature_ids[self.current_split][word].add(pos_feature_id)
             positive_features.append(pos_feature_id)
         
+        # Do negative sampling for object feature embeddings from all WAC datasets. 
+        # This code ignores any object features already in the positive dataset. 
         num_negative_features = len(positive_features) * self.neg_to_pos
         negative_feature_space = set(self.wac_features[self.current_split].keys())
 
@@ -212,6 +255,7 @@ class WACModels():
         feature_dataset = []
         feature_labels = []
 
+        # Add positive and negative labels for the dataset to train 
         for pos_feature_id in positive_feature_ids:
             feature_dataset.append(self.wac_features[self.current_split][pos_feature_id])
             feature_labels.append(1)
@@ -220,9 +264,11 @@ class WACModels():
             feature_dataset.append(self.wac_features[self.current_split][neg_feature_id])
             feature_labels.append(0)
 
+        # Put the object feature embeddings and object labels 
         feature_dataset = np.array(feature_dataset)
         feature_labels = np.expand_dims(np.array(feature_labels), axis=1)
 
+        # Randomize the dataset of features and labels while keeping them aligned. 
         complete_dataset = np.concatenate([feature_dataset, feature_labels], axis=1)
         randomizer = np.random.default_rng()
         randomizer.shuffle(complete_dataset, axis=0)
@@ -230,24 +276,34 @@ class WACModels():
         randomized_features = complete_dataset[:, :-1]
         randomized_labels =complete_dataset[:, -1]
 
+        # Normalize the object embedding features to a 0-1 range and 
+        # fit the WAC word model to the complete dataset. 
         randomized_features = self.scaler.fit_transform(randomized_features)
         model_to_train = self.wac_models[word]
         model_to_train.fit(randomized_features, randomized_labels)
 
+        # Return the word, trained model, and positive feature IDs 
+        # for saving and logging
         return (word, model_to_train, positive_feature_ids)
 
     def update_wac_models(self, word_feature_ids: dict) -> None:
 
+        # Do not train models if training is done 
         if self.training_completed:
             return
 
+        # Select the number of cores to use for WAC model dataset updating and training 
         num_cores = os.cpu_count() if self.num_cores == -1 else self.num_cores
         trained_model_results = []
+
+        # Update WAC datasets and train WAC models one at a time if 
+        # the number of cores is 0
         if num_cores == 0:
             for word, pos_feature_ids in word_feature_ids.items():
                 word_model = self._update_wac_model_word(word, pos_feature_ids)
                 trained_model_results.append(word_model)
         else:
+            # Perform multithreaded WAC dataset updates and training if it is set 
             try:
                 with get_context("spawn").Pool(processes=num_cores) as process_pool:
                     training_model_arguments = list(word_feature_ids.items())
@@ -255,10 +311,13 @@ class WACModels():
             except Exception as e:
                 print(f"Unable to use multi-process approach due to the following exception: {str(e)}. \
                         Using single-process approach instead.")
+                # Do single-threaded training if multithreaded training fails 
                 for word, pos_feature_ids in word_feature_ids.items():
                     word_model = self._update_wac_model_word(word, pos_feature_ids)
                     trained_model_results.append(word_model)
         
+        # Save trained WAC models and update positive feature IDs if the model 
+        # and dataset were updated. 
         for trained_model_result in trained_model_results:
             if trained_model_result is None:
                 continue
@@ -301,6 +360,7 @@ class WACModels():
             for feature_id in negative_samples:
                 self.add_word_sample(word, feature_id, 0)
 
+    # Train a single WAC model and return it after training. 
     def _train_single_model(self, 
                             word: str, 
                             wac_training_features: np.array, 
@@ -313,6 +373,7 @@ class WACModels():
 
         return (word, model_to_train)
     
+    # Train all WAC models one at a time if its associated dataset was updated 
     def _train_models_single_thread(self, datasets_to_train: list[tuple]) -> list:
         trained_model_list = []
         for word, training_features, training_labels in datasets_to_train:
@@ -320,7 +381,12 @@ class WACModels():
             trained_model_list.append(trained_model_tuple)
 
         return trained_model_list
-        
+
+    # Train all WAC models that are updated. Note that this 
+    # function does not update any datasets and only trains
+    # the WAC models with updated datasets. I do not have 
+    # any code at the moment that calls this function but left it 
+    # in place in case I needed it at some point in the future. 
     def train_models(self) -> None:
 
         if self.training_completed:
@@ -333,6 +399,9 @@ class WACModels():
                 continue
             wac_training_features = []
             wac_training_labels = []
+
+            # Put together the positive and negative object embedding features 
+            # into a single dataset 
             for feature_key in ["pos","neg"]:
                 for feature_id in dataset[feature_key]:
                     feature_embedding = self.wac_features[self.current_split][feature_id]
@@ -364,6 +433,9 @@ class WACModels():
             self.current_wac_datasets[self.current_split][word] = None
             self.wac_models[word] = trained_model
 
+    # This function gathers WAC positive probalities for a set of object features
+    # across the entire dataset. The WAC distributions mentioned in my thesis are 
+    # collected using this function. 
     def get_distributions(self, indices: list[int]) -> np.array:
 
         # Get a list of distributions for all words in the provided 
@@ -394,6 +466,8 @@ class WACModels():
             
         return probabilities_array
 
+    # This function gathers all WAC model embeddings for the words provided. This 
+    # is the source of my WAC embeddings I inject into the two-tower language model. 
     def get_embeddings(self, words: list) -> np.array:
 
         # Get embeddings for each word from the WAC model if it exists, and a vector of zeros if it does not
@@ -417,6 +491,8 @@ class WACModels():
         embeddings_list = np.stack(embeddings_list)
         return embeddings_list
 
+    # Returns the parent save directory if a HuggingFace Repository is used for
+    # uploading and/or downloading the WAC models 
     def get_save_parent_directory(self) -> str:
         save_directory = None
         if self.wac_repo_id is not None and "/" in self.wac_repo_id:
@@ -427,6 +503,8 @@ class WACModels():
 
         return save_directory
 
+    # Save all WAC models and associated metadata to a local directory 
+    # so it can be loaded later. 
     def save_models(self) -> None:
         
         if not os.path.exists(self.save_directory):
@@ -447,6 +525,8 @@ class WACModels():
             with open(os.path.join(self.save_directory, f"{word}.pkl"), "wb") as model_file:
                 pickle.dump(model, model_file)
 
+    # Load WAC models for a vocabulary from a local directory and 
+    # set each WAC model's embeddings to the ones loaded from that directory.
     def load_models(self) -> None:
 
         if not os.path.exists(self.save_directory):
@@ -467,6 +547,10 @@ class WACModels():
 
         self.training_completed = True
 
+    # This function loads pretrained WAC embeddings from another source if they 
+    # are provided. This can be used to load alternate WAC model embeddings 
+    # from another source or training procedure instead of the WAC models
+    # trained in this module. 
     def load_pretrained_wac_embeddings(self, wac_embeddings_file):
         self.vocab = []
         self.pretrained_wac_embeddings = {}
@@ -484,6 +568,8 @@ class WACModels():
         self.embedding_size = len(self.pretrained_wac_embeddings[next(iter(self.pretrained_wac_embeddings.keys()))])
         self.training_completed = True
 
+    # Function used for caching created object embedding features. Can be used
+    # to speed up initial WAC model testing on Borah if the need arises. 
     def save_features(self): 
             
         if self.save_wac_features:
@@ -497,6 +583,9 @@ class WACModels():
             with open(os.path.join(self.save_directory, "positive_feature_ids.pkl"), "wb") as feature_ids_file:
                 pickle.dump(self.positive_feature_ids, feature_ids_file)
 
+    # This function loads cached object feature embeddings if they are saved to a local directory.
+    # This is mainly to be used during WAC model testing to speed up Borah jobs and not meant
+    # to be used for full WAC-MLM experiments. 
     def load_features(self):
         
         if self.save_wac_features:
@@ -515,8 +604,14 @@ class WACModels():
         
         else:
             return False
-        
+
+    # Save WAC models to a zip file and push them to a HuggingFace Repo if one is 
+    # provided. This will do nothing if no HuggingFace repo ID is defined.   
     def push_to_hub(self):
+
+        if self.wac_repo_id is None:
+            return 
+
         parent_save_directory = self.get_save_parent_directory()
         wac_zip_file_path = os.path.join(*(os.path.split(parent_save_directory)[1:]), "wac_models.zip")
         with zipfile.ZipFile(wac_zip_file_path, "w") as wac_zip_file:
@@ -533,8 +628,14 @@ class WACModels():
                     path_in_repo="wac_models.zip", 
                     repo_id=self.wac_repo_id, 
                     repo_type="model")
-        
+    
+    # Download WAC models from a HuggingFace Repo and unzip them to a local
+    # directory if a repo ID is provided. This will do nothing if no 
+    # HuggingFace repo ID is defined.  
     def download_from_hub(self):
+        if self.wac_repo_id is None:
+            return 
+
         parent_save_directory = self.get_save_parent_directory()
         local_file_path = os.path.join(parent_save_directory, "wac_models.zip")
 

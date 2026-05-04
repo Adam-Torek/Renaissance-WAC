@@ -105,11 +105,17 @@ class ElectraEmbeddings(nn.Module):
         self.ignore_text_embeddings_epochs = config.ignore_text_embeddings_epochs
         self.current_training_epoch = 0
 
+        # Construct a WAC embedding autoencoder if WAC embeddings are enabled and their size 
+        # does not equal the embedding size of the language model. 
         if config.wac_embedding_size is not None and self.embedding_size != config.wac_embedding_size:
+
+            # The embedding encoder sizes need to be copied to stop Sacred from throwing an error 
             embeddings_encoder_sizes = copy.deepcopy(config.wac_embedding_encoder_sizes)
             embeddings_encoder_sizes.insert(0, config.wac_embedding_size)
             embeddings_encoder_sizes.append(config.embedding_size)
             self.wac_embeddings_projection = nn.ModuleList()
+            # Construct a series of linear layers with a specified activation function
+            # to build the autoencoder 
             for i in range(0, len(embeddings_encoder_sizes)-1):
                 wac_embedding_layer = nn.Linear(embeddings_encoder_sizes[i], embeddings_encoder_sizes[i+1])
                 wac_embedding_layer.apply(init_weights)
@@ -118,6 +124,8 @@ class ElectraEmbeddings(nn.Module):
             self.wac_embeddings_activation = ACT2FN[config.wac_embedding_act]
            
         else:
+            # Do not construct the embedding autoencoder if WAC embeddings are not enabled or no compression
+            # is needed. 
             self.wac_embeddings_projection = None
             self.wac_embeddings_activation = None
 
@@ -141,7 +149,11 @@ class ElectraEmbeddings(nn.Module):
         wac_embeddings: Optional[torch.FloatTensor] = None,
         past_key_values_length: int = 0,
     ) -> torch.Tensor:
+        # Use WAC embeddings instead of word embeddings for the first n epochs which are defined by 
+        # configuration settings. This is used to effectively freeze the word embeddings by 
+        # cutting them off from PyTorch's backpropagation graph. 
         if wac_embeddings is not None and (self.current_training_epoch < self.ignore_text_embeddings_epochs):
+            # send the WAC embeddings through the autoencoder if they are defined. 
             if wac_embeddings.shape[2] != self.embedding_size:
                 if self.wac_embeddings_projection is not None:
                     for embedding_layer in self.wac_embeddings_projection:
@@ -150,6 +162,8 @@ class ElectraEmbeddings(nn.Module):
                 else:
                     raise ValueError("WAC embedding size does not match configured embedding size and no projection layer is defined.")
             embeddings = wac_embeddings
+        # Use word embeddings normally if WAC embeddings are not enabled or the current epoch is 
+        # past the number of epochs to ignore using the language model's word embeddings 
         else:
         
             if input_ids is not None:
@@ -174,6 +188,8 @@ class ElectraEmbeddings(nn.Module):
             if inputs_embeds is None:
                 inputs_embeds = self.word_embeddings(input_ids)
 
+            # Send the WAC embeddings through the embedding compressor if they are defined and 
+            # Their size does not match the language model's word embeddings 
             if wac_embeddings is not None:
                 if wac_embeddings.shape[2] != inputs_embeds.shape[2] and self.wac_embeddings_projection is not None:
                     for embedding_layer in self.wac_embeddings_projection:
@@ -185,6 +201,8 @@ class ElectraEmbeddings(nn.Module):
             token_type_embeddings = self.token_type_embeddings(token_type_ids)
             embeddings = inputs_embeds + token_type_embeddings
 
+            # Define the WAC embeddings as visual embeddings to 
+            # keep them moving forward 
             if wac_embeddings is not None:
                 visual_embeddings = wac_embeddings
             else:
@@ -193,10 +211,10 @@ class ElectraEmbeddings(nn.Module):
             if self.position_embedding_type == "absolute":
                 position_embeddings = self.position_embeddings(position_ids)
                 embeddings += position_embeddings
-
-                #if visual_embeddings is not None:
-                    #visual_embeddings = visual_embeddings + position_embeddings
             
+            # Multiply the WAC embeddings by the model's 
+            # word embeddings if they are defined to perform 
+            # the WAC embedding injection 
             if visual_embeddings is not None:
                 embeddings = visual_embeddings * embeddings
        
