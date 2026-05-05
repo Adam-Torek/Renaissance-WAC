@@ -45,6 +45,10 @@ while preserving their information.
 
 ![Diagram of WAC being injected into ](WAC_Injections.JPG)
 
+Here is a video detailing how to configure, run, and view the output of jobs run on Borah with Renaissance-WAC: 
+
+https://youtu.be/ZzpN_dy-b8w 
+
 A description of the settings to control how WAC works with Renaissance can be found below: 
 
 ### WAC distribution and embedding settings
