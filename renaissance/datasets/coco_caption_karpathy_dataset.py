@@ -23,8 +23,8 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
         super().__init__(*args, **kwargs, names=names, text_column_name="sentences")
 
+        # include WAC data if WAC models are enabled in this experiment 
         self.include_wac_data = False 
-
         if self.draw_false_image == 0 or self.draw_false_text == 0 or not self.image_only:
             if "include_wac_data" in kwargs:
                 include_wac_data = kwargs.pop("include_wac_data")
@@ -32,6 +32,9 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             else:
                 self.include_wac_data = False
 
+        # Set the subimages format for subobjects with bounding boxes in RefCOCO
+        # that will be sent to both the object embedding model for WAC and the 
+        # two-tower multimodal LM. 
         self.subimages_format = "all"
         if "loss_names" in kwargs:
             loss_names = kwargs.pop("loss_names")
@@ -40,6 +43,9 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             if loss_names["itm"] > 0:
                 self.subimages_format = "none"
 
+    # Get the bounding boxes for a particular set of subobjects in a given image.
+    # Used to both extract the subobject image out of the larger image and 
+    # provide position data of the bounding box to the WAC module. 
     def get_bounding_boxes(self, index, only_one=False, return_normalized=False):
         text_index, _ = self.index_mapper[index]
         bboxes = self.table["bboxes"][text_index].as_py()
@@ -56,6 +62,10 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         
         return bboxes        
 
+    # Function to gather subobject images from a larger image 
+    # using their bounding boxes and return a resized suboject image
+    # that will be compatible with both the image tower in the two-tower
+    # MLM and the WAC object embedding model 
     def get_subimages(self, index, only_one=False):
         image_data = self.get_raw_image(index)
         bboxes = self.get_bounding_boxes(index, only_one=only_one)
@@ -81,14 +91,21 @@ class CocoCaptionKarpathyDataset(BaseDataset):
         text_data = self.get_text(index)
         return_dict.update(text_data)
 
+        # Get all of the bounding box data for one RefCOCO image if the subimages 
+        # are supposed to be returned as rectangle points
         if self.subimages_format == "bboxes":
             bboxes_normalized = self.get_bounding_boxes(index, only_one=False, return_normalized=True)
             return_dict["bboxes"] = bboxes_normalized
 
+        # Gather all subimages for a single RefCOCO image as a 4D PyTorch tensor 
+        # where all subimages are a compatible size for the MLM image tower and 
+        # WAC object embedding model 
         elif self.subimages_format == "all":
             subimages = self.get_subimages(index, only_one=False)
             return_dict["subimages"] = torch.stack(subimages)
-            
+        
+        # Randomly sample positive and negative subimages in RefCOCO 
+        # to perform image-text matching 
         elif self.subimages_format == "none":
             return_dict["image"] = self.get_subimages(index, only_one=True)[0]
             for i in range(0, self.draw_false_image):
@@ -109,9 +126,10 @@ class CocoCaptionKarpathyDataset(BaseDataset):
                 random_text = self.get_text(random_index)
                 return_dict[f"false_text_{i}"] = random_text
         
-        # Get subimage and position data for WAC models if needed
+        # Get subimage and position data for WAC models if the data is needed 
         if self.include_wac_data:
             
+            # Get a list of resized subobject images for this RefCOCO image 
             if "subimages" not in return_dict:
                 subimages = self.get_subimages(index, only_one=False)
                 return_dict["subimages"] = torch.stack(subimages)
@@ -143,12 +161,16 @@ class CocoCaptionKarpathyDataset(BaseDataset):
 
             bbox_position_list = np.stack(bbox_position_list)
             text = text_data["text"][0]
+            # Draw false subimages and false text for the image-text matching objective 
+            # if necessary 
             for i in range(0, self.draw_false_text):
                 false_text_to_tokenize = return_dict[f"false_text_{i}"]["text"][0]
                 false_tokenized_text = self.tokenizer.tokenize(false_text_to_tokenize)
                 return_dict[f"false_tokenized_text_{i}"] = false_tokenized_text
 
-
+            # Include the tokenized text with this batch item so that the WAC module 
+            # can add the visual object features that will be made from this data to the 
+            # positive examples to each WAC dataset associated with these tokens  
             tokenized_text = self.tokenizer.tokenize(text)
             return_dict["tokenized_words"] = tokenized_text
             return_dict["position_data"] = bbox_position_list
@@ -169,6 +191,10 @@ class CocoCaptionKarpathyDataset(BaseDataset):
             dict_batch[key] = [batch_item[key] for batch_item in batch_items]
         return dict_batch
 
+    # Function to collate all of the RefCOCO data together into 
+    # a dictionary with either a Python list or a PyTorch tensor
+    # containing all of the batch data for that key. This will
+    # also collate WAC data if it is enabled for the RefCOCO dataset. 
     def collate(self, batch, mlm_collator=None):
         dict_batch = {}
         dict_batch["text_ids"] = []

@@ -98,6 +98,7 @@ def run_experiment(_config):
     print("LR Mult Cross Modal: ", _config['lr_mult_cross_modal'])
     print('\n\n')
 
+    # Print WAC experimental configurations to the console 
     print()
     print("WAC embeddings settings: ", _config["use_wac_embeddings"])
     print("Attention head part to inject WAC distributions: ", _config["wac_distribution_matrix"])
@@ -180,12 +181,17 @@ def run_experiment(_config):
 
     
     if _config["run_training"]:
+
+        # Build the visual object embeddings for the WAC module if it is enabled 
+        # and the dataset can provide images or subobject images to the WAC module. 
         if model.wac_models is not None and (_config["loss_names"]["ref"] > 0 or _config["loss_names"]["vqa"] > 0):
             print("WAC models enabled. Starting construction of WAC features.")
             dm.setup(stage="fit")
             training_dataloader = dm.train_dataloader()
             val_dataloader = dm.val_dataloader()
 
+            # Build the WAC object embedding features for the training and validation splits
+            # of the current dataset 
             model.build_wac_features(training_dataloader, split="train")
             model.build_wac_features(val_dataloader, split="val")
 

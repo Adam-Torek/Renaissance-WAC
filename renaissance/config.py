@@ -184,34 +184,74 @@ def config():
     precision = 32
 
     # WAC distribution and embedding settings
+    # Enable/disable WAC embeddings
     use_wac_embeddings = False
+    # Turn position data on or off for object feature embeddings
     use_position_data = True
+    # Set the attention matrix to multiply with WAC distributions 
     wac_distribution_matrix = None
+    # HuggingFace Repo path to the object embedding model to use for RefCOCO
     wac_image_encoder = ""
+    # Disable two-tower MLM for testing (does not work currently)
     use_wac_models_only = False
+    # File to use for pretrained WAC model embeddings. This must be to a local directory.
+    # This should also be used for WAC model weights that are not trained using 
+    # Renaissance-WAC for testing. 
     pretrained_wac_embedding_file = None
-    wac_pretraining_objectives = ["ref"]
     
-    # WAC compression settings
+    # WAC projection autoencoder settings
+    # Activation function to use for WAC embedding projection encoder.
     wac_embedding_act = "silu"
+    # Dimensions of linear layers to use in WAC embedding encoder 
+    # Note: two more linear layers will be added in front of 
+    # and behind this one in the autoencoder. The first linear layer
+    # will project the WAC embeddings to the first size in this 
+    # array and the last embedding layer will compress the last size
+    # specified in this list down to the text model's embedding size.
     wac_embedding_encoder_sizes = [256]
 
+    # Activation function for WAC distribution projection encoder
     wac_distribution_act = "silu"
+    # Dimensions of linear layers to use for the WAC distribution
+    # projection encoder. Note that two more linear layers will
+    # be added before and after this list. The first will compress
+    # The WAC distribution embeddings down to the first size in this list 
+    # and the last linear layer will compress from the last dimension in this
+    # list down to the attention matrix size. 
     wac_distribution_encoder_sizes = [4096, 2048, 1024, 512]
+    # Weight of the WAC distribution injections to control how strong
+    # the symbol grounding signal coming from these distributions is into
+    # the attention matrices
     wac_distribution_weight = 1.0
+    # Controls whether to use one WAC distribution encoder for all
+    # attention layers in the text tower or to use a separate WAC distribution
+    # encoder for each layer in the text tower. 
     wac_distribution_encoder_location = "all"
 
     # WAC model settings
+
+    # Size of the position data added to the object feature embeddings
     position_size = 7
+    # Negative to positive sampling ratio
     neg_to_pos = None
+    # Keyword arguments to send into the gradient-descent trained 
+    # logistic regression classifier
     wac_kwargs = None
+    # Number of cores to use for multithreaded WAC model training 
     num_cores = None
+    # Number of training steps to train WAC before stopping (does not work currently)
     wac_train_steps = 5
+    # Huggingface repository ID to use if you want to save or load WAC models to 
+    # their platform
     wac_repo_id = None
+    # Local WAC directory to use for saving and loading WAC models between experiments
     local_wac_directory = None
+    # Flag to cache visual object embeddings created for the WAC module. 
+    # Note: this should only be used during testing and should not be enabled
+    # for full experiments using Renaissance WAC. 
     save_wac_features = False
 
-    # HuggingFace settings to save and upload model
+    # HuggingFace settings to save and upload language model (separate from WAC)
     huggingface_save_directory = None
     huggingface_save_name = None
     push_to_hub = False
@@ -618,6 +658,7 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
+    
     use_wac_embeddings = True
     use_position_data = True
     wac_distribution_matrix = None

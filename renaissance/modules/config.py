@@ -5,6 +5,11 @@ from transformers import ElectraConfig, LxmertConfig, AutoConfig, ViTConfig
 from transformers.configuration_utils import PretrainedConfig
 from transformers.models import vit
 
+# This class is used to initialize an Electra-WAC 
+# LM. Note that this configuration is not for the WAC 
+# module directly, but rather how the LM will integrate
+# with the model embeddings and visual distributions from the WAC 
+# module. 
 class WACConfig(ElectraConfig):
 
     model_type = "bert_wac"

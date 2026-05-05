@@ -22,6 +22,10 @@ from .config import WACConfig, TwoTowerConfig
 from .objectives import init_weights
 from .heads import Pooler
 
+# This class contains the distribution projection autoencoder 
+# that shrinks the distribution vector down to a matrix that can 
+# be element-wise multiplied with the matrices in the attention layers
+# of the text model 
 class BertWACDistributionEncoder(nn.Module):
 
     def __init__(self, config):
@@ -29,17 +33,24 @@ class BertWACDistributionEncoder(nn.Module):
         self.vocab_size = config.vocab_size
         self.hidden_size = config.hidden_size
 
+        # Get a copy of the WAC distribution projection autoencoder sizes so that 
+        # Sacred (the configuration library) does not throw a modification error
         wac_distribution_sizes = copy.deepcopy(config.wac_distribution_encoder_sizes)
         wac_distribution_sizes.insert(0, config.vocab_size)
         wac_distribution_sizes.append(config.hidden_size)
 
         self.wac_distribution_projection = nn.ModuleList()
 
+        # Build a series of linear layers that will compress the WAC distribution
+        # vectors down 
         for i in range(0, len(wac_distribution_sizes)-1):
             wac_distribution_projection_layer = nn.Linear(wac_distribution_sizes[i], wac_distribution_sizes[i+1])
             wac_distribution_projection_layer.apply(init_weights)
             self.wac_distribution_projection.append(wac_distribution_projection_layer)
 
+        # Add a series of non-linear activation layers for every linear layer
+        # in the WAC distribution autoencoder. This is specified in the configuration
+        # settings 
         self.wac_distribution_activation = nn.ModuleList()
         distribution_function = ACT2FN[config.wac_distribution_act]
         for i in range(0, len(wac_distribution_sizes)-1):
@@ -47,6 +58,9 @@ class BertWACDistributionEncoder(nn.Module):
 
     def forward(self, x):
 
+        # Compress the received WAC distribution layer down to an attention-matrix 
+        # sized value that can be element-wise multiplied with the specified attention 
+        # matrix 
         for layer, activation in zip(self.wac_distribution_projection, self.wac_distribution_activation):
             x = layer(x)
             x = activation(x)
@@ -136,12 +150,18 @@ class BertSelfAttention(nn.Module):
 
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
+        # Perform the WAC distribution multiplication with the attention matrices in the
+        # attention layer if both the distributions are provided and the specified 
+        # distribution matrix is not none 
         if wac_distributions is not None and self.wac_distribution_matrix is not None:
             
+            # Reshape the WAC distribution matrix to be the proper size 
             wac_distributions = wac_distributions[:, None, :]
             wac_distributions = wac_distributions.expand(-1, query_layer.shape[2], -1)
             wac_distributions = self.transpose_for_scores(wac_distributions)
 
+            # Perform the element-wise WAC distribution multiplication with the 
+            # specified attention matrices in this attention layer.  
             if self.wac_distribution_matrix == "query":
                 query_layer = query_layer * wac_distributions
             elif self.wac_distribution_matrix == "key":
@@ -392,6 +412,9 @@ class BertWACEncoder(nn.Module):
         
         last_hidden_state = hidden_states
         for i, layer in enumerate(self.layers):
+
+            # Compress the WAC distributions using a per-layer distribution projection autoencoder
+            # if it is set. 
             if wac_distributions is not None and self.wac_distribution_encoders is not None:
                 wac_dist_encoder_layer = self.wac_distribution_encoders[i]
                 wac_distributions_compacted = wac_dist_encoder_layer(wac_distributions)
@@ -447,12 +470,18 @@ class BertWACTransformer(BertWACPreTrainedModel):
             if config.wac_distribution_encoder_location != "all" and config.wac_distribution_encoder_location != "layers":
                 raise ValueError("WAC distribution encoder location must either be `all` or `layers`")
             
+            # Use a single WAC distribution projection autoencoder if 
+            # the configuration specifies. Otherwise, create a unique autoencoder
+            # for each attention layer in the model 
             if config.wac_distribution_encoder_location == "all":
                 self.wac_distribution_encoder = BertWACDistributionEncoder(config)
 
             else:
                 self.wac_distribution_encoder = None
 
+            # Set a global weight to multiply the entire WAC distribution matrix.
+            # This controls how amplified the WAC distribution signal will be 
+            # to the attention layers in the LM. 
             if config.wac_distribution_matrix is not None:
                 self.wac_distribution_weight = config.wac_distribution_weight
             else:
@@ -514,6 +543,8 @@ class BertWACTransformer(BertWACPreTrainedModel):
         if self.embeddings_projection is not None:
             hidden_states = self.embeddings_projection(hidden_states)
 
+        # Use the WAC distributions if they are sent in and an attention matrix in the 
+        # attention layer is specified. 
         if wac_distributions is not None and self.wac_distribution_matrix is not None:
             wac_distributions = wac_distributions * self.wac_distribution_weight
       
