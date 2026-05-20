@@ -14,9 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small",
-                "use_wac_embeddings=True",
-                "per_gpu_batchsize=32"
+                "pretrain_wac_ref_twotower_electrasmall_deit_small",
             ]
         },
 

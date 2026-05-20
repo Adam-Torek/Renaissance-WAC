@@ -62,6 +62,7 @@ class RenaissanceTransformer(pl.LightningModule):
             and self.hparams.config["test_only"])
         
         self.exp_name = config["exp_name"]
+        self.refcoco_label_size = config["refcoco_label_size"]
             
         if self.fine_tune or self.test_only:
             ckpt = torch.load(self.hparams.config["load_path"], map_location="cpu")

@@ -248,13 +248,13 @@ def compute_ref(pl_module, batch):
     else:
         wac_feature_dict = None
 
-    ref_logits = torch.full(size=(targets.shape[0], pl_module.ref_classifier.possible_labels,), fill_value=1e-8, device=targets.device)
     i = 0
 
-    for single_text_ids, subimage_tensor in zip(text_ids, subimage_list):    
+    logits_list = []
+    for subimage_tensor in subimage_list:    
         batch_dict = {}
         num_objects = subimage_tensor.shape[0]
-        batch_dict["text_ids"] = single_text_ids.unsqueeze(0).expand(num_objects, -1)
+        batch_dict["text_ids"] = text_ids[i].unsqueeze(0).expand(num_objects, -1)
         if text_masks is not None:
             batch_dict["text_masks"] = text_masks[i].unsqueeze(0).expand(num_objects, -1)
         
@@ -276,11 +276,14 @@ def compute_ref(pl_module, batch):
             class_feats = torch.prod(wac_embeddings, dim=1)
 
         object_logits = pl_module.ref_classifier(class_feats)
-
-        max_value = torch.max(object_logits)
-        position = torch.argmax(object_logits)
-        ref_logits[i, position] = max_value
+        if object_logits.shape[0] < pl_module.refcoco_label_size:
+            padding_to_add = pl_module.refcoco_label_size - object_logits.shape[0]
+            zero_logits = torch.zeros((1, padding_to_add)).to(object_logits.device)
+            object_logits = torch.cat((object_logits, zero_logits))
+        logits_list.append(object_logits)
         i += 1
+
+    ref_logits = torch.cat(logits_list)
 
     loss = F.cross_entropy(ref_logits, targets)
                                                          
