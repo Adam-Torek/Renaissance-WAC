@@ -688,8 +688,8 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    batch_size = 4
-    per_gpu_batchsize = 4
+    batch_size = 8
+    per_gpu_batchsize = 8
     max_epoch = 20
     warmup_steps = 0.1
     whole_word_masking = False

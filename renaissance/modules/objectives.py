@@ -275,15 +275,15 @@ def compute_ref(pl_module, batch):
             wac_embeddings = wac_feature_dict["wac_embeddings"]
             class_feats = torch.prod(wac_embeddings, dim=1)
 
-        object_logits = pl_module.ref_classifier(class_feats)
+        object_logits = pl_module.ref_classifier(class_feats).squeeze()
         if object_logits.shape[0] < pl_module.refcoco_label_size:
             padding_to_add = pl_module.refcoco_label_size - object_logits.shape[0]
-            zero_logits = torch.zeros((1, padding_to_add)).to(object_logits.device)
+            zero_logits = torch.zeros((padding_to_add, )).to(object_logits.device)
             object_logits = torch.cat((object_logits, zero_logits))
         logits_list.append(object_logits)
         i += 1
 
-    ref_logits = torch.cat(logits_list)
+    ref_logits = torch.stack(logits_list)
 
     loss = F.cross_entropy(ref_logits, targets)
                                                          

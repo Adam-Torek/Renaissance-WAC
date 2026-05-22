@@ -105,9 +105,9 @@ class BaseDataset(torch.utils.data.Dataset):
 
                 self.table = pa.concat_tables(tables)
 
-                pandas_table = self.table.to_pandas()
-                pandas_table = pandas_table.take([i for i in range(0, 32)])
-                self.table = pa.Table.from_pandas(pandas_table)
+                # pandas_table = self.table.to_pandas()
+                # pandas_table = pandas_table.take([i for i in range(0, 32)])
+                # self.table = pa.Table.from_pandas(pandas_table)
                 
                 if text_column_name != "":
                     self.text_column_name = text_column_name
