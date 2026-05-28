@@ -275,7 +275,9 @@ def compute_ref(pl_module, batch):
             wac_embeddings = wac_feature_dict["wac_embeddings"]
             class_feats = torch.prod(wac_embeddings, dim=1)
 
-        object_logits = pl_module.ref_classifier(class_feats).squeeze()
+        object_logits = pl_module.ref_classifier(class_feats)
+        object_logits = object_logits.squeeze(1)
+
         if object_logits.shape[0] < pl_module.refcoco_label_size:
             padding_to_add = pl_module.refcoco_label_size - object_logits.shape[0]
             zero_logits = torch.full((padding_to_add, ), -100).to(object_logits.device)
