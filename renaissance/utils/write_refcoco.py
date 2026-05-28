@@ -84,7 +84,25 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
             refs = [ref for ref in tqdm(data['refs']) if ref['split'] == split]
     
         item_list = [process_ref(ref, IMAGE_DIR, Imgs, imgToAnns) for ref in refs]
-        df = pd.DataFrame(item_list, columns=['image', 'sentences', 'bboxes', 'labels', 'image_id', 'ann_ids', 'num_objects'])
+        new_item_list = []
+        for item in item_list:
+            if item[6] > 20:
+                bboxes_chunked = [item[2][i: i + 20] for i in range(0, len(item[2]), 20)]
+                for bboxes in bboxes_chunked:
+                    new_unpacked_item = []
+                    for i in range(0, 7):
+                        if i == 2:
+                            continue
+                        
+                        new_unpacked_item.append(item[i])
+                    
+                    new_unpacked_item.insert(2, bboxes)
+                    new_item_list.append(new_unpacked_item)
+
+            else:
+                new_item_list.append(item)
+
+        df = pd.DataFrame(new_item_list, columns=['image', 'sentences', 'bboxes', 'labels', 'image_id', 'ann_ids', 'num_objects'])
         table = pa.Table.from_pandas(df)
         
         os.makedirs(outfile_root, exist_ok=True)

@@ -148,7 +148,7 @@ def config():
     vqav2_label_size = 3129
 
     # RefCOCO label size
-    refcoco_label_size = 75
+    refcoco_label_size = 20
 
     #Bounding box weights
     giou_weight = 2.0

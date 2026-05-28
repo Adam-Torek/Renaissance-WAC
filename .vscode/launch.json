@@ -42,9 +42,9 @@
             "request": "launch",
             "program": "renaissance/utils/run_write.py",
             "console": "integratedTerminal",
-            "args": ["--dataset_to_write", "vqa", 
-                     "--dataset_source_path", "data/VQA2", 
-                     "--dataset_destination_path", "data/arrow/vqa"]
+            "args": ["--dataset_to_write", "refcoco", 
+                     "--dataset_source_path", "data/coco", 
+                     "--dataset_destination_path", "data/arrow/coco"]
         },
         {
             "name": "Upload Model to HuggingFace",
