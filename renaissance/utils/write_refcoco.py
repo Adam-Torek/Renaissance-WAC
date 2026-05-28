@@ -94,7 +94,7 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
                         if i == 2:
                             continue
                         
-                        if i == 3 and item[i] > 20:
+                        if i == 3 and item[i] >= 20:
                             new_unpacked_item.append(item[i] % 20)
                         else:
                             new_unpacked_item.append(item[i])
