@@ -68,18 +68,22 @@ class CocoCaptionKarpathyDataset(BaseDataset):
     # MLM and the WAC object embedding model 
     def get_subimages(self, index, only_one=False):
         image_data = self.get_raw_image(index)
+        image_data = np.asarray(image_data)
+        image_data = image_data.transpose((2, 0, 1))
+
         bboxes = self.get_bounding_boxes(index, only_one=only_one)
 
         subimages_list = []
         for bbox in bboxes:
-            bbox_bounds = [bbox[0], bbox[1], bbox[0]+bbox[2], bbox[1]+bbox[3]]
-
-            cropped_image = image_data.crop(bbox_bounds)
-
-            resized_subimage = cropped_image.resize((self.image_size, self.image_size), resample=Image.Resampling.LANCZOS)
             
-            resized_subimage = [tr(resized_subimage) for tr in self.transforms][0]
+            bbox = [int(bound) for bound in bbox]
+            cropped_image = image_data[:, bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0] + bbox[2]]
 
+            resized_subimage = self.processor(cropped_image, 
+                                              return_tensors='pt',
+                                              input_data_format="channels_first",
+                                              size={'height': self.image_size, 'width': self.image_size})['pixel_values'][0]
+            
             subimages_list.append(resized_subimage)
         
         return subimages_list

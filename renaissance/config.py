@@ -685,13 +685,14 @@ def pretrain_wac_enabled_vqa_twotower_electrasmall_deit_small():
 @ex.named_config
 def pretrain_wac_ref_twotower_electrasmall_deit_small():
     exp_name = "wac_ref_twotower_electrasmall_deit_small"
+    complete_encoder_path = None
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
     batch_size = 8
     per_gpu_batchsize = 8
     max_epoch = 20
-    warmup_steps = 0.1
+    warmup_steps = 0.05
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
@@ -713,10 +714,10 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     image_encoder = "facebook/deit-small-patch16-224"
 
     # Cross Layer Settings
-    cross_layer_hidden_size = 320
+    cross_layer_hidden_size = 256
     num_cross_layers = 6
     num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 7
+    cross_layer_mlp_ratio = 4
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
@@ -727,15 +728,15 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     num_cores = 0
 
     # Training settings
-    learning_rate = 1e-4
+    learning_rate = 7.5e-4
+    lr_mult_head = 5
+    lr_mult_cross_modal = 5
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-deit-ref-renaissance-wac"
     push_to_hub = True
 
-    # Two-tower model settings
-    learning_rate = 1e-4
 
 @ex.named_config
 def pretrain_wac_ref_bbox_twotower_electrasmall_deit_small():

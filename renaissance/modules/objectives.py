@@ -248,10 +248,9 @@ def compute_ref(pl_module, batch):
     else:
         wac_feature_dict = None
 
-    i = 0
-
     logits_list = []
-    for subimage_tensor in subimage_list:    
+    
+    for i, subimage_tensor in enumerate(subimage_list):    
         batch_dict = {}
         num_objects = subimage_tensor.shape[0]
         batch_dict["text_ids"] = text_ids[i].unsqueeze(0).expand(num_objects, -1)
@@ -283,7 +282,6 @@ def compute_ref(pl_module, batch):
             zero_logits = torch.full((padding_to_add, ), -100).to(object_logits.device)
             object_logits = torch.cat((object_logits, zero_logits))
         logits_list.append(object_logits)
-        i += 1
 
     ref_logits = torch.stack(logits_list)
 
