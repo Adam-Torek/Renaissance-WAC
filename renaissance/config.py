@@ -690,7 +690,7 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
     batch_size = 32
-    per_gpu_batchsize = 16
+    per_gpu_batchsize = 32
     max_epoch = 10
     max_steps = 10e6
     warmup_steps = 0.05
@@ -707,12 +707,12 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     mlm_prob = 0.15
     draw_false_text = 0
     draw_false_image = 0
-    num_gpus = 1
+    num_gpus = 2
     data_root = "data/arrow/coco"
 
     # Image settings to not use image encoders
     use_image_encoder = True
-    image_encoder = "facebook/deit-tiny-patch16-224"
+    image_encoder = "facebook/deit-small-patch16-224"
 
     # Cross Layer Settings
     cross_layer_hidden_size = 256
