@@ -1,5 +1,0 @@
-phase,metric_name,epoch,metric_value
-val,accuracy,0,0.42876774072647095
-val,loss,0,0.6174126267433167
-train,accuracy,0,0.3743398189544678
-train,loss,0,0.6337771415710449

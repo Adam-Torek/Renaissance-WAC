@@ -523,7 +523,7 @@ def pretrain_wac_itm_twotower_electrasmall_deit_small():
 
     # Image settings to not use image encoders
     use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
+    image_encoder = "facebook/deit-tiny-patch16-224"
 
     # Cross Layer Settings
     cross_layer_hidden_size = 320
@@ -689,9 +689,10 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    batch_size = 8
-    per_gpu_batchsize = 8
-    max_epoch = 20
+    batch_size = 32
+    per_gpu_batchsize = 16
+    max_epoch = 10
+    max_steps = 10e6
     warmup_steps = 0.05
     whole_word_masking = False
     # DO NOT Freeze Encoders
@@ -711,7 +712,7 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
 
     # Image settings to not use image encoders
     use_image_encoder = True
-    image_encoder = "facebook/deit-small-patch16-224"
+    image_encoder = "facebook/deit-tiny-patch16-224"
 
     # Cross Layer Settings
     cross_layer_hidden_size = 256
@@ -730,7 +731,7 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     # Training settings
     learning_rate = 7.5e-4
     lr_mult_head = 5
-    lr_mult_cross_modal = 5
+    lr_mult_cross_modal = 15
 
     # HuggingFace settings
     huggingface_save_directory = "results/huggingface_outputs"
