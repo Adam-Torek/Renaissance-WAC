@@ -689,8 +689,8 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    batch_size = 32
-    per_gpu_batchsize = 32
+    batch_size = 60
+    per_gpu_batchsize = 10
     max_epoch = 10
     max_steps = 10e6
     warmup_steps = 0.05
@@ -702,7 +702,7 @@ def pretrain_wac_ref_twotower_electrasmall_deit_small():
     text_encoder = "ajtorek/electra-wac-renaissance-babylm"
     random_init_text_encoder = False
     tokenizer = "google/electra-small-discriminator"
-    max_text_len = 50
+    max_text_len = 40
     whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
     mlm_prob = 0.15
     draw_false_text = 0
