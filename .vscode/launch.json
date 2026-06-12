@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "pretrain_wac_ref_twotower_electrasmall_deit_small",
+                "finetune_cola_onetower_electrasmall",
             ]
         },
 

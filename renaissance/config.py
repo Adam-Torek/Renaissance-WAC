@@ -1442,14 +1442,16 @@ def glue_wac_embeddings_config():
     model_type = "two-tower-wac"
     datasets = ["glue"]
     csv_log_file = "glue_results/glue_wac_embeddings/glue.csv"
-    complete_encoder_path = "ajtorek/electra_deit_small_wac_embeddings"
+    complete_encoder_path = "ajtorek/electra-deit-ref-renaissance-wac"
     run_test = False
 
     batch_size = 128
     per_gpu_batchsize = 128
     max_epoch = 10
-    warmup_steps = 0.1
-    learning_rate = 5e-5
+    warmup_steps = 0.05
+    learning_rate = 2e-6
+    lr_mult_head = 10
+    lr_mult_cross_modal = 5
     whole_word_masking = False
     # DO NOT Freeze Encoders
     freeze_image_encoder = True
@@ -1479,9 +1481,9 @@ def glue_wac_embeddings_config():
     wac_embedding_encoder_sizes = [256]
 
     # WAC model settings
-    use_wac_embeddings = True
+    use_wac_embeddings = False
     wac_distribution_matrix = None
-    wac_image_encoder = "openai/clip-vit-base-patch16"
+    wac_image_encoder = None
     #wac_train_steps = 5
     wac_repo_id = "ajtorek/wac_weights"
     local_wac_directory = "wac_models"
