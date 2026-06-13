@@ -851,16 +851,16 @@ def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    num_gpus = 1
+    num_gpus = 2
     precision = 32
-    batch_size = 8
-    per_gpu_batchsize = 8
     complete_encoder_path = None
     
-    max_epoch = 5
-    warmup_steps = 0.1
+    batch_size = 60
+    per_gpu_batchsize = 10
+    max_epoch = 10
+    max_steps = 10e6
+    warmup_steps = 0.05
     whole_word_masking = False
-    learning_rate = 1e-4
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
     freeze_text_encoder = False
@@ -885,11 +885,16 @@ def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
     image_encoder = "facebook/deit-small-patch16-224"
 
     # Cross Layer Settings
-    cross_layer_hidden_size = 320
+    cross_layer_hidden_size = 256
     num_cross_layers = 6
     num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 7
+    cross_layer_mlp_ratio = 4
     cross_layer_drop_rate = 0.1
+
+     # Training settings
+    learning_rate = 7.5e-4
+    lr_mult_head = 5
+    lr_mult_cross_modal = 15
 
     # WAC model settings
     use_wac_embeddings = True
@@ -915,16 +920,16 @@ def eval_ref_twotower_electrasmall_deit_wac_query_distributions():
     model_type = "two-tower-wac"
     datasets = ["coco"]
     loss_names = _loss_names({"ref": 1})
-    num_gpus = 1
+    num_gpus = 2
     precision = 32
-    batch_size = 8
-    per_gpu_batchsize = 8
     complete_encoder_path = None
     
-    max_epoch = 5
-    warmup_steps = 0.1
+    batch_size = 60
+    per_gpu_batchsize = 10
+    max_epoch = 10
+    max_steps = 10e6
+    warmup_steps = 0.05
     whole_word_masking = False
-    learning_rate = 1e-4
     # DO NOT Freeze Encoders
     freeze_image_encoder = False
     freeze_text_encoder = False
@@ -944,10 +949,10 @@ def eval_ref_twotower_electrasmall_deit_wac_query_distributions():
     image_encoder = "facebook/deit-small-patch16-224"
 
     # Cross Layer Settings
-    cross_layer_hidden_size = 320
+    cross_layer_hidden_size = 256
     num_cross_layers = 6
     num_cross_layer_heads = 4
-    cross_layer_mlp_ratio = 7
+    cross_layer_mlp_ratio = 4
     cross_layer_drop_rate = 0.1
 
     # WAC model settings
@@ -960,6 +965,11 @@ def eval_ref_twotower_electrasmall_deit_wac_query_distributions():
     local_wac_directory = "wac_models"
     num_cores = 0
     save_wac_features = True
+
+     # Training settings
+    learning_rate = 7.5e-4
+    lr_mult_head = 5
+    lr_mult_cross_modal = 15
 
     # HuggingFace settings
     huggingface_save_directory = "models"
