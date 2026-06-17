@@ -877,7 +877,6 @@ def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
     mlm_prob = 0.15
     draw_false_text = 0
     draw_false_image = 0
-    num_gpus = 1
     data_root = "data/arrow/coco"
     
     # Image settings to not use image encoders
