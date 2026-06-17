@@ -2,6 +2,7 @@ import json
 import pandas as pd
 import pyarrow as pa
 import os
+import random
 
 import sys
 import os.path as osp
@@ -87,23 +88,33 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
         new_item_list = []
         for item in item_list:
             if item[6] > 20:
-                bboxes_chunked = [item[2][i: i + 20] for i in range(0, len(item[2]), 20)]
-                for j, bboxes in enumerate(bboxes_chunked):
-                    new_unpacked_item = []
-                    for i in range(0, 7):
-                        if i == 2:
-                            continue
+                # bboxes_chunked = [item[2][i: i + 20] for i in range(0, len(item[2]), 20)]
+                # for j, bboxes in enumerate(bboxes_chunked):
+                #     new_unpacked_item = []
+                #     for i in range(0, 7):
+                #         if i == 2:
+                #             continue
                         
-                        if i == 3 and item[i] >= 20:
-                            new_unpacked_item.append(item[i] % 20)
-                        else:
-                            new_unpacked_item.append(item[i])
+                #         if i == 3 and item[i] >= 20:
+                #             new_unpacked_item.append(item[i] % 20)
+                #         else:
+                #             new_unpacked_item.append(item[i])
                     
-                    new_unpacked_item.insert(2, bboxes)
-                    new_item_list.append(new_unpacked_item)
+                #     new_unpacked_item.insert(2, bboxes)
+                #     new_item_list.append(new_unpacked_item)
+                true_bbox = item[2][item[3]]
+                false_bboxes = []
+                while len(false_bboxes) < 19:
+                    false_bbox = random.choice(item[2])
+                    false_bboxes.append(false_bbox)
 
+                random_insert_point = random.randint(0, 19)
+                false_bboxes.insert(random_insert_point, true_bbox)
+                label = random_insert_point
+
+                new_item_list.append([item[0], item[1], false_bboxes, label, item[4], item[5], 20])
             else:
-                new_item_list.append(item)
+                new_item_list.append([item[0], item[1], item[2], item[3], item[4], item[5], 20])
 
         df = pd.DataFrame(new_item_list, columns=['image', 'sentences', 'bboxes', 'labels', 'image_id', 'ann_ids', 'num_objects'])
         table = pa.Table.from_pandas(df)

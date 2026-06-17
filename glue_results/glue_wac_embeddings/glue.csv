@@ -1,0 +1,2 @@
+model_name,phase,epoch,metric_name,metric_value
+eval_ref_twotower_electrasmall_wac_query_distributions,val,2,accuracy,0.5005146861076355

@@ -14,7 +14,7 @@
             "justMyCode": false,
             "args": [
                 "with", 
-                "finetune_cola_onetower_electrasmall",
+                "eval_ref_twotower_electrasmall_deitsmall_wac_embeddings",
             ]
         },
 
