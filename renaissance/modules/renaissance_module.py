@@ -757,7 +757,7 @@ class RenaissanceTransformer(pl.LightningModule):
         download_path = hf_hub_download(repo_id=model_repository, 
                                         local_dir=local_download_folder,
                                         filename="model.safetensors",)
-        
+
         safetensors_weights = load_file(download_path)
         self.encoder.load_state_dict(safetensors_weights, strict=False)
         self.encoder.train()

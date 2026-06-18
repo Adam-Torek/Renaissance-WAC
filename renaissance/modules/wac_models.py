@@ -617,8 +617,6 @@ class WACModels():
         with zipfile.ZipFile(wac_zip_file_path, "w") as wac_zip_file:
             for file in os.listdir(self.save_directory):
                 wac_zip_file.write(os.path.join(self.save_directory, file))
-        
-        shutil.rmtree(self.save_directory)
 
         create_repo(repo_id=self.wac_repo_id,
                     exist_ok=True,
