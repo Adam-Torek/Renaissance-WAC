@@ -854,6 +854,7 @@ def eval_ref_twotower_electrasmall_deitsmall_wac_embeddings():
     num_gpus = 2
     precision = 32
     complete_encoder_path = None
+    csv_log_file = None
     
     batch_size = 60
     per_gpu_batchsize = 10
