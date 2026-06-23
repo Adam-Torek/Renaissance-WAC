@@ -113,6 +113,7 @@ def write_refcoco(data_root, outfile_root, dataset = 'refcoco', splitBy = 'unc')
                 label = random_insert_point
 
                 new_item_list.append([item[0], item[1], false_bboxes, label, item[4], item[5], 20])
+
             else:
                 new_item_list.append([item[0], item[1], item[2], item[3], item[4], item[5], 20])
 

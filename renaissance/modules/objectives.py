@@ -279,7 +279,7 @@ def compute_ref(pl_module, batch):
 
         if object_logits.shape[0] < pl_module.refcoco_label_size:
             padding_to_add = pl_module.refcoco_label_size - object_logits.shape[0]
-            zero_logits = torch.full((padding_to_add, ), -100).to(object_logits.device)
+            zero_logits = torch.full((padding_to_add, ), 0.0).to(object_logits.device)
             object_logits = torch.cat((object_logits, zero_logits))
         logits_list.append(object_logits)
 

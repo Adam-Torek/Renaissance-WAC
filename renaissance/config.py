@@ -791,6 +791,65 @@ def pretrain_wac_ref_bbox_twotower_electrasmall_deit_small():
     huggingface_save_directory = "results/huggingface_outputs"
     huggingface_save_name = "ajtorek/electra-deit-ref-bbox-renaissance-wac"
     push_to_hub = True
+
+@ex.named_config
+def eval_ref_twotower_electrasmall_test():
+    exp_name = "eval_ref_twotower_electrasmall_deit_test"
+    model_type = "two-tower"
+    datasets = ["coco"]
+    loss_names = _loss_names({"ref": 1})
+    num_gpus = 1
+    precision = 32
+    batch_size = 2
+    per_gpu_batchsize = 2
+    complete_encoder_path = None
+    csv_log_file = None
+    
+    max_epoch = 10
+    warmup_steps = 0.05
+    whole_word_masking = False
+    # DO NOT Freeze Encoders
+    freeze_image_encoder = False
+    freeze_text_encoder = False
+    # Text Setting
+    text_encoder = "ajtorek/electra-renaissance-babylm"
+    text_encoder_manual_configuration = False   
+    tokenizer = "google/electra-small-discriminator"
+    max_text_len = 50
+    whole_word_masking = False # note that whole_word_masking does not work for RoBERTa
+    mlm_prob = 0.15
+    draw_false_text = 0
+    draw_false_image = 0
+    data_root = "data/arrow/coco"
+    
+    # Image settings to not use image encoders
+    use_image_encoder = True
+    image_encoder = "facebook/deit-small-patch16-224"
+
+    # Cross Layer Settings
+    cross_layer_hidden_size = 256
+    num_cross_layers = 6
+    num_cross_layer_heads = 4
+    cross_layer_mlp_ratio = 4
+    cross_layer_drop_rate = 0.1
+
+    # Training settings
+    learning_rate = 7.5e-4
+    lr_mult_head = 5
+    lr_mult_cross_modal = 15
+
+    # WAC model settings
+    use_wac_embeddings = False
+    wac_distribution_matrix = None
+    wac_image_encoder = None
+    #wac_train_steps = 5
+    num_cores = 0
+
+    # HuggingFace settings
+    huggingface_save_directory = "results"
+    huggingface_save_name = "ajtorek/electra-small-deit-test"
+    push_to_hub = True
+
     
 @ex.named_config
 def eval_ref_twotower_electrasmall_deit_small():
@@ -803,6 +862,7 @@ def eval_ref_twotower_electrasmall_deit_small():
     batch_size = 8
     per_gpu_batchsize = 8
     complete_encoder_path = None
+    csv_log_file = None
     
     max_epoch = 5
     warmup_steps = 0.1
