@@ -12,7 +12,7 @@
 source activate renaissance
 
 glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
-distribution_matrices=(key query value)
+distribution_matrices=(query)
 
 for distribution_matrix in "${distribution_matrices[@]}"
 do
