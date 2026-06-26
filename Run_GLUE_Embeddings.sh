@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH -J Renaissance-Embeddings-Eval       # job name
-#SBATCH -o slurm_logs/renaissance_wac/renaissance_embeddings_glue.o%j               # output and error file name (%j expands to jobID)  
+#SBATCH -J Embeddings_GLUE_Eval       # job name
+#SBATCH -o slurm_logs/renaissance_wac/wac_embeddings_glue.o%j               # output and error file name (%j expands to jobID)  
 #SBATCH --nodes=1			               # Number of nodes to run on
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16      # Number of CPU nodes per task to run
@@ -20,6 +20,7 @@ do
                                 use_wac_embeddings=True \
                                 exp_name=finetune_$task\_twotower_electrasmall_embeddings \
                                 csv_log_file=glue_results/glue_wac_embeddings/glue.csv \
-                                wac_image_encoder=openai/clip-vit-base-patch16
+                                wac_image_encoder=openai/clip-vit-base-patch16 \
+                                complete_encoder_path=ajtorek/electra_deit_small_wac_embeddings
 
 done 
