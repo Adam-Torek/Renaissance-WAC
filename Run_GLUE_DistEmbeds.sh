@@ -12,7 +12,7 @@
 source activate renaissance
 
 glue_tasks=(cola mnli mrpc qqp qnli rte sst2 stsb wnli)
-distribution_matrices=(key query value)
+distribution_matrices=(query)
 
 for distribution_matrix in "${distribution_matrices[@]}"
 do
@@ -21,9 +21,10 @@ do
         srun python3 run.py with finetune_$task\_twotower_electrasmall \
                                     complete_encoder_path=ajtorek/electra-deit-small-wac-$distribution_matrix\-distributions-embeddings \
                                     exp_name=finetune_twotower_electrasmall_wac_$distribution_matrix\_distributions_embeddings \
-                                    wac_distribution_matrix=None \
+                                    wac_distribution_matrix=$distribution_matrix \
                                     csv_log_file=glue_results/$distribution_matrix\_distembeds/glue.csv \
-                                    use_wac_embeddings=True
+                                    use_wac_embeddings=True \
+                                    wac_image_encoder=openai/clip-vit-base-patch16 
                                     
     done 
 done

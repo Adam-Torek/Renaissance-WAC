@@ -556,7 +556,7 @@ class RenaissanceTransformer(pl.LightningModule):
                     
                     wac_features_dict["wac_embeddings"] = wac_embeddings_tensor
                    
-                if self.wac_distribution_matrix is not None:
+                if self.wac_distribution_matrix is not None and self.hparams.config['loss_names']['ref'] > 0:
                    
                     wac_distributions = self.wac_models.get_distributions(indices)
                     wac_distributions_tensor = torch.tensor(wac_distributions, dtype=torch.float).to(input_ids.device)
